@@ -1,60 +1,44 @@
-import { StyleSheet, Text, type TextProps } from 'react-native';
-
-import { useThemeColor } from '@/hooks/use-theme-color';
+import React from 'react';
+import { Text as DefaultText, StyleSheet, TextProps } from 'react-native';
 
 export type ThemedTextProps = TextProps & {
-  lightColor?: string;
-  darkColor?: string;
-  type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link';
+  type?: 'default' | 'title' | 'subtitle' | 'link';
 };
 
-export function ThemedText({
-  style,
-  lightColor,
-  darkColor,
-  type = 'default',
-  ...rest
-}: ThemedTextProps) {
-  const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
-
+export function ThemedText({ style, type = 'default', ...rest }: ThemedTextProps) {
   return (
-    <Text
-      style={[
-        { color },
-        type === 'default' ? styles.default : undefined,
-        type === 'title' ? styles.title : undefined,
-        type === 'defaultSemiBold' ? styles.defaultSemiBold : undefined,
-        type === 'subtitle' ? styles.subtitle : undefined,
-        type === 'link' ? styles.link : undefined,
-        style,
-      ]}
+    <DefaultText
+      style={[styles.text, typeStyles[type], style]}
       {...rest}
     />
   );
 }
 
 const styles = StyleSheet.create({
-  default: {
+  text: {
+    fontFamily: 'Montserrat_400Regular', // standaard font
     fontSize: 16,
-    lineHeight: 24,
-  },
-  defaultSemiBold: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    lineHeight: 32,
-  },
-  subtitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  link: {
-    lineHeight: 30,
-    fontSize: 16,
-    color: '#0a7ea4',
+    color: '#1a73e8', // standaard zwarte kleur
   },
 });
+
+const typeStyles = StyleSheet.create({
+  default: {},
+  title: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 24,
+    color: '#FF5733', // ← hier kun je de titelkleur instellen
+  },
+  subtitle: {
+    fontFamily: 'Montserrat_700Bold',
+    fontSize: 18,
+    color: '#2E86C1', // ← hier kun je subtitelkleur instellen
+  },
+  link: {
+    textDecorationLine: 'underline',
+    color: '#1a73e8', // ← linkkleur
+  },
+});
+
+
+

@@ -1,98 +1,100 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
+import { DisplayImage } from '@/components/display-image';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import useMessages from '@/data/messages';
+import React from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const { data, isLoading, isError} = useMessages();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
+  if (isLoading) {
+    return (
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={styles.container}>
+          <ThemedText>Loading...</ThemedText>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  if (isError) {
+    return (
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={styles.container}>
+          <ThemedText>Er ging iets mis bij het laden van berichten.</ThemedText>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  return (
+    <SafeAreaView style={{ flex: 1 }}>
+      <View style={styles.container}>
+        {/* Toon icon.png */}
+        <DisplayImage 
+          source={require('../../assets/images/icon.png')} 
+          width={100} 
+          height={100} 
+          style={{ marginBottom: 20 }}
+        />
+
+        <ThemedText type="title">Hallo jij 🎉</ThemedText>
+        <ThemedText type="subtitle">Dit is een subtitel</ThemedText>
+        <ThemedText style={{ fontFamily: 'Montserrat_400Regular', fontSize: 16 }}>
+          Dit is een oefening met Montserrat Regular
         </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+
+        {/* Berichten weergegeven vanaf API (onder bestaande tekst) */}
+        <ThemedText type="subtitle" style={{ marginTop: 12 }}>Berichten:</ThemedText>
+        {Array.isArray(data) && data.length > 0 ? (
+          <ScrollView style={{ width: '100%', marginTop: 8 }} contentContainerStyle={{ alignItems: 'center', gap: 8 }}>
+            {data.map((msg: any, idx: number) => (
+              <View key={msg._id ?? idx} style={styles.msgCard}>
+                <ThemedText style={styles.msgSender}>{msg.sender?.username ?? (msg.recipients && msg.recipients.length ? 'Group' : 'Unknown')}</ThemedText>
+                <ThemedText style={styles.msgText}>{msg.text ?? JSON.stringify(msg)}</ThemedText>
+                <ThemedText style={styles.msgMeta}>{msg.recipients && msg.recipients.length > 0 ? `To: ${msg.recipients.map((r: any) => r.username).join(', ')}` : 'No recipients'} • {msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ''}</ThemedText>
+              </View>
+            ))}
+          </ScrollView>
+        ) : (
+          <ThemedText>Geen berichten gevonden.</ThemedText>
+        )}
+
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    justifyContent: 'center', // verticaal centreren
+    alignItems: 'center',     // horizontaal centreren
+    padding: 16,
+    gap: 12,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  msgCard: {
+    width: '92%',
+    backgroundColor: '#ffffff',
+    padding: 12,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  msgSender: {
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  msgText: {
+    fontSize: 15,
+    marginBottom: 6,
+  },
+  msgMeta: {
+    fontSize: 12,
+    color: '#666',
   },
 });
+
