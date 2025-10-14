@@ -4,6 +4,7 @@ import useMessages from '@/data/messages';
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Link } from 'expo-router';
 
 export default function HomeScreen() {
   const { data, isLoading, isError} = useMessages();
