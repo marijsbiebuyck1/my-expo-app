@@ -33,7 +33,7 @@ export default function HomeScreen() {
       <View style={styles.container}>
         {/* Toon icon.png */}
         <DisplayImage 
-          source={require('../../assets/images/icon.png')} 
+          source={require('../assets/images/icon.png')} 
           width={100} 
           height={100} 
           style={{ marginBottom: 20 }}
