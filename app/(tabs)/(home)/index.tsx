@@ -5,6 +5,7 @@ import React from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+
 export default function HomeScreen() {
   const { data, isLoading, isError } = useMessages();
 
@@ -33,7 +34,7 @@ export default function HomeScreen() {
       <View style={styles.container}>
         {/* Toon icon.png */}
         <DisplayImage
-          source={require("../assets/images/icon.png")}
+          source={require("../../../assets/images/icon.png")}
           width={100}
           height={100}
           style={{ marginBottom: 20 }}
@@ -120,3 +121,4 @@ const styles = StyleSheet.create({
     color: "#666",
   },
 });
+
