@@ -8,8 +8,9 @@ export default function useMessages () {
   return {
     data,
     isLoading,
-    isError: error
+    // expose a boolean for easier checks + the raw error for debugging
+    isError: Boolean(error),
+    error
   }
 
- 
 }
