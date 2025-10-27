@@ -1,12 +1,12 @@
-import { DisplayImage } from "../../../components/display-image";
-import { ThemedText } from "../../../components/themed-text";
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DisplayImage } from "../../../components/display-image";
+import { ThemedText } from "../../../components/themed-text";
 
 export default function HomeScreen() {
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
       <View style={styles.container}>
         {/* Toon icon.png */}
         <DisplayImage
@@ -29,6 +29,11 @@ export default function HomeScreen() {
     </SafeAreaView>
   );
 }
+
+export const options = {
+  title: "Home",
+  tabBarLabel: "Home",
+};
 
 const styles = StyleSheet.create({
   container: {
