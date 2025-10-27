@@ -2,12 +2,14 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import LogoHeader from "../../../components/logo-header";
 import { ThemedText } from "../../../components/themed-text";
 
 export default function ChatListScreen() {
   const router = useRouter();
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
+      <LogoHeader />
       <View style={styles.container}>
         <ThemedText type="title">Chat</ThemedText>
         <ThemedText>Hier kun je een lijst van chats bouwen.</ThemedText>

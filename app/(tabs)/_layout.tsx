@@ -5,15 +5,12 @@ import { StyleSheet, View } from "react-native";
 export default function TabLayout() {
   return (
     <View style={styles.root}>
+      {/* logo is rendered per-page via the LogoHeader component */}
       <Tabs
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: "#FDA0E9",
           tabBarInactiveTintColor: "#8e8e93",
-          tabBarStyle: styles.tabBar,
-          tabBarLabelStyle: styles.tabLabel,
-          tabBarIconStyle: styles.tabIcon,
-          tabBarHideOnKeyboard: true,
         }}
       >
         <Tabs.Screen
@@ -69,19 +66,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFCF5",
   },
-  tabBar: {
-    backgroundColor: "#fff",
-    height: 64,
-    paddingBottom: 15,
-    borderTopColor: "#eee",
-    borderTopWidth: 1,
-    borderRadius: 80,
-  },
-  tabLabel: {
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  tabIcon: {
+
+  logoWrap: {
+    height: 56,
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 6,
+    margin: 30,
+  },
+  logo: {
+    width: 40,
+    height: 14,
+    resizeMode: "contain",
   },
 });
