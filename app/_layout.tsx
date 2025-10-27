@@ -19,6 +19,8 @@ export default function Layout() {
     // Start with the login screen so the bottom tab bar isn't visible on login
     <Stack initialRouteName="login">
       <Stack.Screen name="login" options={{ headerShown: false }} />
+      {/* Hide header for explicit register route to ensure no title bar appears */}
+      <Stack.Screen name="register-owner" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
     </Stack>
   );

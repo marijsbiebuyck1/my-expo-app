@@ -6,6 +6,11 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// Hide the default header/title bar rendered by the Stack for this route
+export const options = {
+  headerShown: false,
+};
+
 export default function RegisterOwnerScreen() {
   const router = useRouter();
   const [name, setName] = useState('');
@@ -183,7 +188,7 @@ export default function RegisterOwnerScreen() {
     <SafeAreaView style={styles.screen}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          <ThemedText type="title" style={styles.title}>Registratie Baasje</ThemedText>
+          <ThemedText type="title" style={styles.title}>Eerst even over jou</ThemedText>
 
           <TouchableOpacity style={styles.photoBtn} onPress={pickImage}>
             <Text style={styles.photoBtnText}>{photoUri ? 'Wijzig profielfoto' : 'Upload profielfoto'}</Text>
@@ -193,17 +198,17 @@ export default function RegisterOwnerScreen() {
             <Image source={{ uri: photoUri }} style={styles.photo} />
           ) : null}
 
-          <Text style={styles.label}>Naam</Text>
+          <Text style={styles.label}>Wat is je naam?</Text>
           <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Voornaam Achternaam" />
 
-          <Text style={styles.label}>E-mail</Text>
+          <Text style={styles.label}>Wat is je e-mailadres?</Text>
           <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" />
 
           <Text style={styles.label}>Wachtwoord</Text>
           <TextInput style={styles.input} value={password} onChangeText={setPassword} placeholder="Wachtwoord" secureTextEntry />
 
-          <Text style={styles.label}>Geboortedatum</Text>
-          <TextInput style={styles.input} value={birthdate} onChangeText={setBirthdate} placeholder="YYYY-MM-DD" />
+          <Text style={styles.label}>Je geboortedatum</Text>
+          <TextInput style={styles.input} value={birthdate} onChangeText={setBirthdate} placeholder="DD-MM-YYYY" />
 
           <Text style={styles.label}>Regio</Text>
           <TextInput style={styles.input} value={region} onChangeText={setRegion} placeholder="Bijv. Antwerpen" />
@@ -227,10 +232,13 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
   },
   title: {
+    fontFamily: 'MontserratAlternates-SemiBold',
+    color: '#3F3F3F',
     fontSize: 22,
     marginBottom: 24,
   },
   label: {
+    fontFamily: 'Montserrat_400Regular',
     fontSize: 14,
     marginBottom: 6,
     color: '#333',
@@ -238,33 +246,36 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#fff',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 50,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#eee',
+    fontFamily: 'Montserrat_400Regular',
   },
   cta: {
-    backgroundColor: '#E06837',
+    backgroundColor: '#FDA0E9',
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: 50,
     alignItems: 'center',
+
   },
   ctaText: {
     color: '#fff',
-    fontWeight: '600',
+    fontFamily: 'Montserrat_600SemiBold',
+    fontSize: 16,
   },
   photoBtn: {
     backgroundColor: '#fff',
     borderColor: '#eee',
     borderWidth: 1,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 50,
     alignItems: 'center',
     marginBottom: 12,
   },
   photoBtnText: {
     color: '#333',
-    fontWeight: '600',
+    fontFamily: 'Montserrat_600SemiBold',
   },
   photo: {
     width: 120,
