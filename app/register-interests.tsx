@@ -55,7 +55,6 @@ export default function RegisterInterests() {
           // noop
         }
       }
-
       if (!userId) {
         Alert.alert('Fout', 'Kon je gebruikers-id niet vinden. Probeer in te loggen of registreer opnieuw.');
         return;
@@ -63,23 +62,82 @@ export default function RegisterInterests() {
 
       const token = await SecureStore.getItemAsync('userToken');
 
-      const resp = await fetch(`https://my-express-app-ne4l.onrender.com/users/${userId}`, {
+      // Build interests payload matching backend InterestsSchema
+      const employmentLabels = ['💻 Telewerk', '✈️ Vaak reizen', '💼 9-to-5', '📚 Nog op school', '🧓🏽 Op pensioen'].filter(i => selected.includes(i));
+      const freeTime = ['🥾 Wandelen', '⛱️ Op vakantie gaan', '📺 Series kijken', '🥂 Iets gaan drinken', '⚽️ Sporten'].filter(i => selected.includes(i));
+      const householdCompanions = ['👶 Gezin', '👱 Alleen', '👯 Met roomies', '❤️ Met partner'].filter(i => selected.includes(i));
+
+      // infer experience value
+      let experience: string | undefined = undefined;
+      if (selected.includes('Ik heb ervaring')) experience = 'yes';
+      else if (selected.includes('Ik heb geen ervaring')) experience = 'no';
+
+      // infer employmentStatus from selected (best-effort)
+      let employmentStatus: string | undefined = undefined;
+      if (selected.includes('💼 9-to-5')) employmentStatus = 'working';
+      else if (selected.includes('📚 Nog op school')) employmentStatus = 'student';
+      else if (selected.includes('🧓🏽 Op pensioen')) employmentStatus = 'retired';
+      else if (employmentLabels.length > 0) employmentStatus = 'other';
+
+      const interestsPayload: any = {};
+      if (employmentLabels.length) interestsPayload.employmentLabels = employmentLabels;
+      if (freeTime.length) interestsPayload.freeTime = freeTime;
+      if (householdCompanions.length) interestsPayload.householdCompanions = householdCompanions;
+      if (experience) interestsPayload.experience = experience;
+      if (employmentStatus) interestsPayload.employmentStatus = employmentStatus;
+
+      console.debug('PATCH interests ->', { userId, hasToken: !!token, interestsPayload });
+
+      // PATCH to the specific interests route (server exposes PATCH /users/:id/interests)
+      const resp = await fetch(`https://my-express-app-ne4l.onrender.com/users/${userId}/interests`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ interests: selected }),
+        body: JSON.stringify(interestsPayload),
       });
 
+      const respText = await resp.text();
+      console.debug('PATCH interests response', { status: resp.status, body: respText });
       if (!resp.ok) {
-        const text = await resp.text();
-        console.error('Failed to save interests', { status: resp.status, body: text });
-        throw new Error(text || `HTTP ${resp.status}`);
+        console.error('Failed to save interests', { status: resp.status, body: respText });
+        throw new Error(respText || `HTTP ${resp.status}`);
       }
 
-      // success -> go into app
-      router.replace('/home' as any);
+      // Persist updated user: prefer PATCH JSON body; if empty (204) or incomplete, GET fresh user
+      let savedUser: any = null;
+      try {
+        savedUser = await resp.json();
+        console.debug('Saved user after interests (from PATCH body)', savedUser);
+      } catch {
+        console.debug('No JSON body returned from interests PATCH (likely 204), will re-fetch user');
+      }
+
+      if (!savedUser || typeof savedUser !== 'object' || !(savedUser.id || savedUser._id)) {
+        try {
+          const getResp = await fetch(`https://my-express-app-ne4l.onrender.com/users/${userId}`);
+          if (getResp.ok) {
+            const getJson = await getResp.json();
+            console.debug('Re-fetched user after interests', getJson);
+            savedUser = getJson;
+          } else {
+            console.warn('Failed to re-fetch user after interests', { status: getResp.status });
+          }
+        } catch (err) {
+          console.warn('Network error when re-fetching user after interests', err);
+        }
+      }
+
+      if (savedUser && typeof savedUser === 'object') {
+        await SecureStore.setItemAsync('user', JSON.stringify(savedUser));
+        if (savedUser.id || savedUser._id) {
+          await SecureStore.setItemAsync('userId', String(savedUser.id ?? savedUser._id));
+        }
+      }
+
+      // continue onboarding to register-pet
+      router.replace('/register-pet' as any);
     } catch (err) {
       console.error('save interests error', err);
       Alert.alert('Fout', (err as any)?.message || 'Kon voorkeuren niet opslaan.');
@@ -130,14 +188,14 @@ const styles = StyleSheet.create({
   container: { padding: 24, paddingTop: 30 },
   title: { fontSize: 22, marginBottom: 18, fontFamily: 'MontserratAlternates-SemiBold', color: '#3F3F3F' },
   sectionTitle: { fontSize: 14, marginBottom: 8, color: '#333', fontFamily: 'Montserrat_700Bold' },
-  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 2,},
   chip: {
     backgroundColor: '#EFEFD1',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    marginRight: 8,
-    marginBottom: 8,
+    marginRight: 2,
+    marginBottom: 2,
   },
   chipSelected: { backgroundColor: '#E0F0D9' },
   chipText: { color: '#333', fontFamily: 'Montserrat_400Regular' },

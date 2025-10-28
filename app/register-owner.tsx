@@ -128,48 +128,54 @@ export default function RegisterOwnerScreen() {
 
       const json = await resp.json();
 
-      // Try to find a token in the response using common keys.
-      const possibleTokenKeys = [
-        'token',
-        'accessToken',
-        'access_token',
-        'authToken',
-        'jwt',
-        'id',
-      ];
-
+      // Normalize possible response shapes and extract token + user object.
+      // Backend may return: { token: '...' , user: {...} } OR { id: '...' } OR [{...}]
       let token: string | null = null;
+      let userObj: any = null;
 
-      if (json && typeof json === 'object') {
+      if (json) {
+        // if server returned an array, take first element
+        if (Array.isArray(json) && json.length > 0) {
+          userObj = json[0];
+        } else if (typeof json === 'object') {
+          // common nested shapes
+          userObj = json;
+          if ((json as any).data && typeof (json as any).data === 'object') userObj = (json as any).data;
+          if ((json as any).user && typeof (json as any).user === 'object') userObj = (json as any).user;
+          if ((json as any).result && typeof (json as any).result === 'object') userObj = (json as any).result;
+        }
+
+        // token keys to check (do NOT include 'id')
+        const possibleTokenKeys = ['token', 'accessToken', 'access_token', 'authToken', 'jwt'];
         for (const k of possibleTokenKeys) {
           if ((json as any)[k]) {
             token = String((json as any)[k]);
             break;
           }
         }
-
-        // check nested common shapes (e.g. { data: { token: '...' } } or { user: { token: '...' } })
-        if (!token) {
-          const nested = (json as any).data ?? (json as any).user ?? (json as any).result ?? null;
-          if (nested && typeof nested === 'object') {
-            for (const k of possibleTokenKeys) {
-              if (nested[k]) {
-                token = String(nested[k]);
-                break;
-              }
+        // check nested token locations
+        if (!token && userObj && typeof userObj === 'object') {
+          for (const k of possibleTokenKeys) {
+            if (userObj[k]) {
+              token = String(userObj[k]);
+              break;
             }
           }
         }
       }
 
+      // Persist token if found
       if (token) {
-        // store token securely
         await SecureStore.setItemAsync('userToken', token);
+      }
+
+      // Persist user object if present
+      if (userObj && (userObj.id || userObj._id)) {
+        await SecureStore.setItemAsync('user', JSON.stringify(userObj));
+        await SecureStore.setItemAsync('userId', String(userObj.id ?? userObj._id));
       } else if (json && (json as any).id) {
-        // Backend returned a created user object (no token). Store the user id
-        // and the user object so the app can identify the created account.
+        // fallback: server returned top-level id only
         await SecureStore.setItemAsync('userId', String((json as any).id));
-        await SecureStore.setItemAsync('user', JSON.stringify(json));
       } else {
         console.warn('No auth token or id found in register response', json);
       }
