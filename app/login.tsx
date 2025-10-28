@@ -1,12 +1,51 @@
 import { ThemedText } from '@/components/themed-text';
 import { useFonts } from 'expo-font';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import * as SecureStore from 'expo-secure-store';
+import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
   const router = useRouter();
+
+  const [devAutoLogin, setDevAutoLogin] = useState(false);
+
+  useEffect(() => {
+    if (__DEV__) {
+      (async () => {
+        try {
+          const val = await SecureStore.getItemAsync('DEV_AUTO_LOGIN');
+          setDevAutoLogin(val === 'true');
+        } catch (e) {
+          console.warn('Failed to read DEV_AUTO_LOGIN', e);
+        }
+      })();
+    }
+  }, []);
+
+  async function toggleDevAutoLogin() {
+    const next = !devAutoLogin;
+    setDevAutoLogin(next);
+    try {
+      if (next) {
+        await SecureStore.setItemAsync('DEV_AUTO_LOGIN', 'true');
+      } else {
+        await SecureStore.deleteItemAsync('DEV_AUTO_LOGIN');
+      }
+    } catch (e) {
+      console.warn('Failed to write DEV_AUTO_LOGIN', e);
+    }
+  }
+
+  function goToInterests() {
+    // push so dev can inspect register-interest screen without changing history too much
+    router.push('/register-interests');
+  }
+
+  function goToHome() {
+    router.push('/home');
+  }
 
   // Load local Montserrat Alternates font that you've copied into assets/fonts.
   // Example filename: assets/fonts/MontserratAlternates-SemiBold.ttf
@@ -47,6 +86,24 @@ export default function LoginScreen() {
               <Text style={[styles.buttonText, styles.buttonTextShelter]}>Registreer als asiel</Text>
             </TouchableOpacity>
           </View>
+
+          {__DEV__ && (
+            <View style={{ width: '100%', alignItems: 'center', marginTop: 8 }}>
+              <TouchableOpacity onPress={toggleDevAutoLogin} style={{ padding: 8 }}>
+                <Text style={{ color: '#666' }}>Dev auto-login: {devAutoLogin ? 'ON' : 'OFF'} (tik om te wisselen)</Text>
+              </TouchableOpacity>
+
+              <View style={{ flexDirection: 'row', marginTop: 6 }}>
+                <TouchableOpacity onPress={goToInterests} style={{ padding: 8, marginRight: 12 }}>
+                  <Text style={{ color: '#666' }}>Open interests</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={goToHome} style={{ padding: 8 }}>
+                  <Text style={{ color: '#666' }}>Open home</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
         </View>
       </SafeAreaView>
   );

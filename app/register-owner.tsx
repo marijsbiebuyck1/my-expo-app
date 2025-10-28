@@ -174,8 +174,10 @@ export default function RegisterOwnerScreen() {
         console.warn('No auth token or id found in register response', json);
       }
 
-      // success - navigate into the app (replace so user cannot go back to registration)
-      router.replace('/home');
+  // success - continue onboarding to interests selection
+  // replace so user cannot go back to registration
+  // router types are generated; assert `any` to avoid a compile error if route type isn't present yet
+  router.replace('/register-interests' as any);
     } catch (e) {
       console.error('register error', e);
       Alert.alert('Fout', (e && (e as any).message) || 'Er is iets misgegaan bij het registreren.');
