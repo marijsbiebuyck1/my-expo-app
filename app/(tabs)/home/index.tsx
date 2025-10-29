@@ -1,32 +1,33 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { DisplayImage } from "../../../components/display-image";
 import LogoHeader from "../../../components/logo-header";
-import { ThemedText } from "../../../components/themed-text";
+import SwipeCard from "../../../components/ui/swipe-cards";
 
 export default function HomeScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
       <LogoHeader />
       <View style={styles.container}>
-        {/* Toon icon.png */}
-        <DisplayImage
-          source={require("../../../assets/images/icon.png")}
-          width={100}
-          height={100}
-          style={{ marginBottom: 20 }}
+        <SwipeCard
+          imageSource={require("../../../assets/images/maurice.png")}
+          name="Maurice"
+          gender="Kater"
+          age="7 maand"
+          breed="Scottish fold"
+          description={
+            "Hi, ik ben Maurice, andere noemen mij dikkie. Ik vind het leuk om op de raarste posities te zitten, met mij ben je nooit verveeld."
+          }
+          tags={[
+            "✂️ Gecastreerd",
+            "🏠 Binnenkat",
+            "Speels",
+            "👶 Kan met kinderen",
+            "🐱 Kan met katten",
+            "🐶 Kan met honden",
+            "🧸Knuffelkont",
+          ]}
         />
-
-        <ThemedText type="title">Hallo Marijs 🎉</ThemedText>
-        <ThemedText type="subtitle">Dit is een subtitel</ThemedText>
-        <ThemedText
-          style={{ fontFamily: "Montserrat_400Regular", fontSize: 16 }}
-        >
-          Dit is een oefening met Montserrat Regular
-        </ThemedText>
-
-        {/* Berichten zijn uitgezet per verzoek — alleen de statische content tonen */}
       </View>
     </SafeAreaView>
   );
