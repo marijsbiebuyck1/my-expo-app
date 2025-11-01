@@ -25,9 +25,9 @@ const styles = StyleSheet.create({
 const typeStyles = StyleSheet.create({
   default: {},
   title: {
-    fontFamily: 'Montserrat_700Bold',
+    fontFamily: 'MontserratAlternates-SemiBold',
     fontSize: 24,
-    color: '#FF5733', // ← hier kun je de titelkleur instellen
+    color: '#000000', // ← hier kun je de titelkleur instellen
   },
   subtitle: {
     fontFamily: 'Montserrat_700Bold',
