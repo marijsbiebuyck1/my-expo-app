@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "700",
     color: "#3F3F3F", // use provided selection color
-    fontFamily: 'MontserratAlternates-SemiBold',
+    fontFamily: "MontserratAlternates-SemiBold",
   },
   metaWrap: {
     marginLeft: 12,
@@ -198,20 +198,20 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: 13,
     color: "#3F3F3F",
-    fontFamily: 'Montserrat_400Regular',
+    fontFamily: "Montserrat_400Regular",
   },
 
   breed: {
     fontSize: 14,
     color: "#666",
-    fontFamily: 'Montserrat_400Regular',
+    fontFamily: "Montserrat_400Regular",
     marginBottom: 10,
   },
 
   description: {
     fontSize: 15,
     color: "#444",
-    fontFamily: 'Montserrat_400Regular',
+    fontFamily: "Montserrat_400Regular",
     lineHeight: 22,
     marginBottom: 14,
   },
@@ -239,6 +239,6 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 13,
     color: "#333",
-    fontFamily: 'Montserrat_400Regular',
+    fontFamily: "Montserrat_400Regular",
   },
 });
