@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "../../components/themed-text";
-import { api } from "../lib/api";
+import { api, ADMIN_BASE } from "../lib/api";
 
 export const options = {
   headerShown: false,
@@ -87,36 +87,65 @@ export default function AdminRegisterOwnerScreen() {
       let resp;
       const debugPayload: any = { name, email, password, birthdate, region };
       if (photoUri) {
-        const form = new FormData();
-        form.append("name", name);
-        form.append("email", email);
-        form.append("password", password);
-        form.append("birthdate", birthdate);
-        form.append("region", region);
+        // create shelter via JSON first so server can validate and persist the record
+        const payload = { name, email, password, birthdate, region };
+        debugPayload.payload = payload;
+        console.debug("Register (admin) payload (multipart -> create then upload)", payload);
 
-        const uriParts = photoUri.split("/");
-        const fileName = uriParts[uriParts.length - 1];
-        const match = fileName.match(/\.([0-9a-zA-Z]+)$/);
-        const ext = match ? match[1].toLowerCase() : "jpg";
-        const mimeType = ext === "png" ? "image/png" : "image/jpeg";
+        // create shelter
+        let createResp = await api.post("/asielen", payload, true);
+        let createdJson: any = null;
+        if (createResp && createResp.ok) {
+          try {
+            createdJson = await createResp.json();
+          } catch (e) {
+            console.warn("Could not parse create response JSON", e);
+          }
+          // ensure downstream code can read the created object
+          createResp = { ok: true, status: 201, json: async () => createdJson } as any;
+          resp = createResp;
 
-        // @ts-ignore - React Native FormData file object
-        form.append("photo", { uri: photoUri, name: fileName, type: mimeType });
+          const shelterId = (createdJson && (createdJson._id || createdJson.id)) || null;
+          if (shelterId) {
+            const form = new FormData();
+            const uriParts = photoUri.split("/");
+            const fileName = uriParts[uriParts.length - 1];
+            const match = fileName.match(/\.([0-9a-zA-Z]+)$/);
+            const ext = match ? match[1].toLowerCase() : "jpg";
+            const mimeType = ext === "png" ? "image/png" : "image/jpeg";
+            // @ts-ignore - React Native FormData file object
+            form.append("avatar", { uri: photoUri, name: fileName, type: mimeType } as any);
 
-        debugPayload.photo = fileName;
-        console.debug("Register (admin) payload (multipart)", debugPayload);
-
-        resp = await fetch("https://my-express-app-ne4l.onrender.com/asielen", {
-          method: "POST",
-          body: form as any,
-        });
+            try {
+              const uploadResp = await fetch(`${ADMIN_BASE}/asielen/${shelterId}/avatar`, {
+                method: "POST",
+                body: form as any,
+              });
+              if (!uploadResp.ok) {
+                const txt = await uploadResp.text();
+                console.warn("Avatar upload failed", uploadResp.status, txt);
+              } else {
+                try {
+                  const uploadedJson = await uploadResp.json();
+                  // set resp.json() to the uploaded result for downstream extraction
+                  resp = { ok: true, status: uploadResp.status, json: async () => uploadedJson } as any;
+                } catch {}
+              }
+            } catch (e) {
+              console.warn("Avatar upload error", e);
+            }
+          }
+        } else {
+          // creation failed; use the createResp as resp so existing error handling runs
+          resp = createResp;
+        }
       } else {
         const payload = { name, email, password, birthdate, region };
         debugPayload.payload = payload;
         console.debug("Register (admin) payload (no role)", payload);
 
-  // mark this as an admin request so the API helper can pick the admin base URL
-  resp = await api.post("/asielen", payload, true);
+        // mark this as an admin request so the API helper can pick the admin base URL
+        resp = await api.post("/asielen", payload, true);
       }
 
       if (!resp.ok) {

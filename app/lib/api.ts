@@ -2,7 +2,7 @@ import * as SecureStore from "expo-secure-store";
 
 // Public base for the main API and a separate admin base. Change these to your deployed URLs.
 const BASE = "https://my-express-app-ne4l.onrender.com";
-const ADMIN_BASE = "https://my-express-app-ne4l.onrender.com"; // replace with your admin service URL when separate
+export const ADMIN_BASE = "https://my-express-app-ne4l.onrender.com"; // replace with your admin service URL when separate
 
 async function buildHeaders(
   isAdmin = false,
