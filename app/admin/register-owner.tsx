@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "../../components/themed-text";
-import { api, ADMIN_BASE } from "../lib/api";
+import { ADMIN_BASE, api } from "../lib/api";
 
 export const options = {
   headerShown: false,
@@ -90,7 +90,10 @@ export default function AdminRegisterOwnerScreen() {
         // create shelter via JSON first so server can validate and persist the record
         const payload = { name, email, password, birthdate, region };
         debugPayload.payload = payload;
-        console.debug("Register (admin) payload (multipart -> create then upload)", payload);
+        console.debug(
+          "Register (admin) payload (multipart -> create then upload)",
+          payload
+        );
 
         // create shelter
         let createResp = await api.post("/asielen", payload, true);
@@ -102,10 +105,15 @@ export default function AdminRegisterOwnerScreen() {
             console.warn("Could not parse create response JSON", e);
           }
           // ensure downstream code can read the created object
-          createResp = { ok: true, status: 201, json: async () => createdJson } as any;
+          createResp = {
+            ok: true,
+            status: 201,
+            json: async () => createdJson,
+          } as any;
           resp = createResp;
 
-          const shelterId = (createdJson && (createdJson._id || createdJson.id)) || null;
+          const shelterId =
+            (createdJson && (createdJson._id || createdJson.id)) || null;
           if (shelterId) {
             const form = new FormData();
             const uriParts = photoUri.split("/");
@@ -114,13 +122,20 @@ export default function AdminRegisterOwnerScreen() {
             const ext = match ? match[1].toLowerCase() : "jpg";
             const mimeType = ext === "png" ? "image/png" : "image/jpeg";
             // @ts-ignore - React Native FormData file object
-            form.append("avatar", { uri: photoUri, name: fileName, type: mimeType } as any);
+            form.append("avatar", {
+              uri: photoUri,
+              name: fileName,
+              type: mimeType,
+            } as any);
 
             try {
-              const uploadResp = await fetch(`${ADMIN_BASE}/asielen/${shelterId}/avatar`, {
-                method: "POST",
-                body: form as any,
-              });
+              const uploadResp = await fetch(
+                `${ADMIN_BASE}/asielen/${shelterId}/avatar`,
+                {
+                  method: "POST",
+                  body: form as any,
+                }
+              );
               if (!uploadResp.ok) {
                 const txt = await uploadResp.text();
                 console.warn("Avatar upload failed", uploadResp.status, txt);
@@ -128,7 +143,11 @@ export default function AdminRegisterOwnerScreen() {
                 try {
                   const uploadedJson = await uploadResp.json();
                   // set resp.json() to the uploaded result for downstream extraction
-                  resp = { ok: true, status: uploadResp.status, json: async () => uploadedJson } as any;
+                  resp = {
+                    ok: true,
+                    status: uploadResp.status,
+                    json: async () => uploadedJson,
+                  } as any;
                 } catch {}
               }
             } catch (e) {
