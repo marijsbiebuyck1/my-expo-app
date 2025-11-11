@@ -8,10 +8,10 @@ async function buildHeaders(
   isAdmin = false,
   extra: Record<string, string> = {}
 ) {
+  // Do not force a Content-Type here — some requests (FormData) must omit it
   const tokenKey = isAdmin ? "adminToken" : "userToken";
   const token = await SecureStore.getItemAsync(tokenKey);
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     ...extra,
   };
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -34,26 +34,19 @@ export async function apiFetch(
 }
 
 export const api = {
-  get: (path: string, isAdmin = false) =>
-    apiFetch(path, { method: "GET" }, isAdmin),
-  post: (path: string, body: any, isAdmin = false) =>
-    apiFetch(
-      path,
-      {
-        method: "POST",
-        body: typeof body === "string" ? body : JSON.stringify(body),
-      },
-      isAdmin
-    ),
-  patch: (path: string, body: any, isAdmin = false) =>
-    apiFetch(
-      path,
-      {
-        method: "PATCH",
-        body: typeof body === "string" ? body : JSON.stringify(body),
-      },
-      isAdmin
-    ),
-  del: (path: string, isAdmin = false) =>
-    apiFetch(path, { method: "DELETE" }, isAdmin),
+  get: (path: string, isAdmin = false) => apiFetch(path, { method: "GET" }, isAdmin),
+  post: (path: string, body: any, isAdmin = false) => {
+    // If body is FormData (multipart), don't set Content-Type so fetch can add the boundary.
+    const isForm = typeof FormData !== "undefined" && body instanceof FormData;
+    const payload = isForm ? body : typeof body === "string" ? body : JSON.stringify(body);
+    const headers: Record<string, string> = isForm ? {} : { "Content-Type": "application/json" };
+    return apiFetch(path, { method: "POST", body: payload, headers }, isAdmin);
+  },
+  patch: (path: string, body: any, isAdmin = false) => {
+    const isForm = typeof FormData !== "undefined" && body instanceof FormData;
+    const payload = isForm ? body : typeof body === "string" ? body : JSON.stringify(body);
+    const headers: Record<string, string> = isForm ? {} : { "Content-Type": "application/json" };
+    return apiFetch(path, { method: "PATCH", body: payload, headers }, isAdmin);
+  },
+  del: (path: string, isAdmin = false) => apiFetch(path, { method: "DELETE" }, isAdmin),
 };
