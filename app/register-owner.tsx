@@ -1,10 +1,23 @@
-import { ThemedText } from '@/components/themed-text';
-import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
-import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ThemedText } from "@/components/themed-text";
+import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { api } from "./lib/api";
 
 // Hide the default header/title bar rendered by the Stack for this route
 export const options = {
@@ -13,18 +26,21 @@ export const options = {
 
 export default function RegisterOwnerScreen() {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [birthdate, setBirthdate] = useState('');
-  const [region, setRegion] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [birthdate, setBirthdate] = useState("");
+  const [region, setRegion] = useState("");
   const [photoUri, setPhotoUri] = useState<string | null>(null);
 
   async function pickImage() {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert("Toestemming nodig", "Geef toegang tot je foto's om een profielfoto te kiezen.");
+        Alert.alert(
+          "Toestemming nodig",
+          "Geef toegang tot je foto's om een profielfoto te kiezen."
+        );
         return;
       }
 
@@ -37,31 +53,36 @@ export default function RegisterOwnerScreen() {
 
       // handle both new and old result shapes
       // newer expo returns { canceled: false, assets: [{ uri }] } (US spelling)
-      const wasCancelled = (result as any).cancelled ?? (result as any).canceled ?? false;
+      const wasCancelled =
+        (result as any).cancelled ?? (result as any).canceled ?? false;
       if (!wasCancelled) {
         // @ts-ignore
-        const uri = (result.assets && result.assets[0] && result.assets[0].uri) || (result as any).uri;
+        const uri =
+          (result.assets && result.assets[0] && result.assets[0].uri) ||
+          (result as any).uri;
         if (uri) setPhotoUri(uri);
       }
     } catch (err) {
-      console.warn('Image pick error', err);
+      console.warn("Image pick error", err);
     }
   }
   const [loading, setLoading] = useState(false);
 
   function validate() {
-    if (!name.trim()) return 'Vul je naam in.';
-    if (!email.trim() || !email.includes('@')) return 'Vul een geldig e-mail adres in.';
-    if (!birthdate.trim()) return 'Vul je geboortedatum in (YYYY-MM-DD).';
-    if (!password || password.length < 6) return 'Kies een wachtwoord van minstens 6 tekens.';
-    if (!region.trim()) return 'Vul je regio in.';
+    if (!name.trim()) return "Vul je naam in.";
+    if (!email.trim() || !email.includes("@"))
+      return "Vul een geldig e-mail adres in.";
+    if (!birthdate.trim()) return "Vul je geboortedatum in (YYYY-MM-DD).";
+    if (!password || password.length < 6)
+      return "Kies een wachtwoord van minstens 6 tekens.";
+    if (!region.trim()) return "Vul je regio in.";
     return null;
   }
 
   async function onContinue() {
     const err = validate();
     if (err) {
-      Alert.alert('Ongeldige invoer', err);
+      Alert.alert("Ongeldige invoer", err);
       return;
     }
 
@@ -76,44 +97,40 @@ export default function RegisterOwnerScreen() {
       const debugPayload: any = { name, email, password, birthdate, region };
       if (photoUri) {
         const form = new FormData();
-        form.append('name', name);
-        form.append('email', email);
-        form.append('password', password);
-        form.append('birthdate', birthdate);
-        form.append('region', region);
+        form.append("name", name);
+        form.append("email", email);
+        form.append("password", password);
+        form.append("birthdate", birthdate);
+        form.append("region", region);
 
-        const uriParts = photoUri.split('/');
+        const uriParts = photoUri.split("/");
         const fileName = uriParts[uriParts.length - 1];
         const match = fileName.match(/\.([0-9a-zA-Z]+)$/);
-        const ext = match ? match[1].toLowerCase() : 'jpg';
-        const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
+        const ext = match ? match[1].toLowerCase() : "jpg";
+        const mimeType = ext === "png" ? "image/png" : "image/jpeg";
 
-  // @ts-ignore - React Native FormData file object
-  form.append('photo', { uri: photoUri, name: fileName, type: mimeType });
+        // @ts-ignore - React Native FormData file object
+        form.append("photo", { uri: photoUri, name: fileName, type: mimeType });
 
-  debugPayload.photo = fileName;
-  console.debug('Register payload (multipart)', debugPayload);
+        debugPayload.photo = fileName;
+        console.debug("Register payload (multipart)", debugPayload);
 
-        resp = await fetch('https://my-express-app-ne4l.onrender.com/users', {
-          method: 'POST',
+        resp = await fetch("https://my-express-app-ne4l.onrender.com/users", {
+          method: "POST",
           // DO NOT set Content-Type header; fetch will set the multipart boundary automatically
           body: form as any,
         });
       } else {
         const payload = { name, email, password, birthdate, region };
         debugPayload.payload = payload;
-        console.debug('Register payload (no role)', payload);
+        console.debug("Register payload (no role)", payload);
 
-        resp = await fetch('https://my-express-app-ne4l.onrender.com/users', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+        resp = await api.post("/users", payload);
       }
 
       if (!resp.ok) {
         const text = await resp.text();
-        let message = text || 'Server error';
+        let message = text || "Server error";
         try {
           const parsed = JSON.parse(text);
           message = parsed.message || JSON.stringify(parsed);
@@ -121,7 +138,11 @@ export default function RegisterOwnerScreen() {
           // not JSON, keep raw text
         }
         // Log status + raw text to help debugging server-side validation failures
-  console.error('register failed', { status: resp.status, body: text, payload: debugPayload });
+        console.error("register failed", {
+          status: resp.status,
+          body: text,
+          payload: debugPayload,
+        });
         // include HTTP status in the thrown error so the alert shows more context
         throw new Error(`HTTP ${resp.status}: ${message}`);
       }
@@ -137,16 +158,25 @@ export default function RegisterOwnerScreen() {
         // if server returned an array, take first element
         if (Array.isArray(json) && json.length > 0) {
           userObj = json[0];
-        } else if (typeof json === 'object') {
+        } else if (typeof json === "object") {
           // common nested shapes
           userObj = json;
-          if ((json as any).data && typeof (json as any).data === 'object') userObj = (json as any).data;
-          if ((json as any).user && typeof (json as any).user === 'object') userObj = (json as any).user;
-          if ((json as any).result && typeof (json as any).result === 'object') userObj = (json as any).result;
+          if ((json as any).data && typeof (json as any).data === "object")
+            userObj = (json as any).data;
+          if ((json as any).user && typeof (json as any).user === "object")
+            userObj = (json as any).user;
+          if ((json as any).result && typeof (json as any).result === "object")
+            userObj = (json as any).result;
         }
 
         // token keys to check (do NOT include 'id')
-        const possibleTokenKeys = ['token', 'accessToken', 'access_token', 'authToken', 'jwt'];
+        const possibleTokenKeys = [
+          "token",
+          "accessToken",
+          "access_token",
+          "authToken",
+          "jwt",
+        ];
         for (const k of possibleTokenKeys) {
           if ((json as any)[k]) {
             token = String((json as any)[k]);
@@ -154,7 +184,7 @@ export default function RegisterOwnerScreen() {
           }
         }
         // check nested token locations
-        if (!token && userObj && typeof userObj === 'object') {
+        if (!token && userObj && typeof userObj === "object") {
           for (const k of possibleTokenKeys) {
             if (userObj[k]) {
               token = String(userObj[k]);
@@ -166,27 +196,33 @@ export default function RegisterOwnerScreen() {
 
       // Persist token if found
       if (token) {
-        await SecureStore.setItemAsync('userToken', token);
+        await SecureStore.setItemAsync("userToken", token);
       }
 
       // Persist user object if present
       if (userObj && (userObj.id || userObj._id)) {
-        await SecureStore.setItemAsync('user', JSON.stringify(userObj));
-        await SecureStore.setItemAsync('userId', String(userObj.id ?? userObj._id));
+        await SecureStore.setItemAsync("user", JSON.stringify(userObj));
+        await SecureStore.setItemAsync(
+          "userId",
+          String(userObj.id ?? userObj._id)
+        );
       } else if (json && (json as any).id) {
         // fallback: server returned top-level id only
-        await SecureStore.setItemAsync('userId', String((json as any).id));
+        await SecureStore.setItemAsync("userId", String((json as any).id));
       } else {
-        console.warn('No auth token or id found in register response', json);
+        console.warn("No auth token or id found in register response", json);
       }
 
-  // success - continue onboarding to interests selection
-  // replace so user cannot go back to registration
-  // router types are generated; assert `any` to avoid a compile error if route type isn't present yet
-  router.replace('/register-interests' as any);
+      // success - continue onboarding to interests selection
+      // replace so user cannot go back to registration
+      // router types are generated; assert `any` to avoid a compile error if route type isn't present yet
+      router.replace("/register-interests" as any);
     } catch (e) {
-      console.error('register error', e);
-      Alert.alert('Fout', (e && (e as any).message) || 'Er is iets misgegaan bij het registreren.');
+      console.error("register error", e);
+      Alert.alert(
+        "Fout",
+        (e && (e as any).message) || "Er is iets misgegaan bij het registreren."
+      );
     } finally {
       setLoading(false);
     }
@@ -194,12 +230,22 @@ export default function RegisterOwnerScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          <ThemedText type="title" style={styles.title}>Eerst even over jou</ThemedText>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+        >
+          <ThemedText type="title" style={styles.title}>
+            Eerst even over jou
+          </ThemedText>
 
           <TouchableOpacity style={styles.photoBtn} onPress={pickImage}>
-            <Text style={styles.photoBtnText}>{photoUri ? 'Wijzig profielfoto' : 'Upload profielfoto'}</Text>
+            <Text style={styles.photoBtnText}>
+              {photoUri ? "Wijzig profielfoto" : "Upload profielfoto"}
+            </Text>
           </TouchableOpacity>
 
           {photoUri ? (
@@ -207,24 +253,60 @@ export default function RegisterOwnerScreen() {
           ) : null}
 
           <Text style={styles.label}>Wat is je naam?</Text>
-          <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Voornaam Achternaam" />
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder="Voornaam Achternaam"
+          />
 
           <Text style={styles.label}>Wat is je e-mailadres?</Text>
-          <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" />
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="email@example.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
 
           <Text style={styles.label}>Wachtwoord</Text>
-          <TextInput style={styles.input} value={password} onChangeText={setPassword} placeholder="Wachtwoord" secureTextEntry />
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Wachtwoord"
+            secureTextEntry
+          />
 
           <Text style={styles.label}>Je geboortedatum</Text>
-          <TextInput style={styles.input} value={birthdate} onChangeText={setBirthdate} placeholder="DD-MM-YYYY" />
+          <TextInput
+            style={styles.input}
+            value={birthdate}
+            onChangeText={setBirthdate}
+            placeholder="DD-MM-YYYY"
+          />
 
           <Text style={styles.label}>Regio</Text>
-          <TextInput style={styles.input} value={region} onChangeText={setRegion} placeholder="Bijv. Antwerpen" />
+          <TextInput
+            style={styles.input}
+            value={region}
+            onChangeText={setRegion}
+            placeholder="Bijv. Antwerpen"
+          />
 
           <View style={{ height: 20 }} />
 
-          <TouchableOpacity style={styles.cta} onPress={onContinue} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Verder</Text>}
+          <TouchableOpacity
+            style={styles.cta}
+            onPress={onContinue}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.ctaText}>Verder</Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -233,63 +315,62 @@ export default function RegisterOwnerScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#FBF4E2' },
+  screen: { flex: 1, backgroundColor: "#FBF4E2" },
   container: {
     padding: 24,
     paddingTop: 40,
-    alignItems: 'stretch',
+    alignItems: "stretch",
   },
   title: {
-    fontFamily: 'MontserratAlternates-SemiBold',
-    color: '#3F3F3F',
+    fontFamily: "MontserratAlternates-SemiBold",
+    color: "#3F3F3F",
     fontSize: 22,
     marginBottom: 24,
   },
   label: {
-    fontFamily: 'Montserrat_400Regular',
+    fontFamily: "Montserrat_400Regular",
     fontSize: 14,
     marginBottom: 6,
-    color: '#333',
+    color: "#333",
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 12,
     borderRadius: 50,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#eee',
-    fontFamily: 'Montserrat_400Regular',
+    borderColor: "#eee",
+    fontFamily: "Montserrat_400Regular",
   },
   cta: {
-    backgroundColor: '#FDA0E9',
+    backgroundColor: "#FDA0E9",
     paddingVertical: 14,
     borderRadius: 50,
-    alignItems: 'center',
-
+    alignItems: "center",
   },
   ctaText: {
-    color: '#fff',
-    fontFamily: 'Montserrat_600SemiBold',
+    color: "#fff",
+    fontFamily: "Montserrat_600SemiBold",
     fontSize: 16,
   },
   photoBtn: {
-    backgroundColor: '#fff',
-    borderColor: '#eee',
+    backgroundColor: "#fff",
+    borderColor: "#eee",
     borderWidth: 1,
     paddingVertical: 10,
     borderRadius: 50,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 12,
   },
   photoBtnText: {
-    color: '#333',
-    fontFamily: 'Montserrat_600SemiBold',
+    color: "#333",
+    fontFamily: "Montserrat_600SemiBold",
   },
   photo: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginBottom: 12,
   },
 });

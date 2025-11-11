@@ -1,25 +1,35 @@
-# Frontend structure: gebruiker vs admin
+Frontend structure
 
-## Doel
+Where to edit
 
-Net zoals op de backend hebben we een duidelijke scheiding aangebracht tussen 'gebruiker' en 'admin' binnen de frontend-app (`my-expo-app`), zonder bestaande bestanden inhoudelijk te wijzigen.
+- `app/users/...` — authoritative user-facing pages. Edit these to change the user experience.
+- `app/admin/...` — authoritative admin/asielen pages. Edit these to change the admin experience.
+- `components/` — shared UI components used by both users and admin. There are no `components/admin` wrappers; components are shared to avoid duplication.
+- `app/(tabs)` — lightweight re-exports to `app/users/(tabs)` to keep a single source of truth for top-level user tabs. Edit `app/users/(tabs)` when changing user tab pages.
 
-## Wat is gedaan
+Auth & tokens
 
-- Nieuwe wrapper/re-export bestanden toegevoegd onder:
-  - `app/users/...` en `app/admin/...` voor pagina's en tab-structuren.
-  - `components/users/...` en `components/admin/...` voor componenten.
+- Tokens are stored in Expo SecureStore keys:
+  - Users: `userToken`, `user`, `userId`
+  - Admin: `adminToken`, `admin`, `adminId`
+- Use `app/lib/useAuth.ts` for small auth helpers (get token, logout flows).
 
-## Hoe het werkt
+API helper
 
-- De wrapperbestanden zijn kleine re-exports die verwijzen naar de bestaande pagina/componentbestanden. Dit geeft je meteen een duidelijke mapstructuur in de editor (bijv. `app/users`, `app/admin`) zonder dat imports elders in de projectcode hoeven te veranderen.
-- Voor componenten die named exports gebruiken (bijv. `export function ExternalLink`), heb ik `export * from '...'` gebruikt zodat alle named exports beschikbaar zijn. Voor componenten met een default export (bijv. `export default function SwipeCard`) heb ik `export { default } from '...'` gebruikt.
+- `app/lib/api.ts` centralizes requests and automatically injects the correct Authorization header based on `isAdmin` flag.
+  - Usage examples:
+    - api.get('/users/123')
+    - api.post('/users', body)
+    - api.patch('/asielen/123/home', payload, true) // `true` for admin requests
+  - The helper knows the API base URL (`https://my-express-app-ne4l.onrender.com`) and sets `Content-Type: application/json` for JSON requests. For multipart/form-data (file upload) continue using `fetch(...)` directly so the boundary is set automatically.
 
-## Volgende opties
+Recommended developer workflow
 
-- Als je wilt kan ik de wrapperbestanden vervangen door daadwerkelijke verplaatsing van bestanden naar de nieuwe mappen en automatisch alle importpaden bijwerken.
-- We kunnen ook de admin-pagina's/UX aanpassen (bijv. aparte admin layout, menu, of role-based routing) en auth toevoegen.
+1. Run a TypeScript typecheck and lint before refactoring: `npx tsc --noEmit && npx eslint "app/**/*.{ts,tsx}" --ext .ts,.tsx`.
+2. When changing API calls, prefer the `api` helper for JSON endpoints to ensure consistent headers and base URL. Keep raw `fetch` for multipart/form-data uploads.
+3. Edit pages under `app/users` or `app/admin` — the top-level `app/(tabs)` re-exports point at `app/users/(tabs)`.
 
-## Problemen om op te merken
+Notes
 
-- TypeScript/linters kunnen warnings tonen voor sommige re-exports (bijv. wanneer een module alleen named exports heeft en je `export { default }` gebruikt of vice versa). Ik heb de wrappers zo ingesteld dat ze corresponderen met de daadwerkelijke exporttypes, maar als je strict lintregels hebt kan het nodig zijn om kleine aanpassingen te maken.
+- If you add new admin-only endpoints, pass the `isAdmin` boolean (third argument) to `api` methods so the admin token is used.
+- Consider moving the API base URL to an environment variable if you deploy to other environments.
