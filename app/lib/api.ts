@@ -29,24 +29,53 @@ export async function apiFetch(
     isAdmin,
     (opts.headers as Record<string, string>) || {}
   );
+  // Debug log request details in development to help trace missing-body issues
+  try {
+    // safe stringify of body when possible
+    const bodyPreview = opts && (opts as any).body;
+    if (typeof global !== "undefined" && (global as any).__DEV__) {
+      console.debug("apiFetch ->", {
+        method: opts.method || "GET",
+        url,
+        headers,
+        bodyPreview,
+      });
+    }
+  } catch {
+    /* ignore logging errors */
+  }
   const merged: RequestInit = { ...opts, headers };
   return fetch(url, merged);
 }
 
 export const api = {
-  get: (path: string, isAdmin = false) => apiFetch(path, { method: "GET" }, isAdmin),
+  get: (path: string, isAdmin = false) =>
+    apiFetch(path, { method: "GET" }, isAdmin),
   post: (path: string, body: any, isAdmin = false) => {
     // If body is FormData (multipart), don't set Content-Type so fetch can add the boundary.
     const isForm = typeof FormData !== "undefined" && body instanceof FormData;
-    const payload = isForm ? body : typeof body === "string" ? body : JSON.stringify(body);
-    const headers: Record<string, string> = isForm ? {} : { "Content-Type": "application/json" };
+    const payload = isForm
+      ? body
+      : typeof body === "string"
+      ? body
+      : JSON.stringify(body);
+    const headers: Record<string, string> = isForm
+      ? {}
+      : { "Content-Type": "application/json" };
     return apiFetch(path, { method: "POST", body: payload, headers }, isAdmin);
   },
   patch: (path: string, body: any, isAdmin = false) => {
     const isForm = typeof FormData !== "undefined" && body instanceof FormData;
-    const payload = isForm ? body : typeof body === "string" ? body : JSON.stringify(body);
-    const headers: Record<string, string> = isForm ? {} : { "Content-Type": "application/json" };
+    const payload = isForm
+      ? body
+      : typeof body === "string"
+      ? body
+      : JSON.stringify(body);
+    const headers: Record<string, string> = isForm
+      ? {}
+      : { "Content-Type": "application/json" };
     return apiFetch(path, { method: "PATCH", body: payload, headers }, isAdmin);
   },
-  del: (path: string, isAdmin = false) => apiFetch(path, { method: "DELETE" }, isAdmin),
+  del: (path: string, isAdmin = false) =>
+    apiFetch(path, { method: "DELETE" }, isAdmin),
 };
