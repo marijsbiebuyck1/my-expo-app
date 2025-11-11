@@ -115,7 +115,8 @@ export default function AdminRegisterOwnerScreen() {
         debugPayload.payload = payload;
         console.debug("Register (admin) payload (no role)", payload);
 
-        resp = await api.post("/asielen", payload);
+  // mark this as an admin request so the API helper can pick the admin base URL
+  resp = await api.post("/asielen", payload, true);
       }
 
       if (!resp.ok) {

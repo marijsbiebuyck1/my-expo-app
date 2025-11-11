@@ -1,6 +1,8 @@
 import * as SecureStore from "expo-secure-store";
 
+// Public base for the main API and a separate admin base. Change these to your deployed URLs.
 const BASE = "https://my-express-app-ne4l.onrender.com";
+const ADMIN_BASE = "https://my-express-app-ne4l.onrender.com"; // replace with your admin service URL when separate
 
 async function buildHeaders(
   isAdmin = false,
@@ -21,7 +23,8 @@ export async function apiFetch(
   opts: RequestInit = {},
   isAdmin = false
 ) {
-  const url = path.startsWith("http") ? path : BASE + path;
+  const base = isAdmin ? ADMIN_BASE : BASE;
+  const url = path.startsWith("http") ? path : base + path;
   const headers = await buildHeaders(
     isAdmin,
     (opts.headers as Record<string, string>) || {}
