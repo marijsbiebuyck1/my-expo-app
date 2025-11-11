@@ -14,12 +14,12 @@ export default function TabLayout() {
         }}
       >
         <Tabs.Screen
-          name="home/index"
+          name="settings/index"
           options={{
-            title: "Home",
-            tabBarLabel: "Home",
+            title: "Profile",
+            tabBarLabel: "Profile",
             tabBarIcon: ({ color }) => (
-              <FontAwesome size={28} name="heart" color={color} />
+              <FontAwesome size={28} name="cog" color={color} />
             ),
           }}
         />
@@ -36,23 +36,23 @@ export default function TabLayout() {
         />
 
         <Tabs.Screen
+          name="home/index"
+          options={{
+            title: "Home",
+            tabBarLabel: "Home",
+            tabBarIcon: ({ color }) => (
+              <FontAwesome size={28} name="heart" color={color} />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
           name="feed/index"
           options={{
             title: "Feed",
             tabBarLabel: "Feed",
             tabBarIcon: ({ color }) => (
               <FontAwesome size={28} name="rss" color={color} />
-            ),
-          }}
-        />
-
-        <Tabs.Screen
-          name="settings/index"
-          options={{
-            title: "Settings",
-            tabBarLabel: "Settings",
-            tabBarIcon: ({ color }) => (
-              <FontAwesome size={28} name="cog" color={color} />
             ),
           }}
         />
