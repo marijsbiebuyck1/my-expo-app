@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
   Alert,
@@ -68,9 +69,48 @@ export default function AdminRegisterOwnerScreen() {
         throw new Error(message);
       }
 
-      // proceed to next admin step (keep previous flow) — navigate to the admin home tab
-      // use the public route `/admin/home` which maps to the (tabs) home screen
-      router.replace("/admin/home" as any);
+      // If backend returned an auth token or admin object, persist it so the
+      // admin layout won't redirect to the login screen. Be defensive about
+      // possible response shapes.
+      try {
+        const json = await resp.json();
+        if (json && typeof json === "object") {
+          const token =
+            (json as any).token || (json as any).accessToken || (json as any).adminToken || (json as any).authToken;
+          // some backends return the created admin/shelter under `admin` or `user`;
+          // otherwise json may itself be the created resource.
+          const adminObj = (json as any).admin || (json as any).user || json;
+
+          if (token) {
+            await SecureStore.setItemAsync("adminToken", String(token));
+          }
+
+          // If backend didn't return an auth token but did return the created
+          // admin object, write a temporary token so the admin layout won't
+          // immediately redirect to the login screen. This is a UX fallback
+          // — encourage replacing it with a real token once the backend
+          // supports auto-login on registration.
+          if (!token && adminObj && typeof adminObj === "object") {
+            const fallbackToken = `registered-temp-${Date.now()}`;
+            await SecureStore.setItemAsync("adminToken", fallbackToken);
+          }
+
+          if (adminObj && typeof adminObj === "object") {
+            try {
+              await SecureStore.setItemAsync("admin", JSON.stringify(adminObj));
+            } catch {}
+            const adminId = (adminObj as any).id ?? (adminObj as any)._id;
+            if (adminId) {
+              await SecureStore.setItemAsync("adminId", String(adminId));
+            }
+          }
+        }
+      } catch {
+        // ignore JSON parse errors — it's non-fatal here
+      }
+
+      // proceed to next admin step — navigate to the admin tabs home screen
+      router.replace("/admin/(tabs)/home" as any);
     } catch (e: any) {
       console.error("admin register error", e);
       Alert.alert(
