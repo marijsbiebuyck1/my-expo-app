@@ -31,7 +31,7 @@ export default function LoginScreen() {
   function goToHomeDirect() {
     // quick access to home while working on onboarding
     // go to the user home (users' tabs)
-    router.replace("/users/home");
+    router.replace("/users/(tabs)/home");
   }
 
   return (
@@ -82,7 +82,14 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.skip} onPress={goToHomeDirect}>
-            <Text style={styles.skipText}>Ga naar home</Text>
+            <Text style={styles.skipText}>Ga naar home user</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.skip, { marginTop: 8 }]}
+            onPress={() => router.replace("/admin/(tabs)/home")}
+          >
+            <Text style={styles.skipText}>Ga naar home asiel</Text>
           </TouchableOpacity>
         </View>
 
