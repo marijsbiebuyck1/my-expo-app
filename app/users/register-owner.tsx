@@ -261,7 +261,7 @@ export default function RegisterOwnerScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#FBF4E2" },
-  container: { padding: 24, paddingTop: 40, alignItems: "stretch" },
+  container: { padding: 30, paddingTop: 40, alignItems: "stretch" },
   title: {
     fontFamily: "MontserratAlternates-SemiBold",
     color: "#3F3F3F",
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: "#fff",
     padding: 12,
-    borderRadius: 50,
+    borderRadius: 10,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#eee",

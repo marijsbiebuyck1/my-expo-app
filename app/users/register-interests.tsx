@@ -236,7 +236,7 @@ export default function RegisterInterests() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#FBF4E2" },
-  container: { padding: 24, paddingTop: 30 },
+  container: { padding: 30, paddingTop: 30 },
   title: {
     fontSize: 22,
     marginBottom: 18,
