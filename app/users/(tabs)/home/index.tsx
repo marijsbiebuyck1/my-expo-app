@@ -29,12 +29,13 @@ export default function HomeScreen() {
               ],
             },
             {
-              imageUri: "https://placeimg.com/600/400/animals",
-              name: "Demo 2",
-              gender: "Poes",
-              age: "2 jaar",
+              imageSource: require("../../../../assets/images/soezie.png"),
+              name: "Superstar Soezie",
+              gender: "Kattin",
+              age: "4 jaar",
               breed: "Mixed",
-              description: "Demo card from placeimg animals",
+              description:
+                "Hi, ik ben Soezie, ofwel Superstar Soezie. Ik lig graag op de zetel te rusten en ga af en toe eens op pad in de tuin. Ik geef graag knuffels en ik hou van aandacht van m’n baasjes. Word jij m’n nieuwe vriendje?  ",
               tags: ["Speels"],
             },
             {

@@ -10,7 +10,7 @@ export default function FeedScreen() {
       <LogoHeader />
       <View style={styles.container}>
         <ThemedText type="title">Feed</ThemedText>
-        <ThemedText>Hier kun je de feed bouwen.</ThemedText>
+        <ThemedText>Hier kun je de fede bouwen.</ThemedText>
       </View>
     </SafeAreaView>
   );
