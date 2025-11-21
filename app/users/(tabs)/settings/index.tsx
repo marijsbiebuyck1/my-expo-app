@@ -1,4 +1,5 @@
 import { ThemedText } from "@/components/themed-text";
+import BgCard from "@/components/ui/bg-card";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -16,7 +17,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoHeader from "../../../../components/logo-header";
 import { ADMIN_BASE, api } from "../../../lib/api";
-
 function calculateAge(birthdate?: string | number | null) {
   if (!birthdate) return null;
   const year =
@@ -162,6 +162,13 @@ export default function SettingsScreen() {
       displayPhotoUri = ADMIN_BASE + displayPhotoUri;
     else displayPhotoUri = ADMIN_BASE + "/" + displayPhotoUri;
   }
+
+  // In dev, log resolved URI to Metro logs (don't render long URIs in the UI)
+  try {
+    if (typeof global !== "undefined" && (global as any).__DEV__) {
+      console.debug("displayPhotoUri ->", displayPhotoUri);
+    }
+  } catch {}
 
   function createPetPreferenceChips(preferredSpecies: any[] = []) {
     const chips: any[] = [];
@@ -322,135 +329,140 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
       <LogoHeader />
 
-      <ScrollView contentContainerStyle={styles.container}>
-        <ThemedText type="title" style={styles.pageTitle}>
-          Profiel
-        </ThemedText>
-
-        <View style={styles.centerBlock}>
-          <ThemedText type="subtitle" style={styles.nameText}>
-            {displayName}
-            {age ? `, ${age}` : ""}
-          </ThemedText>
-
-          {/* Email and region removed from this view per design — kept only name/age and avatar */}
-
-          {displayPhotoUri ? (
-            <Image
-              source={{ uri: displayPhotoUri }}
-              style={styles.avatarLarge}
-            />
-          ) : (
-            <View style={styles.avatarLargePlaceholder} />
-          )}
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.photoBtn,
-              pressed && { opacity: 0.85 },
-            ]}
-            onPress={pickAndUploadPhoto}
-            disabled={uploading}
+      <ScrollView contentContainerStyle={styles.pageContainer}>
+        <BgCard style={styles.bgCard}>
+          <ScrollView
+            contentContainerStyle={styles.cardContent}
+            showsVerticalScrollIndicator={false}
           >
-            {uploading ? (
-              <ActivityIndicator />
-            ) : (
-              <ThemedText style={styles.photoBtnText}>
-                {photoUri ? "Wijzig profielfoto" : "Upload profielfoto"}
+            <ThemedText type="title" style={styles.pageTitle}>
+              Profiel
+            </ThemedText>
+
+            <View style={styles.centerBlock}>
+              <ThemedText type="subtitle" style={styles.nameText}>
+                {displayName}
+                {age ? `, ${age}` : ""}
               </ThemedText>
-            )}
-          </Pressable>
-        </View>
 
-        <View style={{ height: 12 }} />
+              {displayPhotoUri ? (
+                <Image
+                  source={{ uri: displayPhotoUri }}
+                  style={styles.avatarLarge}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.avatarLargePlaceholder} />
+              )}
 
-        <Section
-          title="Mijn interesses"
-          onEdit={() => router.push("/users/register-interests")}
-        >
-          {interests ? (
-            <View style={styles.chipsRow}>
-              {(interests.employment || []).map((c: string) => (
-                <Chip key={String(c)} label={String(c)} />
-              ))}
-              {(interests.freeTime || []).map((c: string) => (
-                <Chip key={String(c)} label={String(c)} />
-              ))}
-              {(interests.household || []).map((c: string) => (
-                <Chip key={String(c)} label={String(c)} />
-              ))}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.photoBtn,
+                  pressed && { opacity: 0.85 },
+                ]}
+                onPress={pickAndUploadPhoto}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <ActivityIndicator />
+                ) : (
+                  <ThemedText style={styles.photoBtnText}>
+                    {photoUri ? "Wijzig profielfoto" : "Upload profielfoto"}
+                  </ThemedText>
+                )}
+              </Pressable>
             </View>
-          ) : (
-            <ThemedText>Geen interesses opgeslagen.</ThemedText>
-          )}
-        </Section>
 
-        <Section
-          title="Wat ik zoek"
-          onEdit={() => router.push("/users/register-pet")}
-        >
-          {preferences ? (
-            <View style={styles.chipsRow}>
-              {createPetPreferenceChips(preferences.preferredSpecies || [])}
-              {(preferences.characteristics || []).map((c: string) => (
-                <Chip key={String(c)} label={String(c)} />
-              ))}
-              {preferences.notes ? (
-                <Chip label={String(preferences.notes)} />
-              ) : null}
-            </View>
-          ) : (
-            <ThemedText>Geen voorkeuren opgeslagen.</ThemedText>
-          )}
-        </Section>
+            <View style={{ height: 12 }} />
 
-        <Section
-          title="Thuissituatie"
-          onEdit={() => router.push("/users/register-home")}
-        >
-          {home ? (
-            <View>
-              <View style={styles.chipsRow}>
-                {/* Garden */}
-                {typeof home.garden !== "undefined" ? (
-                  <Chip label={home.garden ? "🌿 Tuin: Ja" : "🚫 Tuin: Nee"} />
-                ) : null}
+            <Section
+              title="Mijn interesses"
+              onEdit={() => router.push("/users/register-interests")}
+            >
+              {interests ? (
+                <View style={styles.chipsRow}>
+                  {(interests.employment || []).map((c: string) => (
+                    <Chip key={String(c)} label={String(c)} />
+                  ))}
+                  {(interests.freeTime || []).map((c: string) => (
+                    <Chip key={String(c)} label={String(c)} />
+                  ))}
+                  {(interests.household || []).map((c: string) => (
+                    <Chip key={String(c)} label={String(c)} />
+                  ))}
+                </View>
+              ) : (
+                <ThemedText>Geen interesses opgeslagen.</ThemedText>
+              )}
+            </Section>
 
-                {/* Children */}
-                {typeof home.children !== "undefined" ? (
-                  <Chip
-                    label={
-                      home.children
-                        ? `👶 Kinderen: ${home.children}`
-                        : "👶 Geen kinderen"
-                    }
-                  />
-                ) : null}
+            <Section
+              title="Wat ik zoek"
+              onEdit={() => router.push("/users/register-pet")}
+            >
+              {preferences ? (
+                <View style={styles.chipsRow}>
+                  {createPetPreferenceChips(preferences.preferredSpecies || [])}
+                  {(preferences.characteristics || []).map((c: string) => (
+                    <Chip key={String(c)} label={String(c)} />
+                  ))}
+                  {preferences.notes ? (
+                    <Chip label={String(preferences.notes)} />
+                  ) : null}
+                </View>
+              ) : (
+                <ThemedText>Geen voorkeuren opgeslagen.</ThemedText>
+              )}
+            </Section>
 
-                {/* Other pets */}
-                {(home.otherPets || []).length > 0
-                  ? (home.otherPets || []).map((h: string, i: number) => (
+            <Section
+              title="Thuissituatie"
+              onEdit={() => router.push("/users/register-home")}
+            >
+              {home ? (
+                <View>
+                  <View style={styles.chipsRow}>
+                    {typeof home.garden !== "undefined" ? (
                       <Chip
-                        key={`${String(h)}-${i}`}
-                        label={mapHomePetLabel(h)}
+                        label={home.garden ? "🌿 Tuin: Ja" : "🚫 Tuin: Nee"}
                       />
-                    ))
-                  : null}
-              </View>
-            </View>
-          ) : (
-            <ThemedText>Geen thuissituatie opgeslagen.</ThemedText>
-          )}
-        </Section>
+                    ) : null}
 
-        <Section
-          title={`Regio: ${region}`}
-          onEdit={() => router.push("/users/register-owner")}
-        >
-          <ThemedText>{region}</ThemedText>
-        </Section>
+                    {typeof home.children !== "undefined" ? (
+                      <Chip
+                        label={
+                          home.children
+                            ? `👶 Kinderen: ${home.children}`
+                            : "👶 Geen kinderen"
+                        }
+                      />
+                    ) : null}
 
-        <View style={{ height: 40 }} />
+                    {(home.otherPets || []).length > 0
+                      ? (home.otherPets || []).map((h: string, i: number) => (
+                          <Chip
+                            key={`${String(h)}-${i}`}
+                            label={mapHomePetLabel(h)}
+                          />
+                        ))
+                      : null}
+                  </View>
+                </View>
+              ) : (
+                <ThemedText>Geen thuissituatie opgeslagen.</ThemedText>
+              )}
+            </Section>
+
+            <Section
+              title={`Regio: ${region}`}
+              onEdit={() => router.push("/users/register-owner")}
+            >
+              <ThemedText>{region}</ThemedText>
+            </Section>
+
+            <View style={{ height: 40 }} />
+          </ScrollView>
+        </BgCard>
       </ScrollView>
     </SafeAreaView>
   );
@@ -459,17 +471,67 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#FBF4E2" },
   container: { padding: 20 },
-  pageTitle: { marginTop: 6, marginBottom: 8 },
-  centerBlock: { alignItems: "center", marginBottom: 8 },
-  nameText: { fontSize: 20, marginBottom: 6, color: "000000" },
-  centerMeta: { color: "#333", marginBottom: 12 },
-  avatarLarge: { width: 210, height: 210, borderRadius: 20, marginBottom: 18 },
+  // page container centers the white card on the screen
+  pageContainer: { padding: 20, alignItems: "center" },
+  // white background card dimensions and shadow
+  bgCard: {
+    width: 343,
+    height: 666,
+    paddingTop: 45,
+    paddingRight: 15,
+    paddingBottom: 15,
+    paddingLeft: 15,
+    flexDirection: "column",
+    alignItems: "center",
+    flexShrink: 0,
+    borderRadius: 20,
+    backgroundColor: "#FFF",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: -1, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 23.4,
+    elevation: 6,
+  },
+  cardContent: {
+    width: "100%",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    paddingBottom: 10,
+  },
+  pageTitle: {
+    marginTop: 6,
+    marginBottom: 50,
+    width: "100%",
+    textAlign: "left",
+  },
+  centerBlock: { alignItems: "center", marginBottom: 8, width: "100%" },
+  nameText: {
+    fontSize: 20,
+    marginBottom: 6,
+    width: "100%",
+    textAlign: "center",
+  },
+  centerMeta: {
+    color: "#333",
+    marginBottom: 12,
+    width: "100%",
+    textAlign: "left",
+  },
+  avatarLarge: {
+    width: 210,
+    height: 210,
+    borderRadius: 20,
+    marginBottom: 18,
+    alignSelf: "center",
+  },
   avatarLargePlaceholder: {
     width: 210,
     height: 210,
     borderRadius: 20,
     backgroundColor: "#fff",
     marginBottom: 18,
+    alignSelf: "center",
   },
   editBtn: {
     backgroundColor: "#FDA0E9",
@@ -506,6 +568,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    width: "100%",
   },
 });
 

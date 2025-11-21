@@ -1,44 +1,42 @@
-import React from 'react';
-import { Text as DefaultText, StyleSheet, TextProps } from 'react-native';
+import React from "react";
+import { Text as DefaultText, StyleSheet, TextProps } from "react-native";
 
 export type ThemedTextProps = TextProps & {
-  type?: 'default' | 'title' | 'subtitle' | 'link';
+  type?: "default" | "title" | "subtitle" | "link";
 };
 
-export function ThemedText({ style, type = 'default', ...rest }: ThemedTextProps) {
+export function ThemedText({
+  style,
+  type = "default",
+  ...rest
+}: ThemedTextProps) {
   return (
-    <DefaultText
-      style={[styles.text, typeStyles[type], style]}
-      {...rest}
-    />
+    <DefaultText style={[styles.text, typeStyles[type], style]} {...rest} />
   );
 }
 
 const styles = StyleSheet.create({
   text: {
-    fontFamily: 'Montserrat_400Regular', // standaard font
+    fontFamily: "Montserrat_400Regular", // standaard font
     fontSize: 16,
-    color: '#1a73e8', // standaard zwarte kleur
+    color: "#292929", // standaard zwarte kleur
   },
 });
 
 const typeStyles = StyleSheet.create({
   default: {},
   title: {
-    fontFamily: 'MontserratAlternates-SemiBold',
+    fontFamily: "MontserratAlternates-SemiBold",
     fontSize: 24,
-    color: '#000000', // ← hier kun je de titelkleur instellen
+    color: "#292929", // ← hier kun je de titelkleur instellen
   },
   subtitle: {
-    fontFamily: 'Montserrat_700Bold',
+    fontFamily: "Montserrat_700Bold",
     fontSize: 18,
-    color: '#2E86C1', // ← hier kun je subtitelkleur instellen
+    color: "#292929", // ← hier kun je subtitelkleur instellen
   },
   link: {
-    textDecorationLine: 'underline',
-    color: '#1a73e8', // ← linkkleur
+    textDecorationLine: "underline",
+    color: "#292929", // ← linkkleur
   },
 });
-
-
-
