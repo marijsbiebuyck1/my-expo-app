@@ -1,22 +1,24 @@
 import * as ImagePicker from "expo-image-picker";
+import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  Modal,
-  Platform,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    Modal,
+    Platform,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgXml } from 'react-native-svg';
 import { DisplayImage } from "../../../../components/display-image";
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
+import { api } from "../../../lib/api";
 
 type Post = {
   _id?: string;
@@ -44,6 +46,7 @@ export default function FeedScreen() {
 
   useEffect(() => {
     fetchPosts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function pickImage() {
@@ -106,7 +109,13 @@ export default function FeedScreen() {
         type,
       });
       form.append("caption", caption || "");
-      form.append("author", "Marijs");
+      // attach currently logged-in user id as author (fallback to anonymous)
+      try {
+        const userId = await SecureStore.getItemAsync("userId");
+        form.append("author", userId || "anon");
+      } catch {
+        form.append("author", "anon");
+      }
 
       const res = await fetch(API, {
         method: "POST",
@@ -139,12 +148,46 @@ export default function FeedScreen() {
     try {
       const res = await fetch(API);
       const data = await res.json();
-      setPosts(Array.isArray(data) ? data.reverse() : []);
-    } catch (e) {
-      console.warn("Failed to load posts", e);
+      const postsArr = Array.isArray(data) ? data.reverse() : [];
+      // resolve author ids into user objects for display
+      const resolved = await resolveAuthors(postsArr);
+      setPosts(resolved);
+    } catch {
+      console.warn("Failed to load posts");
     } finally {
       setLoading(false);
     }
+  }
+
+  // cache fetched user objects so we don't refetch the same id repeatedly
+  const userCache: Record<string, any> = {};
+  async function fetchUserById(id: string) {
+    if (!id) return null;
+    if (userCache[id]) return userCache[id];
+    try {
+      const r = await api.get(`/users/${id}`);
+      if (!r.ok) return null;
+      const j = await r.json();
+      const user = (Array.isArray(j) && j[0]) || j.data || j.user || j;
+      userCache[id] = user;
+      return user;
+    } catch {
+      return null;
+    }
+  }
+
+  async function resolveAuthors(postsList: Post[]) {
+    const work = await Promise.all(
+      postsList.map(async (p) => {
+        if (!p) return p;
+        if (typeof p.author === "string" && p.author) {
+          const u = await fetchUserById(p.author);
+          if (u) return { ...p, author: { name: u.name || u.fullName || u.email, avatar: u.photo || u.avatar || u.image } };
+        }
+        return p;
+      })
+    );
+    return work;
   }
 
   function renderPost({ item }: { item: Post }) {

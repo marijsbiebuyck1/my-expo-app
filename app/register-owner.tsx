@@ -73,6 +73,10 @@ export default function RegisterOwnerScreen() {
     if (!email.trim() || !email.includes("@"))
       return "Vul een geldig e-mail adres in.";
     if (!birthdate.trim()) return "Vul je geboortedatum in (YYYY-MM-DD).";
+    // simple YYYY-MM-DD format check to avoid backend validation errors
+    const dateMatch = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateMatch.test(birthdate.trim()))
+      return "Gebruik het formaat YYYY-MM-DD voor je geboortedatum.";
     if (!password || password.length < 6)
       return "Kies een wachtwoord van minstens 6 tekens.";
     if (!region.trim()) return "Vul je regio in.";
@@ -94,7 +98,8 @@ export default function RegisterOwnerScreen() {
       // If user picked a photo, send multipart/form-data so backend can handle file upload.
       let resp;
       // build a debug payload object for logging when something fails
-      const debugPayload: any = { name, email, password, birthdate, region };
+      const payload = { name, email, password, birthdate, region };
+      const debugPayload: any = { ...payload };
       if (photoUri) {
         const form = new FormData();
         form.append("name", name);
@@ -109,19 +114,89 @@ export default function RegisterOwnerScreen() {
         const ext = match ? match[1].toLowerCase() : "jpg";
         const mimeType = ext === "png" ? "image/png" : "image/jpeg";
 
-        // @ts-ignore - React Native FormData file object
-        form.append("photo", { uri: photoUri, name: fileName, type: mimeType });
+  // @ts-ignore - React Native FormData file object
+  // append multiple common keys to maximize backend compatibility
+  const fileField = { uri: photoUri, name: fileName, type: mimeType } as any;
+  form.append("photo", fileField);
+  form.append("image", fileField);
+  form.append("avatar", fileField);
 
         debugPayload.photo = fileName;
         console.debug("Register payload (multipart)", debugPayload);
 
-        resp = await fetch("https://my-express-app-ne4l.onrender.com/users", {
-          method: "POST",
-          // DO NOT set Content-Type header; fetch will set the multipart boundary automatically
-          body: form as any,
-        });
+        // Try multipart create first. If the server fails to parse multipart
+        // (some servers reject multipart on this endpoint), we'll fallback to
+        // creating the user via JSON and then uploading the photo in a second
+        // request.
+        resp = await api.post("/users", form as any);
+        if (!resp.ok) {
+          const text = await resp.text();
+          let message = text || "Server error";
+          try {
+            const parsed = JSON.parse(text);
+            message = parsed.message || JSON.stringify(parsed);
+          } catch {}
+          console.error("register failed (multipart)", {
+            status: resp.status,
+            body: text,
+            payload: debugPayload,
+          });
+
+          // fallback: if server reports missing required fields, try JSON create
+          // without the photo and then PATCH the photo afterwards.
+          if (message && /missing required fields/i.test(message)) {
+            console.debug("Multipart create failed, falling back to JSON create");
+            const resp2 = await api.post("/users", payload);
+            if (!resp2.ok) {
+              const t2 = await resp2.text();
+              const errMsg = `Fallback JSON create failed: HTTP ${resp2.status}: ${t2}`;
+              Alert.alert("Fout bij registratie", errMsg);
+              throw new Error(errMsg);
+            }
+            const json2 = await resp2.json();
+            // extract id from response
+            const created = (Array.isArray(json2) && json2[0]) || (json2.data || json2.user || json2);
+            const createdId = created?.id ?? created?._id ?? (json2 as any).id ?? null;
+            if (createdId && photoUri) {
+              try {
+                const photoForm = new FormData();
+                const fileField2 = { uri: photoUri, name: fileName, type: mimeType } as any;
+                photoForm.append("photo", fileField2);
+                photoForm.append("image", fileField2);
+                photoForm.append("avatar", fileField2);
+                // try PATCH /users/:id
+                let up = await api.patch(`/users/${createdId}`, photoForm as any);
+                if (!up.ok) {
+                  // try common alternative endpoints
+                  try {
+                    up = await api.post(`/users/${createdId}/photo`, photoForm as any);
+                  } catch {}
+                }
+                if (!up.ok) {
+                  try {
+                    // api has no `put` helper; reuse `post` as an alternative
+                    up = await api.post(`/users/${createdId}/photo`, photoForm as any);
+                  } catch {}
+                }
+                if (!up.ok) {
+                  const upText = await up.text().catch(() => "");
+                  console.warn("Photo upload after create failed", up.status, upText);
+                }
+              } catch (uploadErr) {
+                console.warn("Photo upload after create error", uploadErr);
+              }
+            }
+
+            // replace resp with resp2 so normal flow continues
+            resp = resp2;
+          } else {
+            // not a missing-fields error -> surface original message
+            const errMsg = `HTTP ${resp.status}: ${message}`;
+            Alert.alert("Fout bij registratie", errMsg);
+            throw new Error(errMsg);
+          }
+        }
       } else {
-        const payload = { name, email, password, birthdate, region };
         debugPayload.payload = payload;
         console.debug("Register payload (no role)", payload);
 
@@ -143,8 +218,11 @@ export default function RegisterOwnerScreen() {
           body: text,
           payload: debugPayload,
         });
-        // include HTTP status in the thrown error so the alert shows more context
-        throw new Error(`HTTP ${resp.status}: ${message}`);
+  // include HTTP status in the thrown error so the alert shows more context
+  const errMsg = `HTTP ${resp.status}: ${message}`;
+  // surface server message in an Alert as well for faster debugging
+  Alert.alert("Fout bij registratie", errMsg);
+  throw new Error(errMsg);
       }
 
       const json = await resp.json();
@@ -284,7 +362,7 @@ export default function RegisterOwnerScreen() {
             style={styles.input}
             value={birthdate}
             onChangeText={setBirthdate}
-            placeholder="DD-MM-YYYY"
+            placeholder="YYYY-MM-DD"
           />
 
           <Text style={styles.label}>Regio</Text>

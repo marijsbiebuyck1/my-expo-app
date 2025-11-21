@@ -91,6 +91,14 @@ export default function LoginScreen() {
           >
             <Text style={styles.skipText}>Ga naar home asiel</Text>
           </TouchableOpacity>
+
+          {/* Quick access to existing-user login */}
+          <TouchableOpacity
+            style={[styles.skip, { marginTop: 12 }]}
+            onPress={() => router.replace("/users/login-email" as any)}
+          >
+            <Text style={styles.skipText}>Inloggen als bestaande gebruiker</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Dev buttons removed */}
