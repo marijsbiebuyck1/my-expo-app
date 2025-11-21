@@ -72,6 +72,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     backgroundColor: "rgba(0,0,0,0.03)",
   },
-  link: { marginTop: 8, color: "#1a73e8" },
+  link: { marginTop: 8, color: "#000000" },
   error: { marginTop: 16, color: "#cc0000" },
 });

@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
@@ -13,15 +13,6 @@ export default function ChatListScreen() {
       <View style={styles.container}>
         <ThemedText type="title">Chat</ThemedText>
         <ThemedText>Hier kun je een lijst van chats bouwen.</ThemedText>
-        <Pressable
-          onPress={() => router.push("/admin/chat/details")}
-          style={({ pressed }) => [
-            { marginTop: 12, padding: 10, borderRadius: 6 },
-            pressed && { opacity: 0.7 },
-          ]}
-        >
-          <Text style={{ color: "blue" }}>Open chat details</Text>
-        </Pressable>
       </View>
     </SafeAreaView>
   );
