@@ -1,12 +1,12 @@
 import React, { useRef, useState } from "react";
 import {
-  Animated,
-  Dimensions,
-  PanResponder,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Dimensions,
+    PanResponder,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import SwipeCard, { SwipeCardProps } from "./swipe-cards";
 
@@ -14,7 +14,7 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 const SWIPE_THRESHOLD = 120;
 const SWIPE_OUT_DURATION = 250;
 
-type Item = Omit<SwipeCardProps, "imageSource"> & { imageSource?: any };
+type Item = Omit<SwipeCardProps, "imageSource"> & { imageSource?: any; imageUri?: string };
 
 export default function SwipeDeck({ items }: { items: Item[] }) {
   const [cards, setCards] = useState(items);
@@ -127,6 +127,7 @@ export default function SwipeDeck({ items }: { items: Item[] }) {
               <SwipeCard
                 {...(item as SwipeCardProps)}
                 imageSource={item.imageSource}
+                imageUri={item.imageUri}
               />
             </Animated.View>
           );
@@ -148,6 +149,7 @@ export default function SwipeDeck({ items }: { items: Item[] }) {
             <SwipeCard
               {...(item as SwipeCardProps)}
               imageSource={item.imageSource}
+              imageUri={item.imageUri}
             />
           </Animated.View>
         );

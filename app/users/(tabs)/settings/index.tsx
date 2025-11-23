@@ -5,18 +5,18 @@ import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoHeader from "../../../../components/logo-header";
-import { ADMIN_BASE, api } from "../../../lib/api";
+import { ADMIN_BASE, api } from "../../../_lib/api";
 function calculateAge(birthdate?: string | number | null) {
   if (!birthdate) return null;
   const year =

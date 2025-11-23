@@ -1,8 +1,8 @@
 import {
-  Montserrat_400Regular,
-  Montserrat_600SemiBold,
-  Montserrat_700Bold,
-  useFonts,
+    Montserrat_400Regular,
+    Montserrat_600SemiBold,
+    Montserrat_700Bold,
+    useFonts,
 } from "@expo-google-fonts/montserrat";
 import { Stack } from "expo-router";
 import React from "react";
@@ -29,7 +29,9 @@ export default function Layout() {
       <Stack.Screen name="login" />
       {/* Hide header for explicit register route to ensure no title bar appears */}
       <Stack.Screen name="register-owner" />
-      <Stack.Screen name="(tabs)" />
+      {/* Explicitly include the users and admin tab groups that exist in this repo */}
+      <Stack.Screen name="users/(tabs)" />
+      <Stack.Screen name="admin/(tabs)" />
     </Stack>
   );
 }

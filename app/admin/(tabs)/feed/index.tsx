@@ -18,7 +18,7 @@ import { SvgXml } from 'react-native-svg';
 import { DisplayImage } from "../../../../components/display-image";
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
-import { api } from "../../../lib/api";
+import { api } from "../../../_lib/api";
 
 type Post = {
   _id?: string;

@@ -1,4 +1,3 @@
-import { useRouter } from "expo-router";
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -6,7 +5,7 @@ import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
 
 export default function ChatListScreen() {
-  const router = useRouter();
+  // router is not used here yet; remove to avoid unused variable warning
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
       <LogoHeader />

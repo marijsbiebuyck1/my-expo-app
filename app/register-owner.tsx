@@ -1,4 +1,3 @@
-import { ThemedText } from "@/components/themed-text";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -17,7 +16,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { api } from "./lib/api";
+import { ThemedText } from "../components/themed-text";
+import { api } from "./_lib/api";
 
 // Hide the default header/title bar rendered by the Stack for this route
 export const options = {
@@ -95,8 +95,9 @@ export default function RegisterOwnerScreen() {
       // NOTE: the backend returned a validation error for the `role` enum.
       // Temporarily omit `role` so the server can pick its default value (or return a clearer error).
 
-      // If user picked a photo, send multipart/form-data so backend can handle file upload.
-      let resp;
+  // If user picked a photo, send multipart/form-data so backend can handle file upload.
+  let resp;
+  let parsedRespJson: any = null;
       // build a debug payload object for logging when something fails
       const payload = { name, email, password, birthdate, region };
       const debugPayload: any = { ...payload };
@@ -124,11 +125,26 @@ export default function RegisterOwnerScreen() {
         debugPayload.photo = fileName;
         console.debug("Register payload (multipart)", debugPayload);
 
-        // Try multipart create first. If the server fails to parse multipart
-        // (some servers reject multipart on this endpoint), we'll fallback to
-        // creating the user via JSON and then uploading the photo in a second
-        // request.
-        resp = await api.post("/users", form as any);
+        // Try multipart create first. Some servers / wrappers can interfere
+        // with FormData; use a direct fetch() without forcing Content-Type so
+        // the client can set the multipart boundary correctly. If that fails
+        // fall back to the api helper which will attempt its own handling.
+        try {
+          const API_BASE = "https://my-express-app-ne4l.onrender.com";
+          const token = await SecureStore.getItemAsync("userToken");
+          const headers: Record<string, string> = {};
+          if (token) headers.Authorization = `Bearer ${token}`;
+          const direct = await fetch(API_BASE + "/users", {
+            method: "POST",
+            // do NOT set Content-Type here; fetch will add the boundary
+            body: form as any,
+            headers,
+          });
+          resp = direct;
+        } catch (fetchErr) {
+          console.warn("Direct multipart create failed, falling back to api.post", fetchErr);
+          resp = await api.post("/users", form as any);
+        }
         if (!resp.ok) {
           const text = await resp.text();
           let message = text || "Server error";
@@ -151,9 +167,13 @@ export default function RegisterOwnerScreen() {
               const t2 = await resp2.text();
               const errMsg = `Fallback JSON create failed: HTTP ${resp2.status}: ${t2}`;
               Alert.alert("Fout bij registratie", errMsg);
-              throw new Error(errMsg);
+              // Stop the flow gracefully instead of throwing so the app
+              // doesn't surface an uncaught exception to the user.
+              return;
             }
             const json2 = await resp2.json();
+            // save parsed JSON so we can reuse it later without re-reading the Response
+            parsedRespJson = json2;
             // extract id from response
             const created = (Array.isArray(json2) && json2[0]) || (json2.data || json2.user || json2);
             const createdId = created?.id ?? created?._id ?? (json2 as any).id ?? null;
@@ -164,23 +184,39 @@ export default function RegisterOwnerScreen() {
                 photoForm.append("photo", fileField2);
                 photoForm.append("image", fileField2);
                 photoForm.append("avatar", fileField2);
-                // try PATCH /users/:id
-                let up = await api.patch(`/users/${createdId}`, photoForm as any);
-                if (!up.ok) {
-                  // try common alternative endpoints
-                  try {
-                    up = await api.post(`/users/${createdId}/photo`, photoForm as any);
-                  } catch {}
+                // Try direct fetch to common upload endpoints without forcing Content-Type
+                const API_BASE = "https://my-express-app-ne4l.onrender.com";
+                let uploaded = false;
+                try {
+                  const uploadUrl = `${API_BASE}/users/${createdId}/photo`;
+                  // include token if we have one (might not be present yet)
+                  const token = await SecureStore.getItemAsync("userToken");
+                  const headers: Record<string, string> = {};
+                  if (token) headers.Authorization = `Bearer ${token}`;
+                  const r = await fetch(uploadUrl, { method: "POST", body: photoForm as any, headers });
+                  if (r.ok) uploaded = true;
+                  else {
+                    const t = await r.text().catch(() => "");
+                    console.warn("direct upload failed", r.status, t);
+                  }
+                } catch (err) {
+                  console.warn("direct upload exception", err);
                 }
-                if (!up.ok) {
+
+                if (!uploaded) {
+                  // try API helper PATCH then POST as fallbacks
                   try {
-                    // api has no `put` helper; reuse `post` as an alternative
-                    up = await api.post(`/users/${createdId}/photo`, photoForm as any);
-                  } catch {}
-                }
-                if (!up.ok) {
-                  const upText = await up.text().catch(() => "");
-                  console.warn("Photo upload after create failed", up.status, upText);
+                    let up = await api.patch(`/users/${createdId}`, photoForm as any);
+                    if (!up.ok) {
+                      up = await api.post(`/users/${createdId}/photo`, photoForm as any);
+                    }
+                    if (!up.ok) {
+                      const upText = await up.text().catch(() => "");
+                      console.warn("Photo upload after create failed", up.status, upText);
+                    }
+                  } catch (uploadErr) {
+                    console.warn("Photo upload after create error", uploadErr);
+                  }
                 }
               } catch (uploadErr) {
                 console.warn("Photo upload after create error", uploadErr);
@@ -189,11 +225,13 @@ export default function RegisterOwnerScreen() {
 
             // replace resp with resp2 so normal flow continues
             resp = resp2;
-          } else {
+            } else {
             // not a missing-fields error -> surface original message
             const errMsg = `HTTP ${resp.status}: ${message}`;
             Alert.alert("Fout bij registratie", errMsg);
-            throw new Error(errMsg);
+            // Stop the flow gracefully instead of throwing so the app
+            // doesn't surface an uncaught exception to the user.
+            return;
           }
         }
       } else {
@@ -222,10 +260,13 @@ export default function RegisterOwnerScreen() {
   const errMsg = `HTTP ${resp.status}: ${message}`;
   // surface server message in an Alert as well for faster debugging
   Alert.alert("Fout bij registratie", errMsg);
-  throw new Error(errMsg);
+  // Stop the flow gracefully instead of throwing so the app doesn't
+  // surface an uncaught exception to the user. The outer catch will
+  // already log the error and show a generic alert if needed.
+  return;
       }
 
-      const json = await resp.json();
+  const json = parsedRespJson ?? (await resp.json());
 
       // Normalize possible response shapes and extract token + user object.
       // Backend may return: { token: '...' , user: {...} } OR { id: '...' } OR [{...}]
@@ -357,7 +398,7 @@ export default function RegisterOwnerScreen() {
             secureTextEntry
           />
 
-          <Text style={styles.label}>Je geboortedatum</Text>
+          <Text style={styles.label}>Je geboorte</Text>
           <TextInput
             style={styles.input}
             value={birthdate}

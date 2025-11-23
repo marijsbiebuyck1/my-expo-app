@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "../../components/themed-text";
-import { api } from "../lib/api";
+import { api } from "../_lib/api";
 
 export default function LoginEmailScreen() {
   const router = useRouter();
@@ -93,8 +93,8 @@ export default function LoginEmailScreen() {
         const id = (user.id ?? user._id ?? "") as string;
         if (id) await SecureStore.setItemAsync("userId", String(id));
       }
-      // navigate to users home
-      router.replace("/users/(tabs)/home" as any);
+  // navigate to users home
+  router.replace("/users/home" as any);
     } catch (err) {
       console.warn("Login failed", err);
       // err already shown above for non-OK responses, but ensure user sees something

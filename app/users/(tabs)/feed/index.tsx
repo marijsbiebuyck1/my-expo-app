@@ -1,24 +1,24 @@
 import * as ImagePicker from "expo-image-picker";
 import * as SecureStore from "expo-secure-store";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    Modal,
-    Platform,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  Platform,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgXml } from 'react-native-svg';
 import { DisplayImage } from "../../../../components/display-image";
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
-import { api } from "../../../lib/api";
+import { api } from "../../../_lib/api";
 
 type Post = {
   _id?: string;
@@ -159,17 +159,33 @@ export default function FeedScreen() {
     }
   }
 
-  // cache fetched user objects so we don't refetch the same id repeatedly
-  const userCache: Record<string, any> = {};
+  // Persisted cache of fetched user objects so lookup survives renders
+  const userCacheRef = useRef<Record<string, any>>({});
+  const [me, setMe] = useState<any>(null);
+
+  // load locally stored current user (if any) so we can resolve our own posts
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await SecureStore.getItemAsync("user");
+        if (raw) setMe(JSON.parse(raw));
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, []);
+
   async function fetchUserById(id: string) {
     if (!id) return null;
-    if (userCache[id]) return userCache[id];
+    // if this id matches the locally stored user, return it immediately
+    if (me && (String(me.id) === String(id) || String(me._id) === String(id))) return me;
+    if (userCacheRef.current[id]) return userCacheRef.current[id];
     try {
       const r = await api.get(`/users/${id}`);
       if (!r.ok) return null;
       const j = await r.json();
       const user = (Array.isArray(j) && j[0]) || j.data || j.user || j;
-      userCache[id] = user;
+      userCacheRef.current[id] = user;
       return user;
     } catch {
       return null;
@@ -191,7 +207,11 @@ export default function FeedScreen() {
   }
 
   function renderPost({ item }: { item: Post }) {
-    const authorName = typeof item.author === "string" ? item.author : item.author?.name || "Anon";
+    const authorName =
+      typeof item.author === "object"
+        ? item.author?.name || "Anon"
+        : // if author is a string id, try cached lookup, otherwise show fallback
+          (userCacheRef.current[String(item.author)]?.name as string) || String(item.author) || "Anon";
     const avatar = typeof item.author === "object" ? item.author?.avatar : undefined;
     const avatarUri = avatar ? (avatar.startsWith("http") ? avatar : `${API_BASE}${avatar}`) : undefined;
 

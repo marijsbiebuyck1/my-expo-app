@@ -58,8 +58,3 @@ export function useAdminAuth() {
 export async function getAdminToken(): Promise<string | null> {
   return SecureStore.getItemAsync("adminToken");
 }
-
-// Placeholder default export so expo-router doesn't treat this file as a page route.
-export default function __UseAuthPlaceholder() {
-  return null;
-}

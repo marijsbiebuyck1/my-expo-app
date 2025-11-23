@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 // LogoHeader is rendered per-page (same behavior as user side),
 // so don't render it here to avoid duplication.
-import { getAdminToken } from "../lib/useAuth";
+import { getAdminToken } from "../_lib/useAuth";
 
 export default function AdminLayout() {
   const router = useRouter();

@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { api } from "../lib/api";
+import { api } from "../_lib/api";
 
 export const options = { headerShown: false, header: () => null };
 

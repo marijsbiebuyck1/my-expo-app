@@ -2,19 +2,19 @@ import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "../../components/themed-text";
-import { api } from "../lib/api";
+import { api } from "../_lib/api";
 
 export const options = {
   headerShown: false,
@@ -109,8 +109,8 @@ export default function AdminRegisterOwnerScreen() {
         // ignore JSON parse errors — it's non-fatal here
       }
 
-      // proceed to next admin step — navigate to the admin tabs home screen
-      router.replace("/admin/(tabs)/home" as any);
+  // proceed to next admin step — navigate to the admin home screen
+  router.replace("/admin/home" as any);
     } catch (e: any) {
       console.error("admin register error", e);
       Alert.alert(

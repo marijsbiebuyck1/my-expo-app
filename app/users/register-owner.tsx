@@ -17,7 +17,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { api } from "../lib/api";
+import { api } from "../_lib/api";
 
 export const options = { headerShown: false };
 
@@ -80,8 +80,9 @@ export default function RegisterOwnerScreen() {
 
     setLoading(true);
     try {
-      let resp;
-      const debugPayload: any = { name, email, password, birthdate, region };
+  let resp;
+  let parsedRespJson: any = null;
+  const debugPayload: any = { name, email, password, birthdate, region };
       if (photoUri) {
         const form = new FormData();
         form.append("name", name);
@@ -94,13 +95,77 @@ export default function RegisterOwnerScreen() {
         const match = fileName.match(/\.([0-9a-zA-Z]+)$/);
         const ext = match ? match[1].toLowerCase() : "jpg";
         const mimeType = ext === "png" ? "image/png" : "image/jpeg";
-        // @ts-ignore
-        form.append("photo", { uri: photoUri, name: fileName, type: mimeType });
+  // @ts-ignore
+  const fileField = { uri: photoUri, name: fileName, type: mimeType } as any;
+  // append multiple keys commonly used by servers to increase compatibility
+  form.append("photo", fileField);
+  form.append("image", fileField);
+  form.append("avatar", fileField);
         debugPayload.photo = fileName;
         resp = await fetch("https://my-express-app-ne4l.onrender.com/users", {
           method: "POST",
+          // do NOT set Content-Type so the runtime adds the multipart boundary
           body: form as any,
         });
+        // If the server doesn't parse multipart bodies correctly it may
+        // return a 400 listing missing required fields. In that case try a
+        // fallback: create the user with JSON (no photo) and then upload
+        // the photo in a second request.
+        if (!resp.ok) {
+          const text = await resp.text().catch(() => "");
+          let message = text || "Server error";
+          try {
+            const parsed = JSON.parse(text);
+            message = parsed.message || JSON.stringify(parsed);
+          } catch {}
+          console.error("register failed (multipart)", { status: resp.status, body: text, debugPayload });
+          if (message && /missing required fields/i.test(message)) {
+            // fallback: create without photo
+            const payload = { name, email, password, birthdate, region };
+            const resp2 = await api.post("/users", payload);
+            if (!resp2.ok) {
+              const t2 = await resp2.text().catch(() => "");
+              const errMsg = `Fallback JSON create failed: HTTP ${resp2.status}: ${t2}`;
+              Alert.alert("Fout bij registratie", errMsg);
+              return;
+            }
+            // try uploading photo to the user's photo endpoint
+            try {
+              const json2 = await resp2.json().catch(() => null);
+              // save parsed JSON so we can reuse it later without re-reading the Response
+              parsedRespJson = json2;
+              const created = (Array.isArray(json2) && json2[0]) || (json2 && (json2.data || json2.user || json2));
+              const createdId = created?.id ?? created?._id ?? (json2 as any)?.id ?? null;
+              if (createdId) {
+                const photoForm = new FormData();
+                // @ts-ignore
+                photoForm.append("photo", { uri: photoUri, name: fileName, type: mimeType });
+                // try direct upload first
+                const uploadUrl = `https://my-express-app-ne4l.onrender.com/users/${createdId}/photo`;
+                // include token if present (some backends require auth for uploads)
+                const uploadToken = await SecureStore.getItemAsync("userToken");
+                const uploadHeaders: Record<string, string> = {};
+                if (uploadToken) uploadHeaders.Authorization = `Bearer ${uploadToken}`;
+                const r = await fetch(uploadUrl, { method: "POST", body: photoForm as any, headers: uploadHeaders });
+                if (!r.ok) {
+                  const bodyText = await r.text().catch(() => "");
+                  console.warn("direct upload failed", r.status, bodyText);
+                  // fallback to api helper attempts
+                  let up = await api.patch(`/users/${createdId}`, photoForm as any);
+                  if (!up.ok) up = await api.post(`/users/${createdId}/photo`, photoForm as any);
+                  if (!up.ok) {
+                    const upText = await up.text().catch(() => "");
+                    console.warn("fallback upload also failed", up.status, upText);
+                  }
+                }
+              }
+            } catch (uploadErr) {
+              console.warn("Photo upload after JSON create failed", uploadErr);
+            }
+            // continue with resp2 as the successful create response
+            resp = resp2;
+          }
+        }
       } else {
         const payload = { name, email, password, birthdate, region };
         debugPayload.payload = payload;
@@ -108,16 +173,20 @@ export default function RegisterOwnerScreen() {
       }
 
       if (!resp.ok) {
-        const text = await resp.text();
+        const text = await resp.text().catch(() => "");
         let message = text || "Server error";
         try {
           const parsed = JSON.parse(text);
           message = parsed.message || JSON.stringify(parsed);
         } catch {}
-        throw new Error(`HTTP ${resp.status}: ${message}`);
+        // surface server message and stop gracefully
+        const errMsg = `HTTP ${resp.status}: ${message}`;
+        Alert.alert("Fout bij registratie", errMsg);
+        console.error("register failed", { status: resp.status, body: text, debugPayload });
+        return;
       }
 
-      const json = await resp.json();
+  const json = parsedRespJson ?? (await resp.json());
       let token: string | null = null;
       let userObj: any = null;
 
@@ -229,7 +298,7 @@ export default function RegisterOwnerScreen() {
             style={styles.input}
             value={birthdate}
             onChangeText={setBirthdate}
-            placeholder="DD-MM-YYYY"
+            placeholder="YYYY-MM-DD"
           />
 
           <Text style={styles.label}>Regio</Text>

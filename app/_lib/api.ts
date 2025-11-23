@@ -79,8 +79,3 @@ export const api = {
   del: (path: string, isAdmin = false) =>
     apiFetch(path, { method: "DELETE" }, isAdmin),
 };
-
-// Placeholder default export so expo-router doesn't treat this file as a page route.
-export default function __ApiPlaceholder() {
-  return null;
-}

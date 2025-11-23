@@ -4,7 +4,7 @@ import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
 import LogoHeader from "../../components/logo-header";
 import { ThemedText } from "../../components/themed-text";
 import { ThemedView } from "../../components/themed-view";
-import { api } from "../lib/api";
+import { api } from "../_lib/api";
 
 export default function AdminShelters() {
   const [shelters, setShelters] = useState<any[]>([]);
