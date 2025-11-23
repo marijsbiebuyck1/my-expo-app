@@ -58,7 +58,7 @@ export default function FeedScreen() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ["Images"] as any,
         allowsEditing: true,
         quality: 0.7,
       });
@@ -227,7 +227,7 @@ export default function FeedScreen() {
             <View style={styles.addIconCircle}>
               <ThemedText style={styles.addIcon}>+</ThemedText>
             </View>
-            <ThemedText style={styles.addButtonText}>Dier toevoegen</ThemedText>
+            <ThemedText style={styles.addButtonText}>Post maken</ThemedText>
           </View>
         </TouchableOpacity>
 

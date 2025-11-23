@@ -16,32 +16,23 @@ export default function TabLayout() {
         <Tabs.Screen
           name="settings/index"
           options={{
-            title: "Profile",
-            tabBarLabel: "Profile",
+            title: "Settings",
+            tabBarLabel: "Settings",
             tabBarIcon: ({ color }) => (
               <FontAwesome size={28} name="cog" color={color} />
             ),
           }}
         />
 
-        <Tabs.Screen
-          name="chat/index"
-          options={{
-            title: "Chat",
-            tabBarLabel: "Chat",
-            tabBarIcon: ({ color }) => (
-              <FontAwesome size={28} name="comments" color={color} />
-            ),
-          }}
-        />
+  {/* Admin tabs: Settings, Animals, Feed (Chat removed) */}
 
         <Tabs.Screen
-          name="home/index"
+          name="animals/index"
           options={{
-            title: "Home",
-            tabBarLabel: "Home",
+            title: "Animals",
+            tabBarLabel: "Animals",
             tabBarIcon: ({ color }) => (
-              <FontAwesome size={28} name="heart" color={color} />
+              <FontAwesome size={28} name="paw" color={color} />
             ),
           }}
         />

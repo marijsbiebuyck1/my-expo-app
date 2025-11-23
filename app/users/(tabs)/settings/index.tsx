@@ -5,14 +5,14 @@ import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoHeader from "../../../../components/logo-header";
@@ -247,7 +247,7 @@ export default function SettingsScreen() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ["Images"] as any,
         allowsEditing: true,
         aspect: [4, 4],
         quality: 0.7,

@@ -58,7 +58,7 @@ export default function FeedScreen() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ["Images"] as any,
         allowsEditing: true,
         quality: 0.7,
       });

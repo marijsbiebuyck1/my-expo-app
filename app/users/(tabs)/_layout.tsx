@@ -1,10 +1,8 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Tabs } from "expo-router";
 import { Dimensions, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TabLayout() {
-  const insets = useSafeAreaInsets();
   const windowWidth = Dimensions.get("window").width;
   // subtract pill horizontal padding (12*2) and some gutter; divide by 4 tabs
   const tabWidth = Math.max(64, Math.floor((windowWidth - 48) / 4));

@@ -45,7 +45,7 @@ export default function RegisterOwnerScreen() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ["Images"] as any,
         allowsEditing: true,
         aspect: [4, 4],
         quality: 0.7,
