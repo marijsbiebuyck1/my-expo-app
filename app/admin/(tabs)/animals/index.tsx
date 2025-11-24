@@ -1,16 +1,17 @@
 import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Modal,
-    Platform,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoHeader from "../../../../components/logo-header";
@@ -20,6 +21,7 @@ import { useAdminAuth } from "../../../_lib/useAuth";
 
 export default function AnimalsScreen() {
   const { admin } = useAdminAuth();
+  const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [animals, setAnimals] = useState<any[]>([]);
   const [loadingAnimals, setLoadingAnimals] = useState(false);
@@ -277,7 +279,7 @@ export default function AnimalsScreen() {
                 </View>
 
                 <View style={{ width: "100%", marginTop: 16 }}>
-                  <TouchableOpacity style={styles.shareButton} onPress={() => setStep(2)}>
+                  <TouchableOpacity style={styles.shareButton} onPress={() => router.push("/upload-animal-who" as any)}>
                     <ThemedText style={{ color: "#fff" }}>Volgende</ThemedText>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.shareButton, { backgroundColor: "#eee", marginTop: 8 }]} onPress={() => setModalVisible(false)}>
