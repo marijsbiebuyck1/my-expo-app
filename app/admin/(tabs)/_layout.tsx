@@ -1,16 +1,31 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Tabs } from "expo-router";
-import { StyleSheet, View } from "react-native";
+import { Dimensions, StyleSheet, Text, View } from "react-native";
 
 export default function TabLayout() {
+  const windowWidth = Dimensions.get("window").width;
+  const tabCount = 3; // settings, animals, feed
+  const tabWidth = Math.max(64, Math.floor((windowWidth - 48) / tabCount));
+  const tabBarStyleDynamic = [
+    styles.floatingTabBar,
+    {
+      left: 40,
+      right: 40,
+      bottom: 20,
+    },
+  ];
+
   return (
     <View style={styles.root}>
       {/* logo is rendered per-page via the LogoHeader component */}
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: "#FDA0E9",
+          tabBarActiveTintColor: "#AEBA40",
           tabBarInactiveTintColor: "#8e8e93",
+          tabBarStyle: tabBarStyleDynamic,
+          tabBarShowLabel: false,
+          tabBarItemStyle: { paddingTop: 6 },
         }}
       >
         <Tabs.Screen
@@ -19,12 +34,18 @@ export default function TabLayout() {
             title: "Settings",
             tabBarLabel: "Settings",
             tabBarIcon: ({ color }) => (
-              <FontAwesome size={28} name="cog" color={color} />
+              <View style={{ alignItems: "center", width: tabWidth }}>
+                <FontAwesome size={24} name="cog" color={color} />
+                <Text
+                  numberOfLines={1}
+                  style={{ fontSize: 11, marginTop: 4, color, textAlign: "center" }}
+                >
+                  {"Settings"}
+                </Text>
+              </View>
             ),
           }}
         />
-
-  {/* Admin tabs: Settings, Animals, Feed (Chat removed) */}
 
         <Tabs.Screen
           name="animals/index"
@@ -32,7 +53,15 @@ export default function TabLayout() {
             title: "Animals",
             tabBarLabel: "Animals",
             tabBarIcon: ({ color }) => (
-              <FontAwesome size={28} name="paw" color={color} />
+              <View style={{ alignItems: "center", width: tabWidth }}>
+                <FontAwesome size={24} name="paw" color={color} />
+                <Text
+                  numberOfLines={1}
+                  style={{ fontSize: 11, marginTop: 4, color, textAlign: "center" }}
+                >
+                  {"Animals"}
+                </Text>
+              </View>
             ),
           }}
         />
@@ -43,7 +72,15 @@ export default function TabLayout() {
             title: "Feed",
             tabBarLabel: "Feed",
             tabBarIcon: ({ color }) => (
-              <FontAwesome size={28} name="rss" color={color} />
+              <View style={{ alignItems: "center", width: tabWidth }}>
+                <FontAwesome size={24} name="rss" color={color} />
+                <Text
+                  numberOfLines={1}
+                  style={{ fontSize: 11, marginTop: 4, color, textAlign: "center" }}
+                >
+                  {"Feed"}
+                </Text>
+              </View>
             ),
           }}
         />
@@ -69,5 +106,23 @@ const styles = StyleSheet.create({
     width: 40,
     height: 14,
     resizeMode: "contain",
+  },
+  floatingTabBar: {
+    position: "absolute",
+    marginHorizontal: 12,
+    alignSelf: "center",
+    height: 72,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 40,
   },
 });
