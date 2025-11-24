@@ -9,9 +9,9 @@ export default function TabLayout() {
   const tabBarStyleDynamic = [
     styles.floatingTabBar,
     {
-      left: 40,
-      right: 40,
-      bottom: 20,
+      left: 20,
+      right: 20,
+      bottom: 18,
     },
   ];
 
@@ -33,15 +33,17 @@ export default function TabLayout() {
           options={{
             title: "Settings",
             tabBarLabel: "Settings",
-            tabBarIcon: ({ color }) => (
-              <View style={{ alignItems: "center", width: tabWidth }}>
-                <FontAwesome size={24} name="cog" color={color} />
-                <Text
-                  numberOfLines={1}
-                  style={{ fontSize: 11, marginTop: 4, color, textAlign: "center" }}
-                >
-                  {"Settings"}
-                </Text>
+            tabBarIcon: ({ color, focused }) => (
+              <View style={{ alignItems: "center", justifyContent: "center", width: tabWidth }}>
+                <View style={[styles.tabIconWrap, focused && styles.tabIconActive]}>
+                  <FontAwesome size={24} name="cog" color={color} />
+                  <Text
+                    numberOfLines={1}
+                    style={{ fontSize: 11, marginTop: 4, color, textAlign: "center" }}
+                  >
+                    {"Settings"}
+                  </Text>
+                </View>
               </View>
             ),
           }}
@@ -52,15 +54,17 @@ export default function TabLayout() {
           options={{
             title: "Animals",
             tabBarLabel: "Animals",
-            tabBarIcon: ({ color }) => (
-              <View style={{ alignItems: "center", width: tabWidth }}>
-                <FontAwesome size={24} name="paw" color={color} />
-                <Text
-                  numberOfLines={1}
-                  style={{ fontSize: 11, marginTop: 4, color, textAlign: "center" }}
-                >
-                  {"Animals"}
-                </Text>
+            tabBarIcon: ({ color, focused }) => (
+              <View style={{ alignItems: "center", justifyContent: "center", width: tabWidth }}>
+                <View style={[styles.tabIconWrap, focused && styles.tabIconActive]}>
+                  <FontAwesome size={24} name="paw" color={color} />
+                  <Text
+                    numberOfLines={1}
+                    style={{ fontSize: 11, marginTop: 4, color, textAlign: "center" }}
+                  >
+                    {"Animals"}
+                  </Text>
+                </View>
               </View>
             ),
           }}
@@ -71,15 +75,17 @@ export default function TabLayout() {
           options={{
             title: "Feed",
             tabBarLabel: "Feed",
-            tabBarIcon: ({ color }) => (
-              <View style={{ alignItems: "center", width: tabWidth }}>
-                <FontAwesome size={24} name="rss" color={color} />
-                <Text
-                  numberOfLines={1}
-                  style={{ fontSize: 11, marginTop: 4, color, textAlign: "center" }}
-                >
-                  {"Feed"}
-                </Text>
+            tabBarIcon: ({ color, focused }) => (
+              <View style={{ alignItems: "center", justifyContent: "center", width: tabWidth }}>
+                <View style={[styles.tabIconWrap, focused && styles.tabIconActive]}>
+                  <FontAwesome size={24} name="rss" color={color} />
+                  <Text
+                    numberOfLines={1}
+                    style={{ fontSize: 11, marginTop: 4, color, textAlign: "center" }}
+                  >
+                    {"Feed"}
+                  </Text>
+                </View>
               </View>
             ),
           }}
@@ -109,12 +115,12 @@ const styles = StyleSheet.create({
   },
   floatingTabBar: {
     position: "absolute",
-    marginHorizontal: 12,
+    marginHorizontal: 8,
     alignSelf: "center",
     height: 72,
     backgroundColor: "#fff",
     borderRadius: 20,
-    paddingHorizontal: 12,
+    paddingHorizontal: 20,
     paddingVertical: 6,
     flexDirection: "row",
     justifyContent: "space-evenly",
@@ -124,5 +130,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 20,
     elevation: 40,
+  },
+  tabIconWrap: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 100,
+  },
+  tabIconActive: {
+    backgroundColor: "#f2f2f2",
+    // make the active wrapper taller without moving the whole element
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    minHeight: 60,
+    borderRadius: 16,
   },
 });
