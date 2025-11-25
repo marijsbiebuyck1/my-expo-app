@@ -277,6 +277,14 @@ export default function FeedScreen() {
         : `${API_BASE}${avatar}`
       : undefined;
 
+    console.log(
+      "Rendering post by author:",
+      authorName,
+      "avatarUri:",
+      avatarUri,
+      "item:",
+      item
+    );
     return (
       <View style={styles.postCard}>
         <View style={styles.postHeader}>
