@@ -1,5 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
-import { useRouter } from "expo-router";
+// import useRouter only when needed; we keep the import commented out because navigation is not used here
+// import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import {
@@ -21,7 +22,6 @@ import { useAdminAuth } from "../../../_lib/useAuth";
 
 export default function AnimalsScreen() {
   const { admin } = useAdminAuth();
-  const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [animals, setAnimals] = useState<any[]>([]);
   const [loadingAnimals, setLoadingAnimals] = useState(false);
@@ -35,6 +35,7 @@ export default function AnimalsScreen() {
   const [gender, setGender] = useState<"male" | "female" | "" | null>(null);
   const [breed, setBreed] = useState("");
   const [properties, setProperties] = useState<string[]>([]);
+  const [whoProperties, setWhoProperties] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   async function pickImage() {
@@ -176,6 +177,30 @@ export default function AnimalsScreen() {
     }
   }
 
+  async function deleteAnimal(id: string) {
+    Alert.alert("Verwijderen", "Weet je zeker dat je dit dier wilt verwijderen?", [
+      { text: "Annuleren", style: "cancel" },
+      {
+        text: "Verwijder",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const res = await api.del(`/animals/${id}`, true);
+            if (!res.ok) {
+              const t = await res.text().catch(() => null);
+              throw new Error(t || `Status ${res.status}`);
+            }
+            await fetchAnimals();
+            Alert.alert("Verwijderd", "Het dier is verwijderd.");
+          } catch (err: any) {
+            console.warn("Delete animal failed", err);
+            Alert.alert("Fout", String(err?.message || err));
+          }
+        },
+      },
+    ]);
+  }
+
   useEffect(() => {
     fetchAnimals();
   }, []);
@@ -192,6 +217,14 @@ export default function AnimalsScreen() {
     "Ervaring vereist",
     "Andere...",
   ];
+
+  const whoWorkOptions = ["Telewerk", "Vaak reizen", "9-to-5", "Nog op school", "Op pensioen"];
+  const whoHobbyOptions = ["Wandelen", "Op vakantie gaan", "Series kijken", "Iets gaan drinken", "Sporten"];
+  const whoLivingOptions = ["Gezin", "Alleen", "Met roomies", "Met partner"];
+
+  function toggleWhoProperty(key: string) {
+    setWhoProperties((prev) => (prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]));
+  }
 
   function toggleProperty(key: string) {
     setProperties((prev) => (prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]));
@@ -231,6 +264,9 @@ export default function AnimalsScreen() {
                       <ThemedText style={styles.animalsBadgeText}>{String(item.matchesCount)} matches</ThemedText>
                     </View>
                   ) : null}
+                  <TouchableOpacity onPress={() => deleteAnimal(String(item._id || item.id))} style={styles.deleteBtn}>
+                    <ThemedText style={{ color: "#c0392b" }}>Verwijder</ThemedText>
+                  </TouchableOpacity>
                 </TouchableOpacity>
               );
             })}
@@ -279,7 +315,7 @@ export default function AnimalsScreen() {
                 </View>
 
                 <View style={{ width: "100%", marginTop: 16 }}>
-                  <TouchableOpacity style={styles.shareButton} onPress={() => router.push("/upload-animal-who" as any)}>
+                  <TouchableOpacity style={styles.shareButton} onPress={() => setStep(2)}>
                     <ThemedText style={{ color: "#fff" }}>Volgende</ThemedText>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.shareButton, { backgroundColor: "#eee", marginTop: 8 }]} onPress={() => setModalVisible(false)}>
@@ -287,7 +323,7 @@ export default function AnimalsScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-            ) : (
+            ) : step === 2 ? (
               <View style={{ width: "100%", alignItems: "center" }}>
                 <ThemedText>Is het dier een {species === "cat" ? "kat" : "hond"}? Vul ook het ras en eigenschappen in.</ThemedText>
 
@@ -295,7 +331,7 @@ export default function AnimalsScreen() {
 
                 <View style={{ width: "100%", marginTop: 12 }}>
                   <ThemedText style={{ marginBottom: 8 }}>Eigenschappen</ThemedText>
-                  <View style={[styles.speciesRow, { flexWrap: "wrap" }]}>
+                  <View style={[styles.speciesRow, { flexWrap: "wrap" }]}> 
                     {propertyOptions.map((opt) => (
                       <TouchableOpacity
                         key={opt}
@@ -320,10 +356,50 @@ export default function AnimalsScreen() {
                 </View>
 
                 <View style={{ width: "100%", marginTop: 16 }}>
+                  <TouchableOpacity style={styles.shareButton} onPress={() => setStep(3)}>
+                    <ThemedText style={{ color: "#fff" }}>Volgende</ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.shareButton, { backgroundColor: "#eee", marginTop: 8 }]} onPress={() => setStep(1)}>
+                    <ThemedText>Terug</ThemedText>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={{ width: "100%", alignItems: "center" }}>
+                <ThemedText type="title">Wie zoeken we?</ThemedText>
+
+                <ThemedText style={{ marginTop: 12, alignSelf: "flex-start" }}>Werk of opleiding?</ThemedText>
+                <View style={[styles.speciesRow, { flexWrap: "wrap", marginTop: 8 }] }>
+                  {whoWorkOptions.map((opt) => (
+                    <TouchableOpacity key={opt} style={[styles.propertyButton, whoProperties.includes(opt) ? styles.propertyActive : null]} onPress={() => toggleWhoProperty(opt)}>
+                      <ThemedText>{opt}</ThemedText>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <ThemedText style={{ marginTop: 12, alignSelf: "flex-start" }}>In mijn vrije tijd houdt ze van...</ThemedText>
+                <View style={[styles.speciesRow, { flexWrap: "wrap", marginTop: 8 }] }>
+                  {whoHobbyOptions.map((opt) => (
+                    <TouchableOpacity key={opt} style={[styles.propertyButton, whoProperties.includes(opt) ? styles.propertyActive : null]} onPress={() => toggleWhoProperty(opt)}>
+                      <ThemedText>{opt}</ThemedText>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <ThemedText style={{ marginTop: 12, alignSelf: "flex-start" }}>Met wie woon je samen?</ThemedText>
+                <View style={[styles.speciesRow, { flexWrap: "wrap", marginTop: 8 }] }>
+                  {whoLivingOptions.map((opt) => (
+                    <TouchableOpacity key={opt} style={[styles.propertyButton, whoProperties.includes(opt) ? styles.propertyActive : null]} onPress={() => toggleWhoProperty(opt)}>
+                      <ThemedText>{opt}</ThemedText>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <View style={{ width: "100%", marginTop: 16 }}>
                   <TouchableOpacity style={styles.shareButton} onPress={submitAnimal} disabled={submitting}>
                     {submitting ? <ActivityIndicator color="#fff" /> : <ThemedText style={{ color: "#fff" }}>Opslaan</ThemedText>}
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.shareButton, { backgroundColor: "#eee", marginTop: 8 }]} onPress={() => setStep(1)}>
+                  <TouchableOpacity style={[styles.shareButton, { backgroundColor: "#eee", marginTop: 8 }]} onPress={() => setStep(2)}>
                     <ThemedText>Terug</ThemedText>
                   </TouchableOpacity>
                 </View>
@@ -361,6 +437,7 @@ const styles = StyleSheet.create({
   animalBreed: { color: "#666", fontSize: 14 },
   animalsBadge: { backgroundColor: "#E6F0C8", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16 },
   animalsBadgeText: { color: "#333", fontSize: 13 },
+  deleteBtn: { paddingHorizontal: 12, paddingVertical: 6, marginLeft: 8 },
 });
 
 export const options = { title: "Animals" };
