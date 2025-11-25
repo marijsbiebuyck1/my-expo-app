@@ -87,18 +87,21 @@ export default function LoginScreen() {
 
           <TouchableOpacity
             style={[styles.skip, { marginTop: 8 }]}
-            onPress={() => router.replace("/admin/animals")}
+            onPress={() => {
+              router.replace("/admin/animals");
+            }}
           >
             <Text style={styles.skipText}>Ga naar Animals (asiel)</Text>
           </TouchableOpacity>
-
 
           {/* Quick access to existing-user login */}
           <TouchableOpacity
             style={[styles.skip, { marginTop: 12 }]}
             onPress={() => router.replace("/users/login-email" as any)}
           >
-            <Text style={styles.skipText}>Inloggen als bestaande gebruiker</Text>
+            <Text style={styles.skipText}>
+              Inloggen als bestaande gebruiker
+            </Text>
           </TouchableOpacity>
         </View>
 

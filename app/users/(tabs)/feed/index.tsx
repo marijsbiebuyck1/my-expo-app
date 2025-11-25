@@ -14,11 +14,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { SvgXml } from 'react-native-svg';
-import { DisplayImage } from "../../../../components/display-image";
+import { SvgXml } from "react-native-svg";
+// ...existing code...
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
 import { api } from "../../../_lib/api";
+import { getCachedImageUri } from "../../../lib/imageCache";
 
 type Post = {
   _id?: string;
@@ -51,9 +52,13 @@ export default function FeedScreen() {
 
   async function pickImage() {
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert("Permission required", "We need access to your photos to upload a picture.");
+        Alert.alert(
+          "Permission required",
+          "We need access to your photos to upload a picture."
+        );
         return;
       }
 
@@ -75,14 +80,18 @@ export default function FeedScreen() {
     try {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert("Permission required", "We need camera access to take a photo.");
+        Alert.alert(
+          "Permission required",
+          "We need camera access to take a photo."
+        );
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
         quality: 0.7,
       });
-      if (!result.canceled && result.assets && result.assets.length > 0) setImage(result.assets[0].uri);
+      if (!result.canceled && result.assets && result.assets.length > 0)
+        setImage(result.assets[0].uri);
     } catch (err) {
       console.warn("Camera error", err);
     }
@@ -104,7 +113,8 @@ export default function FeedScreen() {
       const form = new FormData();
       // @ts-ignore - RN FormData expects a blob-like object
       form.append("image", {
-        uri: Platform.OS === "ios" && image.startsWith("file://") ? image : image,
+        uri:
+          Platform.OS === "ios" && image.startsWith("file://") ? image : image,
         name,
         type,
       });
@@ -117,12 +127,21 @@ export default function FeedScreen() {
         form.append("author", "anon");
       }
 
+      // require a logged in user (server expects Authorization header)
+      const token = await SecureStore.getItemAsync("userToken");
+      if (!token) {
+        Alert.alert("Not logged in", "You must be logged in to upload a post.");
+        setPosting(false);
+        return;
+      }
+
       const res = await fetch(API, {
         method: "POST",
         body: form as any,
         headers: {
           Accept: "application/json",
-          "Content-Type": "multipart/form-data",
+          // don't set Content-Type - let fetch add the multipart boundary
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -178,7 +197,8 @@ export default function FeedScreen() {
   async function fetchUserById(id: string) {
     if (!id) return null;
     // if this id matches the locally stored user, return it immediately
-    if (me && (String(me.id) === String(id) || String(me._id) === String(id))) return me;
+    if (me && (String(me.id) === String(id) || String(me._id) === String(id)))
+      return me;
     if (userCacheRef.current[id]) return userCacheRef.current[id];
     try {
       const r = await api.get(`/users/${id}`);
@@ -198,7 +218,14 @@ export default function FeedScreen() {
         if (!p) return p;
         if (typeof p.author === "string" && p.author) {
           const u = await fetchUserById(p.author);
-          if (u) return { ...p, author: { name: u.name || u.fullName || u.email, avatar: u.photo || u.avatar || u.image } };
+          if (u)
+            return {
+              ...p,
+              author: {
+                name: u.name || u.fullName || u.email,
+                avatar: u.photo || u.avatar || u.image,
+              },
+            };
         }
         return p;
       })
@@ -206,24 +233,67 @@ export default function FeedScreen() {
     return work;
   }
 
+  // Small helper component that resolves a remote uri to a local cached file:// uri
+  function CachedImage({ uri, style }: { uri?: string; style?: any }) {
+    const [local, setLocal] = useState<string | undefined>(uri);
+
+    useEffect(() => {
+      let mounted = true;
+      // show the provided uri immediately (so the UI isn't blank)
+      setLocal(uri);
+
+      (async () => {
+        try {
+          if (!uri) return;
+          const cached = await getCachedImageUri(uri);
+          // if caching returned a different (local) uri, update
+          if (mounted && cached && cached !== uri) setLocal(cached);
+        } catch {
+          /* ignore */
+        }
+      })();
+      return () => {
+        mounted = false;
+      };
+    }, [uri]);
+
+    if (!uri) return null;
+    return <Image source={{ uri: local }} style={style} />;
+  }
+
   function renderPost({ item }: { item: Post }) {
     const authorName =
       typeof item.author === "object"
         ? item.author?.name || "Anon"
         : // if author is a string id, try cached lookup, otherwise show fallback
-          (userCacheRef.current[String(item.author)]?.name as string) || String(item.author) || "Anon";
-    const avatar = typeof item.author === "object" ? item.author?.avatar : undefined;
-    const avatarUri = avatar ? (avatar.startsWith("http") ? avatar : `${API_BASE}${avatar}`) : undefined;
+          (userCacheRef.current[String(item.author)]?.name as string) ||
+          String(item.author) ||
+          "Anon";
+    const avatar =
+      typeof item.author === "object" ? item.author?.avatar : undefined;
+    const avatarUri = avatar
+      ? avatar.startsWith("http")
+        ? avatar
+        : `${API_BASE}${avatar}`
+      : undefined;
 
     return (
       <View style={styles.postCard}>
         <View style={styles.postHeader}>
           {avatarUri ? (
-            <DisplayImage source={{ uri: avatarUri }} width={40} height={40} style={{ borderRadius: 20, overflow: "hidden" }} />
+            <CachedImage
+              uri={avatarUri}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                overflow: "hidden",
+              }}
+            />
           ) : (
             <View style={styles.avatarFallback}>
               <ThemedText style={styles.avatarInitials}>
-                {authorName.slice(0,2).toUpperCase()}
+                {authorName.slice(0, 2).toUpperCase()}
               </ThemedText>
             </View>
           )}
@@ -231,10 +301,19 @@ export default function FeedScreen() {
         </View>
 
         {item.image ? (
-          <Image source={{ uri: item.image.startsWith("http") ? item.image : `${API_BASE}${item.image}` }} style={styles.postImage} />
+          <CachedImage
+            uri={
+              item.image.startsWith("http")
+                ? item.image
+                : `${API_BASE}${item.image}`
+            }
+            style={styles.postImage}
+          />
         ) : null}
 
-        {item.caption ? <ThemedText style={{ marginTop: 8 }}>{item.caption}</ThemedText> : null}
+        {item.caption ? (
+          <ThemedText style={{ marginTop: 8 }}>{item.caption}</ThemedText>
+        ) : null}
       </View>
     );
   }
@@ -245,7 +324,10 @@ export default function FeedScreen() {
       <View style={styles.container}>
         <ThemedText type="title">Happy tails Feed</ThemedText>
 
-        <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => setModalVisible(true)}
+        >
           <View style={styles.addButtonInner}>
             <View style={styles.addIconCircle}>
               <ThemedText style={styles.addIcon}>+</ThemedText>
@@ -254,9 +336,15 @@ export default function FeedScreen() {
           </View>
         </TouchableOpacity>
 
-        <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
+        <Modal
+          visible={modalVisible}
+          animationType="slide"
+          onRequestClose={() => setModalVisible(false)}
+        >
           <SafeAreaView style={styles.modalContainer}>
-            <ThemedText type="title">Plaats een foto met jouw nieuwste huisgenoot</ThemedText>
+            <ThemedText type="title">
+              Plaats een foto met jouw nieuwste huisgenoot
+            </ThemedText>
 
             <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
               {image ? (
@@ -284,11 +372,25 @@ export default function FeedScreen() {
             />
 
             <View style={{ width: "100%" }}>
-              <TouchableOpacity style={styles.shareButton} onPress={submitPost} disabled={posting}>
-                {posting ? <ActivityIndicator color="#fff" /> : <ThemedText style={{ color: "#fff" }}>Delen</ThemedText>}
+              <TouchableOpacity
+                style={styles.shareButton}
+                onPress={submitPost}
+                disabled={posting}
+              >
+                {posting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <ThemedText style={{ color: "#fff" }}>Delen</ThemedText>
+                )}
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.shareButton, { backgroundColor: "#eee", marginTop: 8 }]} onPress={() => setModalVisible(false)}>
+              <TouchableOpacity
+                style={[
+                  styles.shareButton,
+                  { backgroundColor: "#eee", marginTop: 8 },
+                ]}
+                onPress={() => setModalVisible(false)}
+              >
                 <ThemedText>Annuleren</ThemedText>
               </TouchableOpacity>
             </View>
@@ -298,7 +400,12 @@ export default function FeedScreen() {
         {loading ? (
           <ActivityIndicator style={{ marginTop: 24 }} />
         ) : (
-          <FlatList data={posts} keyExtractor={(p) => p._id ?? String(Math.random())} renderItem={renderPost} contentContainerStyle={{ paddingBottom: 40 }} />
+          <FlatList
+            data={posts}
+            keyExtractor={(p) => p._id ?? String(Math.random())}
+            renderItem={renderPost}
+            contentContainerStyle={{ paddingBottom: 40 }}
+          />
         )}
       </View>
     </SafeAreaView>
@@ -358,35 +465,35 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   addButtonInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   addIconCircle: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   addIcon: {
-    color: '#fff',
-    fontWeight: '700',
+    color: "#fff",
+    fontWeight: "700",
   },
   modalContainer: {
     flex: 1,
     padding: 20,
-    alignItems: 'center',
-    backgroundColor: '#FFFCF5',
+    alignItems: "center",
+    backgroundColor: "#FFFCF5",
   },
   imagePicker: {
     width: 140,
     height: 140,
-    backgroundColor: '#E6F0F8',
+    backgroundColor: "#E6F0F8",
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 20,
     marginBottom: 12,
   },
@@ -396,22 +503,22 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   captionInput: {
-    width: '100%',
+    width: "100%",
     minHeight: 80,
     borderRadius: 8,
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     marginTop: 12,
   },
   shareButton: {
-    backgroundColor: '#FDA0E9',
+    backgroundColor: "#FDA0E9",
     paddingVertical: 12,
     borderRadius: 24,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 16,
   },
   smallButton: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 8,
     borderRadius: 8,
     marginTop: 8,
