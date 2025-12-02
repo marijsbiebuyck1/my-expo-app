@@ -36,6 +36,7 @@ export default function FeedScreen() {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [image, setImage] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [posting, setPosting] = useState(false);
 
@@ -69,7 +70,19 @@ export default function FeedScreen() {
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setImage(result.assets[0].uri);
+        const uri = result.assets[0].uri;
+        if (!uri) return;
+        try {
+          const { manipulateImage } = await import("../../../lib/imageHelpers");
+          const processed = await manipulateImage(uri, true);
+          if (processed.uploadUri) setImage(processed.uploadUri);
+          if (processed.previewBase64) setImagePreview(processed.previewBase64);
+          else setImagePreview(null);
+        } catch (err) {
+          console.warn("image manipulation failed, using original uri", err);
+          setImage(uri);
+          setImagePreview(null);
+        }
       }
     } catch (err) {
       console.warn("Image picker error", err);
@@ -86,12 +99,12 @@ export default function FeedScreen() {
         );
         return;
       }
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        quality: 0.7,
-      });
-      if (!result.canceled && result.assets && result.assets.length > 0)
-        setImage(result.assets[0].uri);
+      const { captureFromCameraOrPicker } = await import("../../../lib/imageHelpers");
+      const res = await captureFromCameraOrPicker(undefined /* no cameraRef available here */);
+      if (res && res.uploadUri) {
+        setImage(res.uploadUri);
+        setImagePreview(res.previewBase64);
+      }
     } catch (err) {
       console.warn("Camera error", err);
     }
@@ -356,7 +369,7 @@ export default function FeedScreen() {
 
             <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
               {image ? (
-                <Image source={{ uri: image }} style={styles.pickedImage} />
+                <Image source={{ uri: imagePreview ? imagePreview : image }} style={styles.pickedImage} />
               ) : (
                 <SvgXml xml={CAMERA_SVG} width={48} height={48} />
               )}

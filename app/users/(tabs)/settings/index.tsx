@@ -1,5 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import BgCard from "@/components/ui/bg-card";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -264,17 +265,32 @@ export default function SettingsScreen() {
         (result as any).uri;
       if (!uri) return;
 
+      // Resize & compress the image before upload to reduce payload size
+      let uploadUri = uri;
+      try {
+        const manipulated = await ImageManipulator.manipulateAsync(
+          uri,
+          [{ resize: { width: 600 } }],
+          { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
+        );
+        if (manipulated && manipulated.uri) uploadUri = manipulated.uri;
+      } catch (err) {
+        // If manipulation fails, continue with original uri
+        console.warn("image manipulation failed, uploading original", err);
+      }
+      if (!uri) return;
+
       // build multipart payload
-      const uriParts = uri.split("/");
-      const fileName = uriParts[uriParts.length - 1];
-      const match = fileName.match(/\.([0-9a-zA-Z]+)$/);
+  const uriParts = uploadUri.split("/");
+  const fileName = uriParts[uriParts.length - 1];
+  const match = fileName.match(/\.([0-9a-zA-Z]+)$/);
       const ext = match ? match[1].toLowerCase() : "jpg";
       const mimeType = ext === "png" ? "image/png" : "image/jpeg";
 
       const form = new FormData();
       // @ts-ignore
       const fileField = {
-        uri: Platform.OS === "ios" && uri.startsWith("file://") ? uri : uri,
+        uri: Platform.OS === "ios" && uploadUri.startsWith("file://") ? uploadUri : uploadUri,
         name: fileName,
         type: mimeType,
       } as any;

@@ -1,5 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import * as FileSystem from 'expo-file-system';
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -70,17 +71,31 @@ export default function SettingsScreen() {
   const uri: string | undefined = (result.assets && result.assets[0] && result.assets[0].uri) || (result as any).uri;
       if (!uri) return;
 
-  // show local preview immediately
+      // show local preview immediately (we'll try to replace with a base64 preview after manipulation)
   setSelectedLocalUri(uri);
 
-      const uriParts = uri.split('/');
+      // attempt to resize/compress and produce a base64 preview
+      let uploadUri = uri;
+      try {
+        const manipulated = await ImageManipulator.manipulateAsync(
+          uri,
+          [{ resize: { width: 600 } }],
+          { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+        );
+        if (manipulated.uri) uploadUri = manipulated.uri;
+        if (manipulated.base64) setSelectedLocalUri(`data:image/jpeg;base64,${manipulated.base64}`);
+      } catch (e) {
+        console.warn('image manipulation failed, proceeding with original uri', e);
+      }
+
+      const uriParts = uploadUri.split('/');
       const fileName = uriParts[uriParts.length - 1] || `photo-${Date.now()}.jpg`;
       const match = fileName.match(/\.([0-9a-zA-Z]+)$/);
       const ext = match ? match[1].toLowerCase() : 'jpg';
       const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
 
       // Some Android URIs are content:// and can't be attached directly. Copy to cache when needed.
-      let uploadUri = uri;
+  // `uploadUri` is already set above (possibly the manipulated uri)
       try {
         if (Platform.OS === 'android' && uri.startsWith('content://')) {
           // Read file as base64 then write to cache so fetch can send it

@@ -1,3 +1,4 @@
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
@@ -35,6 +36,7 @@ export default function FeedScreen() {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [image, setImage] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [posting, setPosting] = useState(false);
 
@@ -64,7 +66,22 @@ export default function FeedScreen() {
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setImage(result.assets[0].uri);
+        const uri = result.assets[0].uri;
+        if (!uri) return;
+        try {
+          const manipulated = await ImageManipulator.manipulateAsync(
+            uri,
+            [{ resize: { width: 600 } }],
+            { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+          );
+          if (manipulated.uri) setImage(manipulated.uri);
+          if (manipulated.base64) setImagePreview(`data:image/jpeg;base64,${manipulated.base64}`);
+          else setImagePreview(null);
+        } catch (err) {
+          console.warn("image manipulation failed, using original uri", err);
+          setImage(uri);
+          setImagePreview(null);
+        }
       }
     } catch (err) {
       console.warn("Image picker error", err);
@@ -78,11 +95,12 @@ export default function FeedScreen() {
         Alert.alert("Permission required", "We need camera access to take a photo.");
         return;
       }
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        quality: 0.7,
-      });
-      if (!result.canceled && result.assets && result.assets.length > 0) setImage(result.assets[0].uri);
+      const { captureFromCameraOrPicker } = await import("../../../lib/imageHelpers");
+      const res = await captureFromCameraOrPicker(undefined);
+      if (res && res.uploadUri) {
+        setImage(res.uploadUri);
+        setImagePreview(res.previewBase64);
+      }
     } catch (err) {
       console.warn("Camera error", err);
     }
@@ -237,7 +255,7 @@ export default function FeedScreen() {
 
             <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
               {image ? (
-                <Image source={{ uri: image }} style={styles.pickedImage} />
+                <Image source={{ uri: imagePreview ? imagePreview : image }} style={styles.pickedImage} />
               ) : (
                 <SvgXml xml={CAMERA_SVG} width={48} height={48} />
               )}

@@ -1,3 +1,5 @@
+import * as FileSystem from 'expo-file-system';
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -60,7 +62,20 @@ export default function RegisterOwnerScreen() {
         const uri =
           (result.assets && result.assets[0] && result.assets[0].uri) ||
           (result as any).uri;
-        if (uri) setPhotoUri(uri);
+        if (uri) {
+          try {
+            const manipulated = await ImageManipulator.manipulateAsync(
+              uri,
+              [{ resize: { width: 600 } }],
+              { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: false }
+            );
+            if (manipulated && manipulated.uri) setPhotoUri(manipulated.uri);
+            else setPhotoUri(uri);
+          } catch (err) {
+            console.warn("image manipulation failed, using original uri", err);
+            setPhotoUri(uri);
+          }
+        }
       }
     } catch (err) {
       console.warn("Image pick error", err);
@@ -115,9 +130,26 @@ export default function RegisterOwnerScreen() {
         const ext = match ? match[1].toLowerCase() : "jpg";
         const mimeType = ext === "png" ? "image/png" : "image/jpeg";
 
+  // Ensure uploadable URI: copy Android content:// URIs to cache and add file:// on iOS when needed
+  let uploadUri = photoUri as string;
+  try {
+    if (Platform.OS === 'android' && uploadUri.startsWith('content://')) {
+      const fs: any = FileSystem;
+      const b64 = await fs.readAsStringAsync(uploadUri, { encoding: 'base64' }).catch(() => null as string | null);
+      if (b64) {
+        const dest = (fs.cacheDirectory || fs.documentDirectory || '') + fileName;
+        await fs.writeAsStringAsync(dest, b64, { encoding: 'base64' });
+        uploadUri = dest;
+      }
+    }
+  } catch (e) {
+    console.warn('Could not copy content URI to cache, using original uri', e);
+  }
+  if (Platform.OS === 'ios' && !uploadUri.startsWith('file://')) uploadUri = 'file://' + uploadUri;
+
   // @ts-ignore - React Native FormData file object
   // append multiple common keys to maximize backend compatibility
-  const fileField = { uri: photoUri, name: fileName, type: mimeType } as any;
+  const fileField = { uri: uploadUri, name: fileName, type: mimeType } as any;
   form.append("photo", fileField);
   form.append("image", fileField);
   form.append("avatar", fileField);
@@ -180,7 +212,7 @@ export default function RegisterOwnerScreen() {
             if (createdId && photoUri) {
               try {
                 const photoForm = new FormData();
-                const fileField2 = { uri: photoUri, name: fileName, type: mimeType } as any;
+                const fileField2 = { uri: uploadUri, name: fileName, type: mimeType } as any;
                 photoForm.append("photo", fileField2);
                 photoForm.append("image", fileField2);
                 photoForm.append("avatar", fileField2);

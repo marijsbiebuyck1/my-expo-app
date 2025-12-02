@@ -1,3 +1,4 @@
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 // import useRouter only when needed; we keep the import commented out because navigation is not used here
 // import { useRouter } from "expo-router";
@@ -27,6 +28,7 @@ export default function AnimalsScreen() {
   const [loadingAnimals, setLoadingAnimals] = useState(false);
   const [step, setStep] = useState(1);
   const [image, setImage] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [day, setDay] = useState("");
   const [month, setMonth] = useState("");
@@ -50,7 +52,25 @@ export default function AnimalsScreen() {
         allowsEditing: true,
         quality: 0.7,
       });
-      if (!res.canceled && res.assets && res.assets.length > 0) setImage(res.assets[0].uri);
+      if (!res.canceled && res.assets && res.assets.length > 0) {
+        const uri = res.assets[0].uri;
+        if (!uri) return;
+        try {
+          const manipulated = await ImageManipulator.manipulateAsync(
+            uri,
+            [{ resize: { width: 600 } }],
+            { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+          );
+          // keep file URI for upload, but prefer a base64 data URL for the preview if available
+          if (manipulated.uri) setImage(manipulated.uri);
+          if (manipulated.base64) setImagePreview(`data:image/jpeg;base64,${manipulated.base64}`);
+          else setImagePreview(null);
+        } catch (err) {
+          console.warn("image manipulation failed, using original uri", err);
+          setImage(uri);
+          setImagePreview(null);
+        }
+      }
     } catch (err) {
       console.warn(err);
     }
@@ -58,13 +78,18 @@ export default function AnimalsScreen() {
 
   async function takePhoto() {
     try {
-      const p = await ImagePicker.requestCameraPermissionsAsync();
-      if (!p.granted) {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
         Alert.alert("Permission required", "We need camera access to take a photo.");
         return;
       }
-      const res = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.7 });
-      if (!res.canceled && res.assets && res.assets.length > 0) setImage(res.assets[0].uri);
+  // Use helper: will use cameraRef.takePictureAsync when provided; here we fallback to ImagePicker
+  const { captureFromCameraOrPicker } = await import("../../../lib/imageHelpers");
+      const res = await captureFromCameraOrPicker(undefined /* cameraRef not available here */);
+      if (res && res.uploadUri) {
+        setImage(res.uploadUri);
+        setImagePreview(res.previewBase64);
+      }
     } catch (err) {
       console.warn(err);
     }
@@ -285,7 +310,14 @@ export default function AnimalsScreen() {
             {step === 1 ? (
               <View style={{ width: "100%", alignItems: "center" }}>
                 <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
-                  {image ? <Image source={{ uri: image }} style={styles.pickedImage} /> : <ThemedText style={{ color: "#999" }}>Upload foto</ThemedText>}
+                  {image ? (
+                    <Image
+                      source={{ uri: imagePreview ? imagePreview : image }}
+                      style={styles.pickedImage}
+                    />
+                  ) : (
+                    <ThemedText style={{ color: "#999" }}>Upload foto</ThemedText>
+                  )}
                 </TouchableOpacity>
 
                 <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
