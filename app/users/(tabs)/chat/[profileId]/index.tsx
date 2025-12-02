@@ -145,7 +145,8 @@ export default function ChatDetailScreen() {
     >
       <LogoHeader />
 
-      <BgCard style={styles.bgCard} contentStyle={{ padding: 0 }}>
+      <View style={styles.pageContainer}>
+        <BgCard style={styles.bgCard} contentStyle={{ padding: 0 }}>
           <KeyboardAvoidingView
             style={{ flex: 1, width: "100%" }}
             behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -200,6 +201,7 @@ export default function ChatDetailScreen() {
             </View>
           </KeyboardAvoidingView>
         </BgCard>
+      </View>
     </SafeAreaView>
   );
 }
@@ -207,31 +209,13 @@ export default function ChatDetailScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#FFFCF5" },
   // page container centers the white card on the screen
-  // (removed wrapper View; keep bgCard style for BgCard itself)
+  pageContainer: { padding: 10, alignItems: "center" },
   // white background card dimensions and shadow
-  bgCard: {
-    width: 343,
-    height: 666,
-    paddingTop: 45,
-    paddingRight: 15,
-    paddingBottom: 15,
-    paddingLeft: 15,
-    flexDirection: "column",
-    alignItems: "center",
-    flexShrink: 0,
-    borderRadius: 20,
-    backgroundColor: "#FFF",
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: -1, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 23.4,
-    elevation: 6,
-  },
-  header: { padding: 16, borderBottomWidth: 0, backgroundColor: "#FFFCF5" },
-  messages: { padding: 16, paddingBottom: 24 },
+  bgCard: { width: "100%", maxWidth: 343, height: 666 },
+  header: { padding: 5, borderBottomWidth: 0 },
+  messages: { padding: 5, paddingBottom: 24 },
   bubble: {
-    maxWidth: "78%",
+    maxWidth: "100%",
     padding: 12,
     borderRadius: 12,
     marginBottom: 8,
@@ -243,11 +227,10 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     padding: 12,
     borderTopWidth: 0,
-    backgroundColor: "#FFFCF5",
   },
   input: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 100,
     maxHeight: 120,
     backgroundColor: "#fff",
     borderRadius: 20,
