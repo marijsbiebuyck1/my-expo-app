@@ -1,7 +1,7 @@
-import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -15,11 +15,13 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { SvgXml } from 'react-native-svg';
-import { DisplayImage } from "../../../../components/display-image";
+import { SvgXml } from "react-native-svg";
+import CameraCapture from "../../../../components/camera-capture";
+// ...existing code...
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
 import { api } from "../../../_lib/api";
+import { getCachedImageUri } from "../../../lib/imageCache";
 
 type Post = {
   _id?: string;
@@ -39,6 +41,10 @@ export default function FeedScreen() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [posting, setPosting] = useState(false);
+  const [cameraVisible, setCameraVisible] = useState(false);
+  // router was previously used for redirect-on-401; we no longer auto-redirect.
+  // Keep the hook available if other flows need navigation in future.
+  const router = useRouter();
 
   const CAMERA_SVG = `
   <svg width="35" height="30" viewBox="0 0 35 30" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -53,14 +59,18 @@ export default function FeedScreen() {
 
   async function pickImage() {
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert("Permission required", "We need access to your photos to upload a picture.");
+        Alert.alert(
+          "Permission required",
+          "We need access to your photos to upload a picture."
+        );
         return;
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["Images"] as any,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         quality: 0.7,
       });
@@ -69,13 +79,10 @@ export default function FeedScreen() {
         const uri = result.assets[0].uri;
         if (!uri) return;
         try {
-          const manipulated = await ImageManipulator.manipulateAsync(
-            uri,
-            [{ resize: { width: 600 } }],
-            { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-          );
-          if (manipulated.uri) setImage(manipulated.uri);
-          if (manipulated.base64) setImagePreview(`data:image/jpeg;base64,${manipulated.base64}`);
+          const { manipulateImage } = await import("../../../lib/imageHelpers");
+          const processed = await manipulateImage(uri, true);
+          if (processed.uploadUri) setImage(processed.uploadUri);
+          if (processed.previewBase64) setImagePreview(processed.previewBase64);
           else setImagePreview(null);
         } catch (err) {
           console.warn("image manipulation failed, using original uri", err);
@@ -92,15 +99,14 @@ export default function FeedScreen() {
     try {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert("Permission required", "We need camera access to take a photo.");
+        Alert.alert(
+          "Permission required",
+          "We need camera access to take a photo."
+        );
         return;
       }
-      const { captureFromCameraOrPicker } = await import("../../../lib/imageHelpers");
-      const res = await captureFromCameraOrPicker(undefined);
-      if (res && res.uploadUri) {
-        setImage(res.uploadUri);
-        setImagePreview(res.previewBase64);
-      }
+      // open the in-app camera modal which uses Camera.takePictureAsync
+      setCameraVisible(true);
     } catch (err) {
       console.warn("Camera error", err);
     }
@@ -114,44 +120,99 @@ export default function FeedScreen() {
 
     setPosting(true);
     try {
-      const uriParts = image.split("/");
-      const name = uriParts[uriParts.length - 1];
-      const match = name.match(/\.([0-9a-z]+)(?:\?|$)/i);
-      const type = match ? `image/${match[1]}` : "image";
+        // If we have a base64 preview (imagePreview), try sending JSON first
+        // because some backends accept a data URL payload like { image: dataURL }
+        const token = await SecureStore.getItemAsync("userToken");
+        if (!token) {
+          Alert.alert("Not logged in", "You must be logged in to upload a post.");
+          setPosting(false);
+          return;
+        }
 
-      const form = new FormData();
-      // @ts-ignore - RN FormData expects a blob-like object
-      form.append("image", {
-        uri: Platform.OS === "ios" && image.startsWith("file://") ? image : image,
-        name,
-        type,
-      });
-      form.append("caption", caption || "");
-      try {
-        const userId = await SecureStore.getItemAsync("userId");
-        form.append("author", userId || "anon");
-      } catch {
-        form.append("author", "anon");
-      }
+        if (imagePreview) {
+          try {
+            const jsonRes = await fetch(API, {
+              method: "POST",
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ image: imagePreview, caption: caption || "", author: (await SecureStore.getItemAsync("userId")) || "anon" }),
+            });
+            if (jsonRes.ok) {
+              setModalVisible(false);
+              setImage(null);
+              setCaption("");
+              fetchPosts();
+              return;
+            }
+            // if JSON failed, check for auth error and fall back to multipart
+            if (jsonRes.status === 401) {
+              // token invalid or expired — do NOT force a logout.
+              Alert.alert("Sessie verlopen", "Je sessie lijkt verlopen. Wil je opnieuw proberen of later?", [
+                { text: "Probeer opnieuw", onPress: () => submitPost() },
+                { text: "Annuleer", style: "cancel" },
+              ]);
+              setPosting(false);
+              return;
+            }
+            console.warn("JSON post upload failed, falling back to multipart", await jsonRes.text().catch(() => ""));
+          } catch (e) {
+            console.warn("JSON post upload error, falling back to multipart", e);
+          }
+        }
 
-      const res = await fetch(API, {
-        method: "POST",
-        body: form as any,
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "multipart/form-data",
-        },
-      });
+        // Multipart/form-data fallback (existing behavior)
+        const uriParts = image.split("/");
+        const name = uriParts[uriParts.length - 1];
+        const match = name.match(/\.([0-9a-z]+)(?:\?|$)/i);
+        const type = match ? `image/${match[1]}` : "image";
 
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Upload failed");
-      }
+        const form = new FormData();
+        // @ts-ignore - RN FormData expects a blob-like object
+        form.append("image", {
+          uri: Platform.OS === "ios" && image.startsWith("file://") ? image : image,
+          name,
+          type,
+        });
+        form.append("caption", caption || "");
+        // attach currently logged-in user id as author (fallback to anonymous)
+        try {
+          const userId = await SecureStore.getItemAsync("userId");
+          form.append("author", userId || "anon");
+        } catch {
+          form.append("author", "anon");
+        }
 
-      setModalVisible(false);
-      setImage(null);
-      setCaption("");
-      fetchPosts();
+        const res = await fetch(API, {
+          method: "POST",
+          body: form as any,
+          headers: {
+            Accept: "application/json",
+            // don't set Content-Type - let fetch add the multipart boundary
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          if (res.status === 401 || String(text).toLowerCase().includes("invalid or expired token")) {
+            // Don't clear credentials or redirect automatically. Let the user retry.
+            Alert.alert("Sessie verlopen", "Je sessie lijkt verlopen. Wil je opnieuw proberen of later?", [
+              { text: "Probeer opnieuw", onPress: () => submitPost() },
+              { text: "Annuleer", style: "cancel" },
+            ]);
+            setPosting(false);
+            return;
+          }
+          throw new Error(text || "Upload failed");
+        }
+
+        setModalVisible(false);
+        setImage(null);
+        setCaption("");
+        fetchPosts();
     } catch (err) {
       console.warn("Post upload failed", err);
       Alert.alert("Upload failed", String(err));
@@ -166,25 +227,44 @@ export default function FeedScreen() {
       const res = await fetch(API);
       const data = await res.json();
       const postsArr = Array.isArray(data) ? data.reverse() : [];
+      // resolve author ids into user objects for display
       const resolved = await resolveAuthors(postsArr);
       setPosts(resolved);
-    } catch (e) {
-      console.warn("Failed to load posts", e);
+    } catch {
+      console.warn("Failed to load posts");
     } finally {
       setLoading(false);
     }
   }
 
-  const userCache: Record<string, any> = {};
+  // Persisted cache of fetched user objects so lookup survives renders
+  const userCacheRef = useRef<Record<string, any>>({});
+  const [me, setMe] = useState<any>(null);
+
+  // load locally stored current user (if any) so we can resolve our own posts
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await SecureStore.getItemAsync("user");
+        if (raw) setMe(JSON.parse(raw));
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, []);
+
   async function fetchUserById(id: string) {
     if (!id) return null;
-    if (userCache[id]) return userCache[id];
+    // if this id matches the locally stored user, return it immediately
+    if (me && (String(me.id) === String(id) || String(me._id) === String(id)))
+      return me;
+    if (userCacheRef.current[id]) return userCacheRef.current[id];
     try {
       const r = await api.get(`/users/${id}`);
       if (!r.ok) return null;
       const j = await r.json();
       const user = (Array.isArray(j) && j[0]) || j.data || j.user || j;
-      userCache[id] = user;
+      userCacheRef.current[id] = user;
       return user;
     } catch {
       return null;
@@ -197,7 +277,16 @@ export default function FeedScreen() {
         if (!p) return p;
         if (typeof p.author === "string" && p.author) {
           const u = await fetchUserById(p.author);
-          if (u) return { ...p, author: { name: u.name || u.fullName || u.email, avatar: u.photo || u.avatar || u.image } };
+          if (u)
+            return {
+              ...p,
+              author: {
+                name: u.name || u.fullName || u.email,
+                // prefer common photo fields; backends differ in naming
+                avatar:
+                  u.photo || u.photoUrl || u.profileImage || u.avatar || u.image || null,
+              },
+            };
         }
         return p;
       })
@@ -205,31 +294,99 @@ export default function FeedScreen() {
     return work;
   }
 
-  function renderPost({ item }: { item: Post }) {
-    const authorName = typeof item.author === "string" ? item.author : item.author?.name || "Anon";
-    const avatar = typeof item.author === "object" ? item.author?.avatar : undefined;
-    const avatarUri = avatar ? (avatar.startsWith("http") ? avatar : `${API_BASE}${avatar}`) : undefined;
+  // Small helper component that resolves a remote uri to a local cached file:// uri
+  function CachedImage({ uri, style }: { uri?: string; style?: any }) {
+    const [local, setLocal] = useState<string | undefined>(uri);
 
+    useEffect(() => {
+      let mounted = true;
+      // show the provided uri immediately (so the UI isn't blank)
+      setLocal(uri);
+
+      (async () => {
+        try {
+          if (!uri) return;
+          const cached = await getCachedImageUri(uri);
+          // if caching returned a different (local) uri, update
+          if (mounted && cached && cached !== uri) setLocal(cached);
+        } catch {
+          /* ignore */
+        }
+      })();
+      return () => {
+        mounted = false;
+      };
+    }, [uri]);
+
+    if (!uri) return null;
+    return <Image source={{ uri: local }} style={style} />;
+  }
+
+  function renderPost({ item }: { item: Post }) {
+    const authorName =
+      typeof item.author === "object"
+        ? item.author?.name || "Anon"
+        : // if author is a string id, try cached lookup, otherwise show fallback
+          (userCacheRef.current[String(item.author)]?.name as string) ||
+          String(item.author) ||
+          "Anon";
+    // resolve avatar from several possible fields on the author object
+    const avatarRaw =
+      typeof item.author === "object"
+        ? (item.author as any)?.avatar || (item.author as any)?.photo || (item.author as any)?.photoUrl || (item.author as any)?.image || (item.author as any)?.profileImage
+        : undefined;
+    const avatarUri = avatarRaw
+      ? avatarRaw.startsWith("http")
+        ? avatarRaw
+        : `${API_BASE}${avatarRaw}`
+      : undefined;
+
+    console.log(
+      "Rendering post by author:",
+      authorName,
+      "avatarUri:",
+      avatarUri,
+      "item:",
+      item
+    );
     return (
       <View style={styles.postCard}>
         <View style={styles.postHeader}>
           {avatarUri ? (
-            <DisplayImage source={{ uri: avatarUri }} width={40} height={40} style={{ borderRadius: 20, overflow: "hidden" }} />
+            <CachedImage
+              uri={avatarUri}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                overflow: "hidden",
+                marginRight: 12,
+              }}
+            />
           ) : (
             <View style={styles.avatarFallback}>
               <ThemedText style={styles.avatarInitials}>
-                {authorName.slice(0,2).toUpperCase()}
+                {authorName.slice(0, 2).toUpperCase()}
               </ThemedText>
             </View>
           )}
-          <ThemedText style={styles.author}>{authorName}</ThemedText>
+          <ThemedText style={[styles.author, { fontWeight: "800" }]}>{authorName}</ThemedText>
         </View>
 
         {item.image ? (
-          <Image source={{ uri: item.image.startsWith("http") ? item.image : `${API_BASE}${item.image}` }} style={styles.postImage} />
+          <CachedImage
+            uri={
+              item.image.startsWith("http")
+                ? item.image
+                : `${API_BASE}${item.image}`
+            }
+            style={styles.postImage}
+          />
         ) : null}
 
-        {item.caption ? <ThemedText style={{ marginTop: 8 }}>{item.caption}</ThemedText> : null}
+        {item.caption ? (
+          <ThemedText style={{ marginTop: 8 }}>{item.caption}</ThemedText>
+        ) : null}
       </View>
     );
   }
@@ -240,18 +397,27 @@ export default function FeedScreen() {
       <View style={styles.container}>
         <ThemedText type="title">Happy tails Feed</ThemedText>
 
-        <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => setModalVisible(true)}
+        >
           <View style={styles.addButtonInner}>
             <View style={styles.addIconCircle}>
               <ThemedText style={styles.addIcon}>+</ThemedText>
             </View>
-            <ThemedText style={styles.addButtonText}>Post maken</ThemedText>
+            <ThemedText style={styles.addButtonText}>Dier toevoegen</ThemedText>
           </View>
         </TouchableOpacity>
 
-        <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
+        <Modal
+          visible={modalVisible}
+          animationType="slide"
+          onRequestClose={() => setModalVisible(false)}
+        >
           <SafeAreaView style={styles.modalContainer}>
-            <ThemedText type="title">Plaats een foto met jouw nieuwste huisgenoot</ThemedText>
+            <ThemedText type="title">
+              Plaats een foto met jouw nieuwste huisgenoot
+            </ThemedText>
 
             <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
               {image ? (
@@ -279,21 +445,50 @@ export default function FeedScreen() {
             />
 
             <View style={{ width: "100%" }}>
-              <TouchableOpacity style={styles.shareButton} onPress={submitPost} disabled={posting}>
-                {posting ? <ActivityIndicator color="#fff" /> : <ThemedText style={{ color: "#fff" }}>Delen</ThemedText>}
+              <TouchableOpacity
+                style={styles.shareButton}
+                onPress={submitPost}
+                disabled={posting}
+              >
+                {posting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <ThemedText style={{ color: "#fff" }}>Delen</ThemedText>
+                )}
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.shareButton, { backgroundColor: "#eee", marginTop: 8 }]} onPress={() => setModalVisible(false)}>
+              <TouchableOpacity
+                style={[
+                  styles.shareButton,
+                  { backgroundColor: "#eee", marginTop: 8 },
+                ]}
+                onPress={() => setModalVisible(false)}
+              >
                 <ThemedText>Annuleren</ThemedText>
               </TouchableOpacity>
             </View>
           </SafeAreaView>
         </Modal>
 
+        <CameraCapture
+          visible={cameraVisible}
+          onClose={() => setCameraVisible(false)}
+          onCapture={(res) => {
+            if (!res) return;
+            if (res.uploadUri) setImage(res.uploadUri);
+            if (res.previewBase64) setImagePreview(res.previewBase64);
+          }}
+        />
+
         {loading ? (
           <ActivityIndicator style={{ marginTop: 24 }} />
         ) : (
-          <FlatList data={posts} keyExtractor={(p) => p._id ?? String(Math.random())} renderItem={renderPost} contentContainerStyle={{ paddingBottom: 40 }} />
+          <FlatList
+            data={posts}
+            keyExtractor={(p) => p._id ?? String(Math.random())}
+            renderItem={renderPost}
+            contentContainerStyle={{ paddingBottom: 40 }}
+          />
         )}
       </View>
     </SafeAreaView>
@@ -353,35 +548,35 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   addButtonInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   addIconCircle: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   addIcon: {
-    color: '#fff',
-    fontWeight: '700',
+    color: "#fff",
+    fontWeight: "700",
   },
   modalContainer: {
     flex: 1,
     padding: 20,
-    alignItems: 'center',
-    backgroundColor: '#FFFCF5',
+    alignItems: "center",
+    backgroundColor: "#FFFCF5",
   },
   imagePicker: {
     width: 140,
     height: 140,
-    backgroundColor: '#E6F0F8',
+    backgroundColor: "#E6F0F8",
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 20,
     marginBottom: 12,
   },
@@ -391,22 +586,22 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   captionInput: {
-    width: '100%',
+    width: "100%",
     minHeight: 80,
     borderRadius: 8,
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     marginTop: 12,
   },
   shareButton: {
-    backgroundColor: '#FDA0E9',
+    backgroundColor: "#FDA0E9",
     paddingVertical: 12,
     borderRadius: 24,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 16,
   },
   smallButton: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 8,
     borderRadius: 8,
     marginTop: 8,

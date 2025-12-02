@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import CameraCapture from "../../../../components/camera-capture";
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
 import { ADMIN_BASE, api } from "../../../_lib/api";
@@ -39,6 +40,7 @@ export default function AnimalsScreen() {
   const [properties, setProperties] = useState<string[]>([]);
   const [whoProperties, setWhoProperties] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [cameraVisible, setCameraVisible] = useState(false);
 
   async function pickImage() {
     try {
@@ -83,13 +85,8 @@ export default function AnimalsScreen() {
         Alert.alert("Permission required", "We need camera access to take a photo.");
         return;
       }
-  // Use helper: will use cameraRef.takePictureAsync when provided; here we fallback to ImagePicker
-  const { captureFromCameraOrPicker } = await import("../../../lib/imageHelpers");
-      const res = await captureFromCameraOrPicker(undefined /* cameraRef not available here */);
-      if (res && res.uploadUri) {
-        setImage(res.uploadUri);
-        setImagePreview(res.previewBase64);
-      }
+      // open the in-app camera modal which uses Camera.takePictureAsync
+      setCameraVisible(true);
     } catch (err) {
       console.warn(err);
     }
@@ -439,6 +436,15 @@ export default function AnimalsScreen() {
             )}
           </SafeAreaView>
         </Modal>
+        <CameraCapture
+          visible={cameraVisible}
+          onClose={() => setCameraVisible(false)}
+          onCapture={(res) => {
+            if (!res) return;
+            if (res.uploadUri) setImage(res.uploadUri);
+            if (res.previewBase64) setImagePreview(res.previewBase64);
+          }}
+        />
       </View>
     </SafeAreaView>
   );

@@ -1,4 +1,5 @@
 import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -15,6 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgXml } from "react-native-svg";
+import CameraCapture from "../../../../components/camera-capture";
 // ...existing code...
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
@@ -39,6 +41,10 @@ export default function FeedScreen() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [posting, setPosting] = useState(false);
+  const [cameraVisible, setCameraVisible] = useState(false);
+  // router was previously used for redirect-on-401; we no longer auto-redirect.
+  // Keep the hook available if other flows need navigation in future.
+  const router = useRouter();
 
   const CAMERA_SVG = `
   <svg width="35" height="30" viewBox="0 0 35 30" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -64,7 +70,7 @@ export default function FeedScreen() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["Images"] as any,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         quality: 0.7,
       });
@@ -99,12 +105,8 @@ export default function FeedScreen() {
         );
         return;
       }
-      const { captureFromCameraOrPicker } = await import("../../../lib/imageHelpers");
-      const res = await captureFromCameraOrPicker(undefined /* no cameraRef available here */);
-      if (res && res.uploadUri) {
-        setImage(res.uploadUri);
-        setImagePreview(res.previewBase64);
-      }
+      // open the in-app camera modal which uses Camera.takePictureAsync
+      setCameraVisible(true);
     } catch (err) {
       console.warn("Camera error", err);
     }
@@ -118,55 +120,99 @@ export default function FeedScreen() {
 
     setPosting(true);
     try {
-      const uriParts = image.split("/");
-      const name = uriParts[uriParts.length - 1];
-      const match = name.match(/\.([0-9a-z]+)(?:\?|$)/i);
-      const type = match ? `image/${match[1]}` : "image";
+        // If we have a base64 preview (imagePreview), try sending JSON first
+        // because some backends accept a data URL payload like { image: dataURL }
+        const token = await SecureStore.getItemAsync("userToken");
+        if (!token) {
+          Alert.alert("Not logged in", "You must be logged in to upload a post.");
+          setPosting(false);
+          return;
+        }
 
-      const form = new FormData();
-      // @ts-ignore - RN FormData expects a blob-like object
-      form.append("image", {
-        uri:
-          Platform.OS === "ios" && image.startsWith("file://") ? image : image,
-        name,
-        type,
-      });
-      form.append("caption", caption || "");
-      // attach currently logged-in user id as author (fallback to anonymous)
-      try {
-        const userId = await SecureStore.getItemAsync("userId");
-        form.append("author", userId || "anon");
-      } catch {
-        form.append("author", "anon");
-      }
+        if (imagePreview) {
+          try {
+            const jsonRes = await fetch(API, {
+              method: "POST",
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ image: imagePreview, caption: caption || "", author: (await SecureStore.getItemAsync("userId")) || "anon" }),
+            });
+            if (jsonRes.ok) {
+              setModalVisible(false);
+              setImage(null);
+              setCaption("");
+              fetchPosts();
+              return;
+            }
+            // if JSON failed, check for auth error and fall back to multipart
+            if (jsonRes.status === 401) {
+              // token invalid or expired — do NOT force a logout.
+              Alert.alert("Sessie verlopen", "Je sessie lijkt verlopen. Wil je opnieuw proberen of later?", [
+                { text: "Probeer opnieuw", onPress: () => submitPost() },
+                { text: "Annuleer", style: "cancel" },
+              ]);
+              setPosting(false);
+              return;
+            }
+            console.warn("JSON post upload failed, falling back to multipart", await jsonRes.text().catch(() => ""));
+          } catch (e) {
+            console.warn("JSON post upload error, falling back to multipart", e);
+          }
+        }
 
-      // require a logged in user (server expects Authorization header)
-      const token = await SecureStore.getItemAsync("userToken");
-      if (!token) {
-        Alert.alert("Not logged in", "You must be logged in to upload a post.");
-        setPosting(false);
-        return;
-      }
+        // Multipart/form-data fallback (existing behavior)
+        const uriParts = image.split("/");
+        const name = uriParts[uriParts.length - 1];
+        const match = name.match(/\.([0-9a-z]+)(?:\?|$)/i);
+        const type = match ? `image/${match[1]}` : "image";
 
-      const res = await fetch(API, {
-        method: "POST",
-        body: form as any,
-        headers: {
-          Accept: "application/json",
-          // don't set Content-Type - let fetch add the multipart boundary
-          Authorization: `Bearer ${token}`,
-        },
-      });
+        const form = new FormData();
+        // @ts-ignore - RN FormData expects a blob-like object
+        form.append("image", {
+          uri: Platform.OS === "ios" && image.startsWith("file://") ? image : image,
+          name,
+          type,
+        });
+        form.append("caption", caption || "");
+        // attach currently logged-in user id as author (fallback to anonymous)
+        try {
+          const userId = await SecureStore.getItemAsync("userId");
+          form.append("author", userId || "anon");
+        } catch {
+          form.append("author", "anon");
+        }
 
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Upload failed");
-      }
+        const res = await fetch(API, {
+          method: "POST",
+          body: form as any,
+          headers: {
+            Accept: "application/json",
+            // don't set Content-Type - let fetch add the multipart boundary
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-      setModalVisible(false);
-      setImage(null);
-      setCaption("");
-      fetchPosts();
+        if (!res.ok) {
+          const text = await res.text();
+          if (res.status === 401 || String(text).toLowerCase().includes("invalid or expired token")) {
+            // Don't clear credentials or redirect automatically. Let the user retry.
+            Alert.alert("Sessie verlopen", "Je sessie lijkt verlopen. Wil je opnieuw proberen of later?", [
+              { text: "Probeer opnieuw", onPress: () => submitPost() },
+              { text: "Annuleer", style: "cancel" },
+            ]);
+            setPosting(false);
+            return;
+          }
+          throw new Error(text || "Upload failed");
+        }
+
+        setModalVisible(false);
+        setImage(null);
+        setCaption("");
+        fetchPosts();
     } catch (err) {
       console.warn("Post upload failed", err);
       Alert.alert("Upload failed", String(err));
@@ -236,7 +282,9 @@ export default function FeedScreen() {
               ...p,
               author: {
                 name: u.name || u.fullName || u.email,
-                avatar: u.photo || u.avatar || u.image,
+                // prefer common photo fields; backends differ in naming
+                avatar:
+                  u.photo || u.photoUrl || u.profileImage || u.avatar || u.image || null,
               },
             };
         }
@@ -282,12 +330,15 @@ export default function FeedScreen() {
           (userCacheRef.current[String(item.author)]?.name as string) ||
           String(item.author) ||
           "Anon";
-    const avatar =
-      typeof item.author === "object" ? item.author?.avatar : undefined;
-    const avatarUri = avatar
-      ? avatar.startsWith("http")
-        ? avatar
-        : `${API_BASE}${avatar}`
+    // resolve avatar from several possible fields on the author object
+    const avatarRaw =
+      typeof item.author === "object"
+        ? (item.author as any)?.avatar || (item.author as any)?.photo || (item.author as any)?.photoUrl || (item.author as any)?.image || (item.author as any)?.profileImage
+        : undefined;
+    const avatarUri = avatarRaw
+      ? avatarRaw.startsWith("http")
+        ? avatarRaw
+        : `${API_BASE}${avatarRaw}`
       : undefined;
 
     console.log(
@@ -309,6 +360,7 @@ export default function FeedScreen() {
                 height: 40,
                 borderRadius: 20,
                 overflow: "hidden",
+                marginRight: 12,
               }}
             />
           ) : (
@@ -318,7 +370,7 @@ export default function FeedScreen() {
               </ThemedText>
             </View>
           )}
-          <ThemedText style={styles.author}>{authorName}</ThemedText>
+          <ThemedText style={[styles.author, { fontWeight: "800" }]}>{authorName}</ThemedText>
         </View>
 
         {item.image ? (
@@ -417,6 +469,16 @@ export default function FeedScreen() {
             </View>
           </SafeAreaView>
         </Modal>
+
+        <CameraCapture
+          visible={cameraVisible}
+          onClose={() => setCameraVisible(false)}
+          onCapture={(res) => {
+            if (!res) return;
+            if (res.uploadUri) setImage(res.uploadUri);
+            if (res.previewBase64) setImagePreview(res.previewBase64);
+          }}
+        />
 
         {loading ? (
           <ActivityIndicator style={{ marginTop: 24 }} />
