@@ -1,5 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import BgCard from "@/components/ui/bg-card";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -8,7 +9,6 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,8 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoHeader from "../../../../components/logo-header";
-import { ADMIN_BASE, api } from "../../../_lib/api";
-import { manipulateImage } from "../../../lib/imageHelpers";
+import { api } from "../../../_lib/api";
 function calculateAge(birthdate?: string | number | null) {
   if (!birthdate) return null;
   const year =
@@ -139,37 +138,9 @@ export default function SettingsScreen() {
   const preferences = user?.preferences || user?.petPreferences || {};
   const home = user?.home || {};
 
-  const photoUri =
-    user &&
-    (user.photo ||
-      user.photoUrl ||
-      user.avatar ||
-      user.image ||
-      user.profileImage)
-      ? String(
-          user.photo ||
-            user.photoUrl ||
-            user.avatar ||
-            user.image ||
-            user.profileImage
-        )
-      : null;
+  const photoUri = user.profileImage;
 
-  // Normalize display URI: backend may return a relative path like '/uploads/...' or 'uploads/...'
-  let displayPhotoUri: string | null = photoUri;
-  if (displayPhotoUri && !displayPhotoUri.startsWith("http")) {
-    // ensure exactly one slash between ADMIN_BASE and the path
-    if (displayPhotoUri.startsWith("/"))
-      displayPhotoUri = ADMIN_BASE + displayPhotoUri;
-    else displayPhotoUri = ADMIN_BASE + "/" + displayPhotoUri;
-  }
-
-  // In dev, log resolved URI to Metro logs (don't render long URIs in the UI)
-  try {
-    if (typeof global !== "undefined" && (global as any).__DEV__) {
-      console.debug("displayPhotoUri ->", displayPhotoUri);
-    }
-  } catch {}
+  console.log("photoUri ->", photoUri);
 
   function createPetPreferenceChips(preferredSpecies: any[] = []) {
     const chips: any[] = [];
@@ -265,27 +236,21 @@ export default function SettingsScreen() {
         (result as any).uri;
       if (!uri) return;
 
-      // Resize & compress the image before upload to reduce payload size.
-      // Use centralized helper so behavior is consistent across screens.
-      let uploadUri = uri;
-      let dataUrl: string | null = null;
-      try {
-        const manipulated = await manipulateImage(uri, true);
-        if (manipulated.uploadUri) uploadUri = manipulated.uploadUri;
-        if (manipulated.previewBase64) dataUrl = manipulated.previewBase64;
-      } catch (err) {
-        console.warn("image manipulation failed, uploading original", err);
+      const manipulated = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 600 } }],
+        {
+          compress: 0.5,
+          format: ImageManipulator.SaveFormat.JPEG,
+          base64: true,
+        }
+      );
+      if (!manipulated.base64) {
+        Alert.alert("Fout", "Kon afbeelding niet verwerken.");
+        return;
       }
-      if (!uri) return;
 
-      // build multipart payload
-  const uriParts = uploadUri.split("/");
-  const fileName = uriParts[uriParts.length - 1];
-  const match = fileName.match(/\.([0-9a-zA-Z]+)$/);
-      const ext = match ? match[1].toLowerCase() : "jpg";
-      const mimeType = ext === "png" ? "image/png" : "image/jpeg";
-
-      // determine id early so we can include it in the multipart form as well
+      const base64Image = `data:image/jpeg;base64,${manipulated.base64}`;
       const id =
         user?.id || user?._id || (await SecureStore.getItemAsync("userId"));
       if (!id) {
@@ -296,250 +261,43 @@ export default function SettingsScreen() {
         return;
       }
 
-  const form = new FormData();
-      // @ts-ignore
-      const fileField = {
-        uri: Platform.OS === "ios" && uploadUri.startsWith("file://") ? uploadUri : uploadUri,
-        name: fileName,
-        type: mimeType,
-      } as any;
-      // append under several common keys to match whatever the backend expects
-      form.append("avatar", fileField);
-      form.append("image", fileField);
-      form.append("file", fileField);
-      // some backends look for a 'filename' field as a string
-      form.append("filename", fileName);
-      // include id hints as form fields too
-      form.append("id", String(id));
-      form.append("userId", String(id));
-
-      
-
-      // ensure we have an auth token
       const token = await SecureStore.getItemAsync("userToken");
       if (!token) {
-        Alert.alert("Not logged in", "Je bent niet ingelogd. Log in en probeer opnieuw.");
+        Alert.alert(
+          "Not logged in",
+          "Je bent niet ingelogd. Log in en probeer opnieuw."
+        );
         return;
-      }
-
-      // helper: if server response doesn't include a photo field, fetch the fresh user record
-      async function hydrateUpdatedUser(maybe: any) {
-        const hasPhoto = maybe && (maybe.photo || maybe.photoUrl || maybe.avatar || maybe.image || maybe.profileImage);
-        if (hasPhoto) return maybe;
-        try {
-          const r = await api.get(`/users/${id}`);
-          if (!r.ok) return maybe;
-          const j = await r.json().catch(() => null);
-          const fetched = Array.isArray(j) && j.length > 0 ? j[0] : j?.data || j?.user || j?.result || j;
-          return fetched || maybe;
-        } catch {
-          return maybe;
-        }
       }
 
       setUploading(true);
 
-      // Prefer sending JSON with a data URL if available — many backends expect
-      // { profileImage: dataURL } or { filename } instead of multipart. Try
-      // JSON first when we have a base64 preview, then fall back to multipart.
-      // helper to clear stored auth and redirect to login when the server reports invalid token
-      async function handleInvalidToken() {
-        try {
-          await SecureStore.deleteItemAsync("userToken");
-          await SecureStore.deleteItemAsync("user");
-          await SecureStore.deleteItemAsync("userId");
-        } catch {}
-        Alert.alert("Sessie verlopen", "Je sessie is verlopen. Log opnieuw in.", [
-          { text: "OK", onPress: () => router.push("/users/login") },
-        ]);
+      const response = await api.post(`/users/${id}/avatar`, {
+        profileImage: base64Image,
+      });
+      if (!response.ok) {
+        const message =
+          (await response.text().catch(() => "")) ||
+          "Profielfoto bijwerken mislukt.";
+        throw new Error(message);
       }
 
-      if (dataUrl) {
+      const payload = await response.json().catch(() => null);
+      const updatedUser =
+        Array.isArray(payload) && payload.length > 0
+          ? payload[0]
+          : payload?.data || payload?.user || payload?.result || payload;
+
+      if (updatedUser) {
+        setUser(updatedUser);
         try {
-          const tryJson = await api.post(`/users/${id}/avatar`, { profileImage: dataUrl });
-          if (tryJson.status === 401) {
-            await handleInvalidToken();
-            setUploading(false);
-            return;
-          }
-          if (tryJson.ok) {
-            const j = await tryJson.json().catch(() => null);
-            const updated = Array.isArray(j) && j.length > 0 ? j[0] : j?.data || j?.user || j?.result || j;
-            if (updated) {
-              const finalUser = await hydrateUpdatedUser(updated);
-              setUser(finalUser);
-              try {
-                await SecureStore.setItemAsync("user", JSON.stringify(finalUser));
-              } catch {}
-            }
-            Alert.alert("Klaar", "Profielfoto bijgewerkt.");
-            setUploading(false);
-            return;
-          }
-        } catch (e) {
-          // continue to multipart fallback below
-          console.warn("JSON profileImage upload failed, falling back to multipart", e);
-        }
-      }
-
-      // If JSON wasn't available or failed, try multipart upload as a fallback
-      const resp = await api.post(`/users/${id}/avatar`, form as any);
-      if (!resp.ok) {
-        // read text to decide on fallback
-        const text = await resp.text().catch(() => "");
-        let msg = text || `HTTP ${resp.status}`;
-        try {
-          const parsed = JSON.parse(text);
-          msg = parsed.message || JSON.stringify(parsed);
-        } catch {}
-
-        if (resp.status === 401 || String(msg).toLowerCase().includes("invalid or expired token")) {
-          await handleInvalidToken();
-          setUploading(false);
-          return;
-        }
-
-        // If the server complains about missing file, try additional JSON fallbacks
-        const lc = String(msg).toLowerCase();
-        if (dataUrl && (lc.includes("no file provided") || lc.includes("profileimage") || lc.includes("no file") || lc.includes("cannot patch users"))) {
-          // Some backends expect a JSON body to this same endpoint, e.g. { filename } or { profileImage: dataURL }
-          try {
-            const jsonTry1 = await api.post(`/users/${id}/avatar`, { filename: fileName });
-            if (jsonTry1.ok) {
-              const j = await jsonTry1.json().catch(() => null);
-              const updated = Array.isArray(j) && j.length > 0 ? j[0] : j?.data || j?.user || j?.result || j;
-              if (updated) {
-                const finalUser = await hydrateUpdatedUser(updated);
-                setUser(finalUser);
-                try {
-                  await SecureStore.setItemAsync("user", JSON.stringify(finalUser));
-                } catch {}
-              }
-              Alert.alert("Klaar", "Profielfoto bijgewerkt (filename JSON).");
-              return;
-            }
-            // try profileImage:dataURL to the same endpoint as a second JSON attempt
-            if (dataUrl) {
-              const jsonTry2 = await api.post(`/users/${id}/avatar`, { profileImage: dataUrl });
-              if (jsonTry2.ok) {
-                const j2 = await jsonTry2.json().catch(() => null);
-                const updated2 = Array.isArray(j2) && j2.length > 0 ? j2[0] : j2?.data || j2?.user || j2?.result || j2;
-                if (updated2) {
-                  const finalUser = await hydrateUpdatedUser(updated2);
-                  setUser(finalUser);
-                  try {
-                    await SecureStore.setItemAsync("user", JSON.stringify(finalUser));
-                  } catch {}
-                }
-                Alert.alert("Klaar", "Profielfoto bijgewerkt (profileImage JSON).");
-                return;
-              }
-            }
-            // fall through to more extensive probe below
-          } catch (e) {
-            console.warn('json avatar fallback failed', e);
-            // continue to probe other endpoints
-          }
-          const probeEndpoints = [
-            `/users/${id}/avatar`,
-            `/users/${id}/photo`,
-            `/users/avatar`,
-            `/users/photo`,
-            `/users/${id}/upload`,
-            `/users/upload`,
-          ];
-
-          const probeResults: { endpoint: string; ok: boolean; status: number; body: string }[] = [];
-
-          for (const ep of probeEndpoints) {
-            try {
-              const r = await api.post(ep, form as any);
-              const body = await r.text().catch(() => "");
-              probeResults.push({ endpoint: ep, ok: r.ok, status: r.status, body });
-              if (r.ok) {
-                // success: try parse JSON and update user
-                try {
-                  const j = JSON.parse(body || "null");
-                  const updated = Array.isArray(j) && j.length > 0 ? j[0] : j?.data || j?.user || j?.result || j;
-                  if (updated) {
-                    const finalUser = await hydrateUpdatedUser(updated);
-                    setUser(finalUser);
-                    try {
-                      await SecureStore.setItemAsync("user", JSON.stringify(finalUser));
-                    } catch {}
-                  }
-                } catch {
-                  /* ignore parse errors */
-                }
-                Alert.alert("Klaar", `Profielfoto bijgewerkt via ${ep}`);
-                return;
-              }
-            } catch (e) {
-              probeResults.push({ endpoint: ep, ok: false, status: 0, body: String(e) });
-            }
-          }
-
-          // If none of the multipart endpoints worked, try JSON fallbacks (PATCH/POST)
-          const jsonFallbacks = [
-            { method: 'patch', path: `/users`, body: { profileImage: dataUrl } },
-            { method: 'patch', path: `/users/${id}`, body: { profileImage: dataUrl } },
-            { method: 'post', path: `/users`, body: { id, profileImage: dataUrl } },
-            { method: 'patch', path: `/users`, body: { filename: fileName } },
-            { method: 'patch', path: `/users/${id}`, body: { filename: fileName } },
-          ];
-
-          const jsonResults: { path: string; method: string; ok: boolean; status: number; body: string }[] = [];
-          for (const fb of jsonFallbacks) {
-            try {
-              const r = fb.method === 'patch' ? await api.patch(fb.path, fb.body) : await api.post(fb.path, fb.body);
-              const body = await r.text().catch(() => "");
-              jsonResults.push({ path: fb.path, method: fb.method, ok: r.ok, status: r.status, body });
-              if (r.ok) {
-                try {
-                  const j = JSON.parse(body || "null");
-                  const updated = Array.isArray(j) && j.length > 0 ? j[0] : j?.data || j?.user || j?.result || j;
-                  if (updated) {
-                    const finalUser = await hydrateUpdatedUser(updated);
-                    setUser(finalUser);
-                    try { await SecureStore.setItemAsync("user", JSON.stringify(finalUser)); } catch {}
-                  }
-                } catch {}
-                Alert.alert("Klaar", `Profielfoto bijgewerkt via ${fb.method.toUpperCase()} ${fb.path}`);
-                return;
-              }
-            } catch (e) {
-              jsonResults.push({ path: fb.path, method: fb.method, ok: false, status: 0, body: String(e) });
-            }
-          }
-
-          // nothing succeeded — summarize results for debugging
-          console.warn('Photo upload probe results', { probeResults, jsonResults, original: { status: resp.status, body: text } });
-          const summaryLines: string[] = [];
-          probeResults.forEach((p) => summaryLines.push(`${p.endpoint} -> ${p.status}${p.ok ? ' OK' : ''}`));
-          jsonResults.forEach((j) => summaryLines.push(`${j.method.toUpperCase()} ${j.path} -> ${j.status}${j.ok ? ' OK' : ''}`));
-          Alert.alert('Upload mislukt', `Probe finished. See console logs for details. Summary:\n${summaryLines.join('\n')}`);
-          return;
-        }
-
-        Alert.alert("Upload mislukt", msg);
-        return;
-      }
-
-      const json = await resp.json();
-      // server may return updated user object or nested shapes
-      const updated =
-        Array.isArray(json) && json.length > 0
-          ? json[0]
-          : json.data || json.user || json.result || json;
-      if (updated) {
-        setUser(updated);
-        try {
-          await SecureStore.setItemAsync("user", JSON.stringify(updated));
+          await SecureStore.setItemAsync("user", JSON.stringify(updatedUser));
         } catch {}
       }
+
       Alert.alert("Klaar", "Profielfoto bijgewerkt.");
-    } catch (e) {
-      console.error("photo upload error", e);
+    } catch (error) {
+      console.error("photo upload error", error);
       Alert.alert("Fout", "Er is iets misgegaan bij het uploaden van de foto.");
     } finally {
       setUploading(false);
@@ -566,9 +324,9 @@ export default function SettingsScreen() {
                 {age ? `, ${age}` : ""}
               </ThemedText>
 
-              {displayPhotoUri ? (
+              {photoUri ? (
                 <Image
-                  source={{ uri: displayPhotoUri }}
+                  source={{ uri: photoUri }}
                   style={styles.avatarLarge}
                   resizeMode="cover"
                 />

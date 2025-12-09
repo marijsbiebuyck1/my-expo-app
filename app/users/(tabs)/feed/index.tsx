@@ -120,99 +120,118 @@ export default function FeedScreen() {
 
     setPosting(true);
     try {
-        // If we have a base64 preview (imagePreview), try sending JSON first
-        // because some backends accept a data URL payload like { image: dataURL }
-        const token = await SecureStore.getItemAsync("userToken");
-        if (!token) {
-          Alert.alert("Not logged in", "You must be logged in to upload a post.");
-          setPosting(false);
-          return;
-        }
+      // If we have a base64 preview (imagePreview), try sending JSON first
+      // because some backends accept a data URL payload like { image: dataURL }
+      const token = await SecureStore.getItemAsync("userToken");
+      if (!token) {
+        Alert.alert("Not logged in", "You must be logged in to upload a post.");
+        setPosting(false);
+        return;
+      }
 
-        if (imagePreview) {
-          try {
-            const jsonRes = await fetch(API, {
-              method: "POST",
-              headers: {
-                Accept: "application/json",
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ image: imagePreview, caption: caption || "", author: (await SecureStore.getItemAsync("userId")) || "anon" }),
-            });
-            if (jsonRes.ok) {
-              setModalVisible(false);
-              setImage(null);
-              setCaption("");
-              fetchPosts();
-              return;
-            }
-            // if JSON failed, check for auth error and fall back to multipart
-            if (jsonRes.status === 401) {
-              // token invalid or expired — do NOT force a logout.
-              Alert.alert("Sessie verlopen", "Je sessie lijkt verlopen. Wil je opnieuw proberen of later?", [
+      if (imagePreview) {
+        try {
+          const jsonRes = await fetch(API, {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              image: imagePreview,
+              caption: caption || "",
+              author: (await SecureStore.getItemAsync("userId")) || "anon",
+            }),
+          });
+          if (jsonRes.ok) {
+            setModalVisible(false);
+            setImage(null);
+            setCaption("");
+            fetchPosts();
+            return;
+          }
+          // if JSON failed, check for auth error and fall back to multipart
+          if (jsonRes.status === 401) {
+            // token invalid or expired — do NOT force a logout.
+            Alert.alert(
+              "Sessie verlopen",
+              "Je sessie lijkt verlopen. Wil je opnieuw proberen of later?",
+              [
                 { text: "Probeer opnieuw", onPress: () => submitPost() },
                 { text: "Annuleer", style: "cancel" },
-              ]);
-              setPosting(false);
-              return;
-            }
-            console.warn("JSON post upload failed, falling back to multipart", await jsonRes.text().catch(() => ""));
-          } catch (e) {
-            console.warn("JSON post upload error, falling back to multipart", e);
-          }
-        }
-
-        // Multipart/form-data fallback (existing behavior)
-        const uriParts = image.split("/");
-        const name = uriParts[uriParts.length - 1];
-        const match = name.match(/\.([0-9a-z]+)(?:\?|$)/i);
-        const type = match ? `image/${match[1]}` : "image";
-
-        const form = new FormData();
-        // @ts-ignore - RN FormData expects a blob-like object
-        form.append("image", {
-          uri: Platform.OS === "ios" && image.startsWith("file://") ? image : image,
-          name,
-          type,
-        });
-        form.append("caption", caption || "");
-        // attach currently logged-in user id as author (fallback to anonymous)
-        try {
-          const userId = await SecureStore.getItemAsync("userId");
-          form.append("author", userId || "anon");
-        } catch {
-          form.append("author", "anon");
-        }
-
-        const res = await fetch(API, {
-          method: "POST",
-          body: form as any,
-          headers: {
-            Accept: "application/json",
-            // don't set Content-Type - let fetch add the multipart boundary
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!res.ok) {
-          const text = await res.text();
-          if (res.status === 401 || String(text).toLowerCase().includes("invalid or expired token")) {
-            // Don't clear credentials or redirect automatically. Let the user retry.
-            Alert.alert("Sessie verlopen", "Je sessie lijkt verlopen. Wil je opnieuw proberen of later?", [
-              { text: "Probeer opnieuw", onPress: () => submitPost() },
-              { text: "Annuleer", style: "cancel" },
-            ]);
+              ]
+            );
             setPosting(false);
             return;
           }
-          throw new Error(text || "Upload failed");
+          console.warn(
+            "JSON post upload failed, falling back to multipart",
+            await jsonRes.text().catch(() => "")
+          );
+        } catch (e) {
+          console.warn("JSON post upload error, falling back to multipart", e);
         }
+      }
 
-        setModalVisible(false);
-        setImage(null);
-        setCaption("");
-        fetchPosts();
+      // Multipart/form-data fallback (existing behavior)
+      const uriParts = image.split("/");
+      const name = uriParts[uriParts.length - 1];
+      const match = name.match(/\.([0-9a-z]+)(?:\?|$)/i);
+      const type = match ? `image/${match[1]}` : "image";
+
+      const form = new FormData();
+      // @ts-ignore - RN FormData expects a blob-like object
+      form.append("image", {
+        uri:
+          Platform.OS === "ios" && image.startsWith("file://") ? image : image,
+        name,
+        type,
+      });
+      form.append("caption", caption || "");
+      // attach currently logged-in user id as author (fallback to anonymous)
+      try {
+        const userId = await SecureStore.getItemAsync("userId");
+        form.append("author", userId || "anon");
+      } catch {
+        form.append("author", "anon");
+      }
+
+      const res = await fetch(API, {
+        method: "POST",
+        body: form as any,
+        headers: {
+          Accept: "application/json",
+          // don't set Content-Type - let fetch add the multipart boundary
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        if (
+          res.status === 401 ||
+          String(text).toLowerCase().includes("invalid or expired token")
+        ) {
+          // Don't clear credentials or redirect automatically. Let the user retry.
+          Alert.alert(
+            "Sessie verlopen",
+            "Je sessie lijkt verlopen. Wil je opnieuw proberen of later?",
+            [
+              { text: "Probeer opnieuw", onPress: () => submitPost() },
+              { text: "Annuleer", style: "cancel" },
+            ]
+          );
+          setPosting(false);
+          return;
+        }
+        throw new Error(text || "Upload failed");
+      }
+
+      setModalVisible(false);
+      setImage(null);
+      setCaption("");
+      fetchPosts();
     } catch (err) {
       console.warn("Post upload failed", err);
       Alert.alert("Upload failed", String(err));
@@ -283,8 +302,7 @@ export default function FeedScreen() {
               author: {
                 name: u.name || u.fullName || u.email,
                 // prefer common photo fields; backends differ in naming
-                avatar:
-                  u.photo || u.photoUrl || u.profileImage || u.avatar || u.image || null,
+                avatar: u.profileImage,
               },
             };
         }
@@ -331,15 +349,10 @@ export default function FeedScreen() {
           String(item.author) ||
           "Anon";
     // resolve avatar from several possible fields on the author object
-    const avatarRaw =
+    const avatarUri =
       typeof item.author === "object"
-        ? (item.author as any)?.avatar || (item.author as any)?.photo || (item.author as any)?.photoUrl || (item.author as any)?.image || (item.author as any)?.profileImage
+        ? (item.author as any)?.profileImage
         : undefined;
-    const avatarUri = avatarRaw
-      ? avatarRaw.startsWith("http")
-        ? avatarRaw
-        : `${API_BASE}${avatarRaw}`
-      : undefined;
 
     console.log(
       "Rendering post by author:",
@@ -349,12 +362,14 @@ export default function FeedScreen() {
       "item:",
       item
     );
+
+    console.log("Post image uri:", avatarUri);
     return (
       <View style={styles.postCard}>
         <View style={styles.postHeader}>
           {avatarUri ? (
-            <CachedImage
-              uri={avatarUri}
+            <Image
+              source={{ uri: avatarUri }}
               style={{
                 width: 40,
                 height: 40,
@@ -370,7 +385,9 @@ export default function FeedScreen() {
               </ThemedText>
             </View>
           )}
-          <ThemedText style={[styles.author, { fontWeight: "800" }]}>{authorName}</ThemedText>
+          <ThemedText style={[styles.author, { fontWeight: "800" }]}>
+            {authorName}
+          </ThemedText>
         </View>
 
         {item.image ? (
@@ -421,7 +438,10 @@ export default function FeedScreen() {
 
             <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
               {image ? (
-                <Image source={{ uri: imagePreview ? imagePreview : image }} style={styles.pickedImage} />
+                <Image
+                  source={{ uri: imagePreview ? imagePreview : image }}
+                  style={styles.pickedImage}
+                />
               ) : (
                 <SvgXml xml={CAMERA_SVG} width={48} height={48} />
               )}
