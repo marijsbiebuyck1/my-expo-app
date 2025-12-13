@@ -16,6 +16,8 @@ export interface SwipeCardProps {
   breed?: string;
   description?: string;
   tags?: string[]; // small property chips
+  secondaryTitle?: string;
+  secondaryTags?: string[];
   // imageSource supports local static requires (require('./assets/maurice.png'))
   imageSource?: ImageSourcePropType;
   // imageUri supports remote (http(s) or file://) URIs
@@ -33,6 +35,8 @@ export default function SwipeCard({
   breed,
   description,
   tags = [],
+  secondaryTitle,
+  secondaryTags = [],
   imageSource,
   imageUri,
 }: SwipeCardProps) {
@@ -95,7 +99,10 @@ export default function SwipeCard({
         {breed ? <Text style={styles.breed}>{breed}</Text> : null}
 
         {description ? (
-          <Text style={styles.description}>{description}</Text>
+          <View style={styles.descriptionBlock}>
+            <Text style={styles.sectionHeading}>Beschrijving</Text>
+            <Text style={styles.description}>{description}</Text>
+          </View>
         ) : null}
 
         {tags && tags.length > 0 && (
@@ -104,6 +111,23 @@ export default function SwipeCard({
             <View style={styles.chipsRow}>
               {tags.map((t) => (
                 <View key={t} style={styles.chip}>
+                  <Text numberOfLines={1} style={styles.chipText}>
+                    {t}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+
+        {secondaryTags && secondaryTags.length > 0 && (
+          <>
+            <Text style={styles.sectionHeading}>
+              {secondaryTitle || "Wie zoek ik?"}
+            </Text>
+            <View style={styles.chipsRow}>
+              {secondaryTags.map((t) => (
+                <View key={`who-${t}`} style={styles.chip}>
                   <Text numberOfLines={1} style={styles.chipText}>
                     {t}
                   </Text>
@@ -213,6 +237,8 @@ const styles = StyleSheet.create({
     color: "#444",
     fontFamily: "Montserrat_400Regular",
     lineHeight: 22,
+  },
+  descriptionBlock: {
     marginBottom: 14,
   },
 

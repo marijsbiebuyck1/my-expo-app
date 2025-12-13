@@ -1,12 +1,12 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    PanResponder,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  PanResponder,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import SwipeCard, { SwipeCardProps } from "./swipe-cards";
 
@@ -14,10 +14,16 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 const SWIPE_THRESHOLD = 120;
 const SWIPE_OUT_DURATION = 250;
 
-type Item = Omit<SwipeCardProps, "imageSource"> & { imageSource?: any; imageUri?: string };
+type Item = Omit<SwipeCardProps, "imageSource"> & {
+  imageSource?: any;
+  imageUri?: string;
+};
 
 export default function SwipeDeck({ items }: { items: Item[] }) {
   const [cards, setCards] = useState(items);
+  useEffect(() => {
+    setCards(items);
+  }, [items]);
 
   const position = useRef(new Animated.ValueXY()).current;
 
