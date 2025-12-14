@@ -25,7 +25,7 @@ export interface SwipeCardProps {
 }
 
 const CARD_WIDTH = 355;
-const CARD_MAX_HEIGHT = 593;
+const CARD_MAX_HEIGHT = 610;
 
 export default function SwipeCard({
   title,
@@ -79,8 +79,6 @@ export default function SwipeCard({
         style={styles.content}
         contentContainerStyle={styles.contentInner}
       >
-        {title ? <Text style={styles.title}>{title}</Text> : null}
-
         <View style={styles.rowTop}>
           <View style={styles.nameWrap}>
             <Text numberOfLines={2} style={styles.name}>
@@ -100,7 +98,6 @@ export default function SwipeCard({
 
         {description ? (
           <View style={styles.descriptionBlock}>
-            <Text style={styles.sectionHeading}>Beschrijving</Text>
             <Text style={styles.description}>{description}</Text>
           </View>
         ) : null}

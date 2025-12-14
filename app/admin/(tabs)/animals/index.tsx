@@ -621,16 +621,6 @@ export default function AnimalsScreen() {
                         />
                       </View>
 
-                      <TextInput
-                        placeholder="Beschrijf het dier (karakter, gewoontes, ... )"
-                        value={description}
-                        onChangeText={setDescription}
-                        multiline
-                        numberOfLines={4}
-                        textAlignVertical="top"
-                        style={[styles.input, styles.textArea]}
-                      />
-
                       <View style={styles.speciesRow}>
                         <TouchableOpacity
                           style={[
@@ -686,7 +676,15 @@ export default function AnimalsScreen() {
                         style={[styles.input, { marginTop: 12 }]}
                       />
 
-                      
+                      <TextInput
+                        placeholder="Beschrijf het dier (karakter, gewoontes, ...)"
+                        value={description}
+                        onChangeText={setDescription}
+                        multiline
+                        numberOfLines={4}
+                        textAlignVertical="top"
+                        style={[styles.input, styles.textArea]}
+                      />
 
                       <View style={{ width: "100%", marginTop: 12 }}>
                         <ThemedText style={{ marginBottom: 8 }}>

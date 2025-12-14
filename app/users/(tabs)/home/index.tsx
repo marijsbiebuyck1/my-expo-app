@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
 import SwipeDeck from "../../../../components/ui/swipe-deck";
 import { api } from "../../../_lib/api";
@@ -68,7 +67,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
-      <LogoHeader />
+     
       <View style={styles.container}>
         {loading ? (
           <View style={styles.stateWrap}>

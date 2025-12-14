@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   container: { width: "100%", alignItems: "center", paddingBottom: 40 },
   cardsContainer: {
     // keep the cards container a bit smaller so the action buttons remain visible on most phones
-    height: 520,
+    height: 600,
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
