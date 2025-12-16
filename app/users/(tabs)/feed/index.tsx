@@ -205,9 +205,8 @@ export default function FeedScreen() {
     try {
       const res = await fetch(API);
       const data = await res.json();
-      const postsArr = Array.isArray(data) ? data.reverse() : [];
       // resolve author ids into user objects for display
-      const resolved = await resolveAuthors(postsArr);
+      const resolved = await resolveAuthors(data);
       setPosts(resolved);
     } catch {
       console.warn("Failed to load posts");

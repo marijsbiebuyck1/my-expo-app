@@ -226,6 +226,8 @@ export default function AnimalsScreen() {
         endpoint = `/animals/${String(targetId)}`;
       }
       const method = isEditing ? api.patch : api.post;
+
+      console.log(payload);
       const res = await method(endpoint, payload, true);
       if (!res.ok) {
         const t = await res.text();
