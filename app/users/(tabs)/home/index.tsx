@@ -1,6 +1,8 @@
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import MatchCard from "../../../../components/match-card";
 import { ThemedText } from "../../../../components/themed-text";
 import SwipeDeck from "../../../../components/ui/swipe-deck";
 import { api } from "../../../_lib/api";
@@ -16,6 +18,7 @@ type SwipeDeckItem = {
   secondaryTitle?: string;
   secondaryTags?: string[];
   imageUri?: string;
+  id?: string | number;
 };
 
 export default function HomeScreen() {
@@ -64,6 +67,10 @@ export default function HomeScreen() {
   }, []);
 
   const hasCards = items.length > 0;
+  const [matchItem, setMatchItem] = useState<SwipeDeckItem | null>(null);
+  const router = useRouter();
+
+  const AUTO_MESSAGE = "Hoi! We hebben een match — ik stuur je een berichtje. 🐾";
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
@@ -75,7 +82,57 @@ export default function HomeScreen() {
             <ThemedText style={styles.stateText}>Dieren laden…</ThemedText>
           </View>
         ) : hasCards ? (
-          <SwipeDeck items={items} />
+          <>
+            <SwipeDeck
+              items={items}
+              onLike={async (raw) => {
+                const item = raw as SwipeDeckItem;
+                // Try to fetch the latest animal profile by id so the MatchCard
+                // always shows the profile photo from the authoritative animal resource.
+                try {
+                  if (item?.id) {
+                    const res = await api.get(`/animals/${item.id}`);
+                    if (res.ok) {
+                      const data = await res.json().catch(() => null);
+                      const photo = data?.photo || item.imageUri;
+                      setMatchItem({ ...(item as SwipeDeckItem), imageUri: photo });
+                      return;
+                    }
+                  }
+                } catch (e) {
+                  // ignore — fallback below
+                  console.warn("Failed to fetch animal for match card", e);
+                }
+
+                // fallback: use the mapped imageUri
+                setMatchItem(item);
+                // NOTE: you can also trigger backend conversation creation here
+              }}
+            />
+            <MatchCard
+              visible={!!matchItem}
+              imageUri={matchItem?.imageUri}
+              onClose={() => setMatchItem(null)}
+              onOpenChat={async () => {
+                // close the modal
+                const id = matchItem?.id;
+                setMatchItem(null);
+                if (!id) {
+                  // just navigate to home if no id
+                  return;
+                }
+
+                // optimistically navigate to the chat screen
+                try {
+                  await api.post("/messages", { to: String(id), text: AUTO_MESSAGE });
+                } catch (e) {
+                  console.warn("failed to send auto-message", e);
+                }
+
+                router.push({ pathname: "/users/[profileId]", params: { profileId: String(id) } } as any);
+              }}
+            />
+          </>
         ) : (
           <View style={styles.stateWrap}>
             <ThemedText style={styles.stateTitle}>

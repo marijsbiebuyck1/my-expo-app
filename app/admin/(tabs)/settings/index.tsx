@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat_600SemiBold',
   },
   deleteBtn: {
-    backgroundColor: '#e3342f',
+    backgroundColor: '#037D4E',
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,

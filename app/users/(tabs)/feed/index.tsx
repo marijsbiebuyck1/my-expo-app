@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   addButton: {
-    backgroundColor: "#FDA0E9",
+    backgroundColor: "#037D4E",
     paddingVertical: 12,
     borderRadius: 24,
     alignItems: "center",
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   shareButton: {
-    backgroundColor: "#FDA0E9",
+    backgroundColor: "#037D4E",
     paddingVertical: 12,
     borderRadius: 24,
     alignItems: "center",

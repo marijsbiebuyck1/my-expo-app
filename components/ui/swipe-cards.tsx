@@ -142,7 +142,11 @@ const styles = StyleSheet.create({
   cardWrap: {
     width: CARD_WIDTH,
     maxHeight: CARD_MAX_HEIGHT,
+    // enforce fully opaque background so cards are not translucent
     backgroundColor: "#FFFFFF",
+    opacity: 1,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.03)",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 100,
     borderBottomRightRadius: 20,

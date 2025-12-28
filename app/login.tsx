@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
 
   subtitle: {
     fontFamily: "Montserrat_400Regular",
-    color: "#FDA0E9",
+    color: "#037D4E",
     marginBottom: 24,
     textAlign: "center",
     fontSize: 16,
@@ -157,10 +157,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   owner: {
-    backgroundColor: "#FDA0E9",
+    backgroundColor: "#037D4E",
   },
   shelter: {
-    borderColor: "#FDA0E9",
+    borderColor: "#037D4E",
     borderWidth: 2,
   },
   buttonText: {
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   buttonTextShelter: {
-    color: "#FDA0E9",
+    color: "#037D4E",
   },
   skip: {
     width: "100%",

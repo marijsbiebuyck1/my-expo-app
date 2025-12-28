@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import HeartIcon from "../icons/HeartIcon";
+import TimesIcon from "../icons/TimesIcon";
 import SwipeCard, { SwipeCardProps } from "./swipe-cards";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -19,7 +21,13 @@ type Item = Omit<SwipeCardProps, "imageSource"> & {
   imageUri?: string;
 };
 
-export default function SwipeDeck({ items }: { items: Item[] }) {
+type Props = {
+  items: Item[];
+  onLike?: (item: Item) => void;
+  onNope?: (item: Item) => void;
+};
+
+export default function SwipeDeck({ items, onLike, onNope }: Props) {
   const [cards, setCards] = useState(items);
   useEffect(() => {
     setCards(items);
@@ -64,6 +72,19 @@ export default function SwipeDeck({ items }: { items: Item[] }) {
   }
 
   function onSwipeComplete(direction: number) {
+    // determine which card was swiped (the top one)
+    const swiped = cards[0];
+    try {
+      if (direction > 0) {
+        onLike?.(swiped);
+      } else {
+        onNope?.(swiped);
+      }
+    } catch (e) {
+      // ignore callback errors
+      console.warn("swipe callback error", e);
+    }
+
     const remaining = cards.slice(1);
     setCards(remaining);
     position.setValue({ x: 0, y: 0 });
@@ -81,7 +102,24 @@ export default function SwipeDeck({ items }: { items: Item[] }) {
     if (!cards.length) {
       return (
         <View style={styles.noMoreWrap}>
-          <Text style={styles.noMoreText}>No more cards</Text>
+          <Text style={styles.noMoreText}>Volledig uitgeswiped, morgen hebben we weer nieuwe diertjes in</Text>
+          <View style={styles.noMoreTextLargeRow}>
+            {(() => {
+              const word = "Petto";
+              const colors = [
+                "#037D4E", // M-green
+                "#FDA0E9", // A-pink
+                "#FF8E28", // T-orange
+                "#AEBA40", // C-lightgreen
+                "#D3D1F6", // H-lila
+              ];
+              return word.split("").map((ch, i) => (
+                <Text key={i} style={[styles.noMoreTextLarge, { color: colors[i % colors.length] }]}>
+                  {ch}
+                </Text>
+              ));
+            })()}
+          </View>
         </View>
       );
     }
@@ -181,7 +219,7 @@ export default function SwipeDeck({ items }: { items: Item[] }) {
           accessibilityLabel="Nope"
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Text style={[styles.buttonIcon, styles.nopeIcon]}>✖️</Text>
+          <TimesIcon size={28} color={styles.nopeIcon.color} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -190,7 +228,7 @@ export default function SwipeDeck({ items }: { items: Item[] }) {
           accessibilityLabel="Like"
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Text style={[styles.buttonIcon, styles.loveIcon]}>❤</Text>
+          <HeartIcon size={28} color={styles.loveIcon.color} />
         </TouchableOpacity>
       </View>
     </View>
@@ -241,15 +279,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginHorizontal: 12,
-    elevation: 3,
+    elevation: 6, // Android shadow
+    // iOS shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    // keep visible overflow so shadow is not clipped
+    overflow: "visible",
   },
   buttonText: { fontSize: 28 },
   // button variants
   nopeButton: { backgroundColor: "#FFFFFF" },
   loveButton: { backgroundColor: "#FFFFFF" },
   buttonIcon: { fontSize: 28 },
-  loveIcon: { color: "#FDA0E9" },
-  nopeIcon: { color: "#CDD6DD" },
+  loveIcon: { color: "#AEBA40" },
+  nopeIcon: { color: "#FDA0E9" },
   noMoreWrap: { height: 300, alignItems: "center", justifyContent: "center" },
-  noMoreText: { fontSize: 18, color: "#666" },
+  noMoreText: { fontSize: 16, color: "#666", textAlign: 'center', fontFamily: "montserrat" },
+  noMoreTextLarge: { fontSize: 48, fontFamily:"barriecito", color: "#666"},
+  noMoreTextLargeRow: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
 });

@@ -1,0 +1,12 @@
+import React from 'react';
+import Svg, { Path } from 'react-native-svg';
+
+type Props = { size?: number; color?: string };
+
+export default function HeartIcon({ size = 48, color = '#AEBA40' }: Props) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 50 50" fill="none">
+      <Path d="M41.7888 9.26376C37.3293 5.46338 30.6969 6.14696 26.6036 10.3705L25.0004 12.0225L23.3973 10.3705C19.3121 6.14696 12.6716 5.46338 8.21202 9.26376C3.10144 13.6257 2.83289 21.4543 7.40637 26.1824L23.1531 42.4418C24.1704 43.4916 25.8224 43.4916 26.8396 42.4418L42.5864 26.1824C47.168 21.4543 46.8994 13.6257 41.7888 9.26376V9.26376Z" fill={color} />
+    </Svg>
+  );
+}

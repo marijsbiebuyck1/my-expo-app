@@ -20,6 +20,7 @@ import CameraCapture from "../../../../components/camera-capture";
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
 import { api } from "../../../_lib/api";
+
 type Post = {
   _id?: string;
   caption?: string;
@@ -204,9 +205,8 @@ export default function FeedScreen() {
     try {
       const res = await fetch(API);
       const data = await res.json();
-      const postsArr = Array.isArray(data) ? data.reverse() : [];
       // resolve author ids into user objects for display
-      const resolved = await resolveAuthors(postsArr);
+      const resolved = await resolveAuthors(data);
       setPosts(resolved);
     } catch {
       console.warn("Failed to load posts");
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   addButton: {
-    backgroundColor: "#FDA0E9",
+    backgroundColor: "#037D4E",
     paddingVertical: 12,
     borderRadius: 24,
     alignItems: "center",
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   shareButton: {
-    backgroundColor: "#FDA0E9",
+    backgroundColor: "#037D4E",
     paddingVertical: 12,
     borderRadius: 24,
     alignItems: "center",
