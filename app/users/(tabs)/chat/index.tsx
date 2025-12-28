@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+// SecureStore usage removed - prefer provided ids from the conversation list
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
@@ -113,10 +114,9 @@ export default function ChatListScreen() {
   }, []);
 
   function openConversation(id: string) {
-    // navigate to dynamic route /users/(tabs)/chat/[profileId]
-    // use pathname + params to satisfy router typing
+    // Navigate to dynamic route /users/[profileId] using the id provided by the list.
     router.push({
-      pathname: "/users/(tabs)/chat/[profileId]",
+      pathname: "/users/[profileId]",
       params: { profileId: id },
     } as any);
   }

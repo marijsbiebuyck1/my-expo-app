@@ -14,9 +14,9 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import LogoHeader from "../../../../../components/logo-header";
-import { ThemedText } from "../../../../../components/themed-text";
-import { api } from "../../../../_lib/api";
+import LogoHeader from "../../../components/logo-header";
+import { ThemedText } from "../../../components/themed-text";
+import { api } from "../../_lib/api";
 
 type Message = {
   id: string;
@@ -143,7 +143,7 @@ export default function ChatDetailScreen() {
       style={styles.screen}
       edges={["top", "left", "right", "bottom"]}
     >
-      <LogoHeader />
+    
 
       <View style={styles.pageContainer}>
         <BgCard style={styles.bgCard} contentStyle={{ padding: 0 }}>
@@ -153,7 +153,7 @@ export default function ChatDetailScreen() {
           >
             <View style={styles.header}>
               <ThemedText type="title">Chat</ThemedText>
-              <ThemedText>{`Profiel: ${profileId}`}</ThemedText>
+              {/* profileId intentionally not shown in UI */}
             </View>
 
             {loading ? (
