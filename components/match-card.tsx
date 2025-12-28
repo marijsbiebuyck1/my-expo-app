@@ -1,23 +1,25 @@
 import { Barriecito_400Regular, useFonts as useGFonts } from "@expo-google-fonts/barriecito";
 import React, { useEffect } from "react";
 import {
-    Animated,
-    Image,
-    Modal,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Image,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type Props = {
   visible: boolean;
   imageUri?: string | null;
   onClose?: () => void;
-  onOpenChat?: () => void;
+  // accept the profile id so the card can directly ask to open a chat for that id
+  profileId?: string | number;
+  onOpenChat?: (id?: string | number) => void;
 };
 
-export default function MatchCard({ visible, imageUri, onClose, onOpenChat }: Props) {
+export default function MatchCard({ visible, imageUri, onClose, profileId, onOpenChat }: Props) {
   // load Barriecito via expo-google-fonts
   const [gfontsLoaded] = useGFonts({ Barriecito_400Regular });
 
@@ -76,7 +78,17 @@ export default function MatchCard({ visible, imageUri, onClose, onOpenChat }: Pr
               <Text style={styles.actionText}>Sluiten</Text>
             </TouchableOpacity>
             {onOpenChat ? (
-              <TouchableOpacity onPress={onOpenChat} style={[styles.actionButton, styles.chatButton]} accessibilityLabel="Open chat">
+              <TouchableOpacity
+                onPress={() => {
+                  // close the modal first
+                  onClose?.();
+                  // call onOpenChat with the provided profileId after a short delay so
+                  // the modal has time to dismiss and the handler can navigate safely
+                  setTimeout(() => onOpenChat?.(profileId), 0);
+                }}
+                style={[styles.actionButton, styles.chatButton]}
+                accessibilityLabel="Open chat"
+              >
                 <Text style={[styles.actionText, styles.chatText]}>Open chat</Text>
               </TouchableOpacity>
             ) : null}

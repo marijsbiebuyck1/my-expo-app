@@ -2,6 +2,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 // import useRouter only when needed; we keep the import commented out because navigation is not used here
 // import { useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import {
@@ -28,6 +29,7 @@ import { useAdminAuth } from "../../../_lib/useAuth";
 
 export default function AnimalsScreen() {
   const { admin } = useAdminAuth();
+  const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [animals, setAnimals] = useState<any[]>([]);
   const [loadingAnimals, setLoadingAnimals] = useState(false);
@@ -475,9 +477,13 @@ export default function AnimalsScreen() {
                   : "";
               return (
                 <TouchableOpacity
-                  key={item._id || item.id || item.name}
-                  style={styles.animalRow}
-                >
+                        key={item._id || item.id || item.name}
+                        style={styles.animalRow}
+                        onPress={() => {
+                          const id = String(item._id ?? item.id ?? "");
+                          router.push({ pathname: "/admin/animals/[animalId]/chats", params: { animalId: id } } as any);
+                        }}
+                      >
                   {photoUri ? (
                     <Image source={{ uri: photoUri }} style={styles.avatar} />
                   ) : (

@@ -1,7 +1,8 @@
 import BgCard from "@/components/ui/bg-card";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,7 +15,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import LogoHeader from "../../../components/logo-header";
+
 import { ThemedText } from "../../../components/themed-text";
 import { api } from "../../_lib/api";
 
@@ -28,21 +29,13 @@ type Message = {
 export default function ChatDetailScreen() {
   const params = useLocalSearchParams();
   const profileId = String(params.profileId ?? "unknown");
+  const autoMessageParam = typeof params.autoMessage === "string" ? params.autoMessage : undefined;
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+
+  const [animal, setAnimal] = useState<{ name?: string; photo?: string } | null>(null);
 
   const [messages, setMessages] = useState<Message[]>(() => [
-    {
-      id: "m1",
-      text: "Hallo! Hoe kan ik je helpen?",
-      fromMe: false,
-      time: "10:00",
-    },
-    {
-      id: "m2",
-      text: "Ik heb interesse in het hondje.",
-      fromMe: true,
-      time: "10:02",
-    },
   ]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,6 +48,7 @@ export default function ChatDetailScreen() {
 
   useEffect(() => {
     let mounted = true;
+
     async function loadMessages() {
       setLoading(true);
       try {
@@ -94,8 +88,9 @@ export default function ChatDetailScreen() {
               setMessages(list);
               return;
             }
-          } catch {
+          } catch (err) {
             // try next
+            console.warn && console.warn('message fetch attempt failed', err);
           }
         }
       } finally {
@@ -103,11 +98,41 @@ export default function ChatDetailScreen() {
       }
     }
 
-    loadMessages();
+    loadMessages().finally(() => {
+      // fetch animal profile to render header/avatar
+      (async () => {
+        try {
+          const r = await api.get(`/animals/${encodeURIComponent(profileId)}`);
+          if (r.ok) {
+            const j = await r.json().catch(() => null);
+            if (j) {
+              setAnimal({ name: j.name || j.title || undefined, photo: j.photo || undefined });
+            }
+          }
+        } catch (err) {
+          console.warn('fetch animal failed', err);
+        }
+      })();
+
+      // If an auto message param was provided, ensure it's shown (avoid duplicates)
+      if (autoMessageParam) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.text === autoMessageParam)) return prev;
+          const autoMsg: Message = {
+            id: `auto-${Date.now()}`,
+            text: autoMessageParam,
+            fromMe: false,
+            time: new Date().toLocaleTimeString().slice(0, 5),
+          };
+          return [...prev, autoMsg];
+        });
+      }
+    });
+
     return () => {
       mounted = false;
     };
-  }, [profileId]);
+  }, [profileId, autoMessageParam]);
 
   function send() {
     if (!text.trim()) return;
@@ -151,9 +176,17 @@ export default function ChatDetailScreen() {
             style={{ flex: 1, width: "100%" }}
             behavior={Platform.OS === "ios" ? "padding" : undefined}
           >
-            <View style={styles.header}>
-              <ThemedText type="title">Chat</ThemedText>
-              {/* profileId intentionally not shown in UI */}
+            <View style={styles.headerRow}>
+              <Pressable onPress={() => router.push('/users/chat')} style={styles.backBtn} accessibilityLabel="Terug naar chats">
+                <ThemedText>{'‹ Terug'}</ThemedText>
+              </Pressable>
+
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                {animal?.photo ? (
+                  <Image source={{ uri: animal.photo }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                ) : null}
+                <ThemedText type="title">{animal?.name ? `${animal.name}` : "Chat"}</ThemedText>
+              </View>
             </View>
 
             {loading ? (
@@ -213,6 +246,8 @@ const styles = StyleSheet.create({
   // white background card dimensions and shadow
   bgCard: { width: "100%", maxWidth: 343, height: 666 },
   header: { padding: 5, borderBottomWidth: 0 },
+  headerRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 6 },
+  backBtn: { marginRight: 8, paddingVertical: 6, paddingHorizontal: 8 },
   messages: { padding: 5, paddingBottom: 24 },
   bubble: {
     maxWidth: "100%",

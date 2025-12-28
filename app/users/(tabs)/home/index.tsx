@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import MatchCard from "../../../../components/match-card";
 import { ThemedText } from "../../../../components/themed-text";
 import SwipeDeck from "../../../../components/ui/swipe-deck";
+import { addLocalConversation } from "../../../../lib/localConversations";
 import { api } from "../../../_lib/api";
 
 type SwipeDeckItem = {
@@ -25,6 +26,12 @@ export default function HomeScreen() {
   const [items, setItems] = useState<SwipeDeckItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [matchItem, setMatchItem] = useState<SwipeDeckItem | null>(null);
+  const router = useRouter();
+
+  const AUTO_MESSAGE = `Ik heb 9 levens… wil jij er eentje met mij delen?
+
+Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan het formulier in en wie weet claim ik binnenkort mijn plekje op jouw bank 😸.`;
 
   useEffect(() => {
     let active = true;
@@ -67,10 +74,6 @@ export default function HomeScreen() {
   }, []);
 
   const hasCards = items.length > 0;
-  const [matchItem, setMatchItem] = useState<SwipeDeckItem | null>(null);
-  const router = useRouter();
-
-  const AUTO_MESSAGE = "Hoi! We hebben een match — ik stuur je een berichtje. 🐾";
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
@@ -112,24 +115,34 @@ export default function HomeScreen() {
             <MatchCard
               visible={!!matchItem}
               imageUri={matchItem?.imageUri}
+              profileId={matchItem?.id}
               onClose={() => setMatchItem(null)}
-              onOpenChat={async () => {
-                // close the modal
-                const id = matchItem?.id;
+              onOpenChat={async (id) => {
+                // use the id provided by the MatchCard so we don't depend on state
+                const resolvedId = id ?? (matchItem as any)?.id;
+                const snapshot = matchItem;
                 setMatchItem(null);
-                if (!id) {
-                  // just navigate to home if no id
-                  return;
-                }
+                if (!resolvedId) return;
 
-                // optimistically navigate to the chat screen
                 try {
-                  await api.post("/messages", { to: String(id), text: AUTO_MESSAGE });
+                  await api.post("/messages", { to: String(resolvedId), text: AUTO_MESSAGE });
                 } catch (e) {
                   console.warn("failed to send auto-message", e);
                 }
 
-                router.push({ pathname: "/users/[profileId]", params: { profileId: String(id) } } as any);
+                // add an optimistic local conversation so it appears immediately in the chat list
+                try {
+                  addLocalConversation({
+                    id: String(resolvedId),
+                    name: snapshot?.name || "Onbekend",
+                    lastMessage: AUTO_MESSAGE,
+                    avatar: snapshot?.imageUri || null,
+                  });
+                } catch {}
+
+                router.push(`/users/${encodeURIComponent(String(resolvedId))}?autoMessage=${encodeURIComponent(
+                  AUTO_MESSAGE
+                )}`);
               }}
             />
           </>
@@ -174,6 +187,7 @@ function mapAnimalToCard(animal: any): SwipeDeckItem | null {
     secondaryTitle: whoTags.length ? "Wie zoek ik?" : undefined,
     secondaryTags: whoTags.length ? whoTags : undefined,
     imageUri: imageUri || undefined,
+    id: animal.id || animal._id || undefined,
   };
 }
 

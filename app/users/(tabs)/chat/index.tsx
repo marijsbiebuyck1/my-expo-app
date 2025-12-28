@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
+import { getLocalConversations, subscribeLocalConversations } from "../../../../lib/localConversations";
 import { api } from "../../../_lib/api";
 
 type Conversation = {
@@ -21,30 +22,9 @@ type Conversation = {
   avatar?: string | null;
 };
 
-const MOCK: Conversation[] = [
-  {
-    id: "u1",
-    name: "Sofie Jans",
-    lastMessage: "Hoi! Is de hond nog beschikbaar?",
-    avatar: null,
-  },
-  {
-    id: "u2",
-    name: "Dierentehuis Utrecht",
-    lastMessage: "We kunnen morgen rond 15:00",
-    avatar: null,
-  },
-  {
-    id: "u3",
-    name: "Peter",
-    lastMessage: "Dankjewel voor je bericht!",
-    avatar: null,
-  },
-];
-
 export default function ChatListScreen() {
   const router = useRouter();
-  const [conversations, setConversations] = useState<Conversation[]>(MOCK);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -95,7 +75,18 @@ export default function ChatListScreen() {
               .filter(Boolean);
 
             if (list.length > 0) {
-              setConversations(list);
+              const local = getLocalConversations();
+              const localAsConv: Conversation[] = local.map((l) => ({
+                id: l.id,
+                name: l.name,
+                lastMessage: l.lastMessage || "",
+                avatar: l.avatar ?? null,
+              }));
+              const merged = [
+                ...localAsConv,
+                ...list.filter((l) => !localAsConv.some((x) => x.id === l.id)),
+              ];
+              setConversations(merged);
               return;
             }
           } catch {
@@ -108,8 +99,25 @@ export default function ChatListScreen() {
     }
 
     load();
+
+    // subscribe to local optimistic conversations so the list updates immediately
+    const unsub = subscribeLocalConversations((items) => {
+      setConversations((prev) => {
+        // convert items to Conversation[] and keep fetched items that aren't in local
+        const localAsConv: Conversation[] = items.map((l) => ({
+          id: l.id,
+          name: l.name,
+          lastMessage: l.lastMessage || "",
+          avatar: l.avatar ?? null,
+        }));
+        const fetched = prev.filter((p) => !localAsConv.some((i) => i.id === p.id));
+        return [...localAsConv, ...fetched];
+      });
+    });
+
     return () => {
       mounted = false;
+      unsub();
     };
   }, []);
 
@@ -134,7 +142,9 @@ export default function ChatListScreen() {
         )}
         <View style={styles.meta}>
           <ThemedText type="subtitle">{item.name}</ThemedText>
-          <ThemedText style={styles.preview}>{item.lastMessage}</ThemedText>
+          <ThemedText style={styles.preview} numberOfLines={1} ellipsizeMode="tail">
+            {item.lastMessage}
+          </ThemedText>
         </View>
       </Pressable>
     );
