@@ -1,7 +1,6 @@
+import { Ionicons } from "@expo/vector-icons";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
-// import useRouter only when needed; we keep the import commented out because navigation is not used here
-// import { useRouter } from "expo-router";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
@@ -20,6 +19,11 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import {
+  GestureHandlerRootView,
+  RectButton,
+  Swipeable,
+} from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CameraCapture from "../../../../components/camera-capture";
 import LogoHeader from "../../../../components/logo-header";
@@ -441,456 +445,501 @@ export default function AnimalsScreen() {
     setModalVisible(true);
   }
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
-      <LogoHeader />
-      <View style={styles.root}>
-        <View style={styles.headerRow}>
-          <ThemedText type="title">Jouw dieren 🐾</ThemedText>
-        </View>
-
-        <TouchableOpacity
-          style={styles.addButtonFull}
-          onPress={openCreateModal}
+  function renderSwipeActions(item: any) {
+    const id = String(item._id ?? item.id ?? "");
+    return (
+      <View style={styles.swipeActions}>
+        <RectButton
+          style={[styles.swipeActionButton, styles.swipeMoreButton]}
+          onPress={() => {
+            router.push({
+              pathname: "/admin/animals/[animalId]/chats",
+              params: { animalId: id },
+            } as any);
+          }}
         >
+          <Ionicons name="ellipsis-horizontal" size={20} color="#4b5563" />
           <ThemedText
-            style={{ color: "#fff", fontWeight: "700", textAlign: "center" }}
+            style={[styles.swipeActionText, styles.swipeActionTextDark]}
           >
-            + Dier toevoegen
+            Meer
           </ThemedText>
-        </TouchableOpacity>
+        </RectButton>
+        <RectButton
+          style={[styles.swipeActionButton, styles.swipeEditButton]}
+          onPress={() => beginEditAnimal(item)}
+        >
+          <Ionicons name="flag-outline" size={20} color="#fff" />
+          <ThemedText style={styles.swipeActionText}>Bewerk</ThemedText>
+        </RectButton>
+        <RectButton
+          style={[styles.swipeActionButton, styles.swipeDeleteButton]}
+          onPress={() => deleteAnimal(id)}
+        >
+          <Ionicons name="archive-outline" size={20} color="#fff" />
+          <ThemedText style={styles.swipeActionText}>Verwijder</ThemedText>
+        </RectButton>
+      </View>
+    );
+  }
 
-        {loadingAnimals ? (
-          <View style={styles.emptyState}>
-            <ActivityIndicator />
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
+        <LogoHeader />
+        <View style={styles.root}>
+          <View style={styles.headerRow}>
+            <ThemedText type="title">Jouw dieren 🐾</ThemedText>
           </View>
-        ) : animals && animals.length > 0 ? (
-          <View style={{ width: "100%" }}>
-            {animals.map((item) => {
-              const photoUri =
-                typeof item.photo === "string" && item.photo
-                  ? item.photo
-                  : null;
-              const descriptionSnippet =
-                typeof item.description === "string"
-                  ? item.description.trim()
-                  : "";
-              return (
-                <TouchableOpacity
-                        key={item._id || item.id || item.name}
+
+          <TouchableOpacity
+            style={styles.addButtonFull}
+            onPress={openCreateModal}
+          >
+            <ThemedText
+              style={{ color: "#fff", fontWeight: "700", textAlign: "center" }}
+            >
+              + Dier toevoegen
+            </ThemedText>
+          </TouchableOpacity>
+
+          {loadingAnimals ? (
+            <View style={styles.emptyState}>
+              <ActivityIndicator />
+            </View>
+          ) : animals && animals.length > 0 ? (
+            <View style={{ width: "100%" }}>
+              {animals.map((item) => {
+                const photoUri =
+                  typeof item.photo === "string" && item.photo
+                    ? item.photo
+                    : null;
+                const descriptionSnippet =
+                  typeof item.description === "string"
+                    ? item.description.trim()
+                    : "";
+                const key = item._id || item.id || item.name;
+                return (
+                  <Swipeable
+                    key={key}
+                    renderRightActions={() => renderSwipeActions(item)}
+                    overshootRight={false}
+                    friction={2}
+                    rightThreshold={40}
+                  >
+                    <View style={styles.swipeRowContainer}>
+                      <TouchableOpacity
                         style={styles.animalRow}
                         onPress={() => {
                           const id = String(item._id ?? item.id ?? "");
-                          router.push({ pathname: "/admin/animals/[animalId]/chats", params: { animalId: id } } as any);
+                          router.push({
+                            pathname: "/admin/animals/[animalId]/chats",
+                            params: { animalId: id },
+                          } as any);
                         }}
+                        activeOpacity={0.9}
                       >
-                  {photoUri ? (
-                    <Image source={{ uri: photoUri }} style={styles.avatar} />
-                  ) : (
-                    <View style={styles.avatar} />
-                  )}
-                  <View style={{ flex: 1, marginLeft: 16 }}>
-                    <ThemedText style={styles.animalName}>
-                      {item.name}
-                    </ThemedText>
-                    <ThemedText style={styles.animalBreed}>
-                      {item.breed || item.species || "-"}
-                    </ThemedText>
-                    {descriptionSnippet ? (
-                      <ThemedText
-                        numberOfLines={2}
-                        style={styles.animalDescription}
-                      >
-                        {descriptionSnippet}
-                      </ThemedText>
-                    ) : null}
-                  </View>
-                  {typeof item.matchesCount === "number" ? (
-                    <View style={styles.animalsBadge}>
-                      <ThemedText style={styles.animalsBadgeText}>
-                        {String(item.matchesCount)} matches
-                      </ThemedText>
-                    </View>
-                  ) : null}
-                  <TouchableOpacity
-                    onPress={() => beginEditAnimal(item)}
-                    style={styles.editBtn}
-                  >
-                    <ThemedText style={{ color: "#1a73e8" }}>Bewerk</ThemedText>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => deleteAnimal(String(item._id || item.id))}
-                    style={styles.deleteBtn}
-                  >
-                    <ThemedText style={{ color: "#c0392b" }}>
-                      Verwijder
-                    </ThemedText>
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        ) : (
-          <View style={styles.emptyState}>
-            <ThemedText style={{ fontSize: 18, marginBottom: 8 }}>
-              Nog geen Animals
-            </ThemedText>
-            <ThemedText style={{ color: "#666" }}>
-              Er zijn nog geen Animals om te tonen. Voeg een dier toe om te
-              beginnen.
-            </ThemedText>
-          </View>
-        )}
-
-        <Modal
-          visible={modalVisible}
-          animationType="slide"
-          onRequestClose={closeModal}
-        >
-          <SafeAreaView style={styles.modalWrap}>
-            <TouchableWithoutFeedback
-              onPress={Keyboard.dismiss}
-              accessible={false}
-            >
-              <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
-                style={styles.modalAvoiding}
-              >
-                <ScrollView
-                  contentContainerStyle={styles.modalContent}
-                  keyboardShouldPersistTaps="handled"
-                  showsVerticalScrollIndicator={false}
-                >
-                  <ThemedText type="title">{modalTitle}</ThemedText>
-
-                  {step === 1 ? (
-                    <View style={{ width: "100%", alignItems: "center" }}>
-                      <TouchableOpacity
-                        style={styles.imagePicker}
-                        onPress={pickImage}
-                      >
-                        {photoPreview ? (
+                        {photoUri ? (
                           <Image
-                            source={{ uri: photoPreview }}
-                            style={styles.pickedImage}
+                            source={{ uri: photoUri }}
+                            style={styles.avatar}
                           />
                         ) : (
-                          <ThemedText style={{ color: "#999" }}>
-                            Upload foto
-                          </ThemedText>
+                          <View style={styles.avatar} />
                         )}
+                        <View style={{ flex: 1, marginLeft: 16 }}>
+                          <ThemedText style={styles.animalName}>
+                            {item.name}
+                          </ThemedText>
+                          <ThemedText style={styles.animalBreed}>
+                            {item.breed || item.species || "-"}
+                          </ThemedText>
+                          {descriptionSnippet ? (
+                            <ThemedText
+                              numberOfLines={2}
+                              style={styles.animalDescription}
+                            >
+                              {descriptionSnippet}
+                            </ThemedText>
+                          ) : null}
+                        </View>
+                        {typeof item.matchesCount === "number" ? (
+                          <View style={styles.animalsBadge}>
+                            <ThemedText style={styles.animalsBadgeText}>
+                              {String(item.matchesCount)} matches
+                            </ThemedText>
+                          </View>
+                        ) : null}
                       </TouchableOpacity>
+                    </View>
+                  </Swipeable>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <ThemedText style={{ fontSize: 18, marginBottom: 8 }}>
+                Nog geen Animals
+              </ThemedText>
+              <ThemedText style={{ color: "#666" }}>
+                Er zijn nog geen Animals om te tonen. Voeg een dier toe om te
+                beginnen.
+              </ThemedText>
+            </View>
+          )}
 
-                      <View
-                        style={{ flexDirection: "row", gap: 8, marginTop: 8 }}
-                      >
+          <Modal
+            visible={modalVisible}
+            animationType="slide"
+            onRequestClose={closeModal}
+          >
+            <SafeAreaView style={styles.modalWrap}>
+              <TouchableWithoutFeedback
+                onPress={Keyboard.dismiss}
+                accessible={false}
+              >
+                <KeyboardAvoidingView
+                  behavior={Platform.OS === "ios" ? "padding" : undefined}
+                  style={styles.modalAvoiding}
+                >
+                  <ScrollView
+                    contentContainerStyle={styles.modalContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                  >
+                    <ThemedText type="title">{modalTitle}</ThemedText>
+
+                    {step === 1 ? (
+                      <View style={{ width: "100%", alignItems: "center" }}>
                         <TouchableOpacity
-                          style={[styles.speciesButton]}
+                          style={styles.imagePicker}
                           onPress={pickImage}
                         >
-                          <ThemedText>Choose</ThemedText>
+                          {photoPreview ? (
+                            <Image
+                              source={{ uri: photoPreview }}
+                              style={styles.pickedImage}
+                            />
+                          ) : (
+                            <ThemedText style={{ color: "#999" }}>
+                              Upload foto
+                            </ThemedText>
+                          )}
                         </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.speciesButton]}
-                          onPress={takePhoto}
+
+                        <View
+                          style={{ flexDirection: "row", gap: 8, marginTop: 8 }}
                         >
-                          <ThemedText>Camera</ThemedText>
-                        </TouchableOpacity>
-                      </View>
+                          <TouchableOpacity
+                            style={[styles.speciesButton]}
+                            onPress={pickImage}
+                          >
+                            <ThemedText>Choose</ThemedText>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.speciesButton]}
+                            onPress={takePhoto}
+                          >
+                            <ThemedText>Camera</ThemedText>
+                          </TouchableOpacity>
+                        </View>
 
-                      <TextInput
-                        placeholder="Naam"
-                        value={name}
-                        onChangeText={setName}
-                        style={styles.input}
-                      />
-
-                      <View style={styles.rowSmall}>
                         <TextInput
-                          placeholder="DD"
-                          value={day}
-                          onChangeText={setDay}
-                          keyboardType="number-pad"
-                          style={[styles.inputSmall]}
+                          placeholder="Naam"
+                          value={name}
+                          onChangeText={setName}
+                          style={styles.input}
                         />
-                        <TextInput
-                          placeholder="MM"
-                          value={month}
-                          onChangeText={setMonth}
-                          keyboardType="number-pad"
-                          style={[styles.inputSmall]}
-                        />
-                        <TextInput
-                          placeholder="YYYY"
-                          value={year}
-                          onChangeText={setYear}
-                          keyboardType="number-pad"
-                          style={[styles.inputLarge]}
-                        />
+
+                        <View style={styles.rowSmall}>
+                          <TextInput
+                            placeholder="DD"
+                            value={day}
+                            onChangeText={setDay}
+                            keyboardType="number-pad"
+                            style={[styles.inputSmall]}
+                          />
+                          <TextInput
+                            placeholder="MM"
+                            value={month}
+                            onChangeText={setMonth}
+                            keyboardType="number-pad"
+                            style={[styles.inputSmall]}
+                          />
+                          <TextInput
+                            placeholder="YYYY"
+                            value={year}
+                            onChangeText={setYear}
+                            keyboardType="number-pad"
+                            style={[styles.inputLarge]}
+                          />
+                        </View>
+
+                        <View style={styles.speciesRow}>
+                          <TouchableOpacity
+                            style={[
+                              styles.speciesButton,
+                              species === "cat" ? styles.speciesActive : null,
+                            ]}
+                            onPress={() => setSpecies("cat")}
+                          >
+                            <ThemedText>Kat</ThemedText>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.speciesButton,
+                              species === "dog" ? styles.speciesActive : null,
+                            ]}
+                            onPress={() => setSpecies("dog")}
+                          >
+                            <ThemedText>Hond</ThemedText>
+                          </TouchableOpacity>
+                        </View>
+
+                        <View style={{ width: "100%", marginTop: 16 }}>
+                          <TouchableOpacity
+                            style={styles.shareButton}
+                            onPress={() => setStep(2)}
+                          >
+                            <ThemedText style={{ color: "#fff" }}>
+                              Volgende
+                            </ThemedText>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.shareButton,
+                              { backgroundColor: "#eee", marginTop: 8 },
+                            ]}
+                            onPress={closeModal}
+                          >
+                            <ThemedText>Annuleren</ThemedText>
+                          </TouchableOpacity>
+                        </View>
                       </View>
-
-                      <View style={styles.speciesRow}>
-                        <TouchableOpacity
-                          style={[
-                            styles.speciesButton,
-                            species === "cat" ? styles.speciesActive : null,
-                          ]}
-                          onPress={() => setSpecies("cat")}
-                        >
-                          <ThemedText>Kat</ThemedText>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.speciesButton,
-                            species === "dog" ? styles.speciesActive : null,
-                          ]}
-                          onPress={() => setSpecies("dog")}
-                        >
-                          <ThemedText>Hond</ThemedText>
-                        </TouchableOpacity>
-                      </View>
-
-                      <View style={{ width: "100%", marginTop: 16 }}>
-                        <TouchableOpacity
-                          style={styles.shareButton}
-                          onPress={() => setStep(2)}
-                        >
-                          <ThemedText style={{ color: "#fff" }}>
-                            Volgende
-                          </ThemedText>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.shareButton,
-                            { backgroundColor: "#eee", marginTop: 8 },
-                          ]}
-                          onPress={closeModal}
-                        >
-                          <ThemedText>Annuleren</ThemedText>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ) : step === 2 ? (
-                    <View style={{ width: "100%", alignItems: "center" }}>
-                      <ThemedText>
-                        Is het dier een {species === "cat" ? "kat" : "hond"}?
-                        Vul ook het ras en eigenschappen in.
-                      </ThemedText>
-
-                      <TextInput
-                        placeholder="Welk ras?"
-                        value={breed}
-                        onChangeText={setBreed}
-                        style={[styles.input, { marginTop: 12 }]}
-                      />
-
-                      <TextInput
-                        placeholder="Beschrijf het dier (karakter, gewoontes, ...)"
-                        value={description}
-                        onChangeText={setDescription}
-                        multiline
-                        numberOfLines={4}
-                        textAlignVertical="top"
-                        style={[styles.input, styles.textArea]}
-                      />
-
-                      <View style={{ width: "100%", marginTop: 12 }}>
-                        <ThemedText style={{ marginBottom: 8 }}>
-                          Eigenschappen
+                    ) : step === 2 ? (
+                      <View style={{ width: "100%", alignItems: "center" }}>
+                        <ThemedText>
+                          Is het dier een {species === "cat" ? "kat" : "hond"}?
+                          Vul ook het ras en eigenschappen in.
                         </ThemedText>
-                        <View style={[styles.speciesRow, { flexWrap: "wrap" }]}>
-                          {propertyOptions.map((opt) => (
+
+                        <TextInput
+                          placeholder="Welk ras?"
+                          value={breed}
+                          onChangeText={setBreed}
+                          style={[styles.input, { marginTop: 12 }]}
+                        />
+
+                        <TextInput
+                          placeholder="Beschrijf het dier (karakter, gewoontes, ...)"
+                          value={description}
+                          onChangeText={setDescription}
+                          multiline
+                          numberOfLines={4}
+                          textAlignVertical="top"
+                          style={[styles.input, styles.textArea]}
+                        />
+
+                        <View style={{ width: "100%", marginTop: 12 }}>
+                          <ThemedText style={{ marginBottom: 8 }}>
+                            Eigenschappen
+                          </ThemedText>
+                          <View
+                            style={[styles.speciesRow, { flexWrap: "wrap" }]}
+                          >
+                            {propertyOptions.map((opt) => (
+                              <TouchableOpacity
+                                key={opt}
+                                style={[
+                                  styles.propertyButton,
+                                  properties.includes(opt)
+                                    ? styles.propertyActive
+                                    : null,
+                                ]}
+                                onPress={() => toggleProperty(opt)}
+                              >
+                                <ThemedText>{opt}</ThemedText>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        </View>
+
+                        <ThemedText style={{ marginTop: 12 }}>
+                          Kies het geslacht
+                        </ThemedText>
+
+                        <View style={styles.speciesRow}>
+                          <TouchableOpacity
+                            style={[
+                              styles.speciesButton,
+                              gender === "male" ? styles.speciesActive : null,
+                            ]}
+                            onPress={() => setGender("male")}
+                          >
+                            <ThemedText>{genderLabelMale}</ThemedText>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.speciesButton,
+                              gender === "female" ? styles.speciesActive : null,
+                            ]}
+                            onPress={() => setGender("female")}
+                          >
+                            <ThemedText>{genderLabelFemale}</ThemedText>
+                          </TouchableOpacity>
+                        </View>
+
+                        <View style={{ width: "100%", marginTop: 16 }}>
+                          <TouchableOpacity
+                            style={styles.shareButton}
+                            onPress={() => setStep(3)}
+                          >
+                            <ThemedText style={{ color: "#fff" }}>
+                              Volgende
+                            </ThemedText>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.shareButton,
+                              { backgroundColor: "#eee", marginTop: 8 },
+                            ]}
+                            onPress={() => setStep(1)}
+                          >
+                            <ThemedText>Terug</ThemedText>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={{ width: "100%", alignItems: "center" }}>
+                        <ThemedText type="title">Wie zoeken we?</ThemedText>
+
+                        <ThemedText
+                          style={{ marginTop: 12, alignSelf: "flex-start" }}
+                        >
+                          Werk of opleiding?
+                        </ThemedText>
+                        <View
+                          style={[
+                            styles.speciesRow,
+                            { flexWrap: "wrap", marginTop: 8 },
+                          ]}
+                        >
+                          {whoWorkOptions.map((opt) => (
                             <TouchableOpacity
                               key={opt}
                               style={[
                                 styles.propertyButton,
-                                properties.includes(opt)
+                                whoProperties.includes(opt)
                                   ? styles.propertyActive
                                   : null,
                               ]}
-                              onPress={() => toggleProperty(opt)}
+                              onPress={() => toggleWhoProperty(opt)}
                             >
                               <ThemedText>{opt}</ThemedText>
                             </TouchableOpacity>
                           ))}
                         </View>
-                      </View>
 
-                      <ThemedText style={{ marginTop: 12 }}>
-                        Kies het geslacht
-                      </ThemedText>
-
-                      <View style={styles.speciesRow}>
-                        <TouchableOpacity
+                        <ThemedText
+                          style={{ marginTop: 12, alignSelf: "flex-start" }}
+                        >
+                          In mijn vrije tijd houdt ze van...
+                        </ThemedText>
+                        <View
                           style={[
-                            styles.speciesButton,
-                            gender === "male" ? styles.speciesActive : null,
+                            styles.speciesRow,
+                            { flexWrap: "wrap", marginTop: 8 },
                           ]}
-                          onPress={() => setGender("male")}
                         >
-                          <ThemedText>{genderLabelMale}</ThemedText>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.speciesButton,
-                            gender === "female" ? styles.speciesActive : null,
-                          ]}
-                          onPress={() => setGender("female")}
-                        >
-                          <ThemedText>{genderLabelFemale}</ThemedText>
-                        </TouchableOpacity>
-                      </View>
+                          {whoHobbyOptions.map((opt) => (
+                            <TouchableOpacity
+                              key={opt}
+                              style={[
+                                styles.propertyButton,
+                                whoProperties.includes(opt)
+                                  ? styles.propertyActive
+                                  : null,
+                              ]}
+                              onPress={() => toggleWhoProperty(opt)}
+                            >
+                              <ThemedText>{opt}</ThemedText>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
 
-                      <View style={{ width: "100%", marginTop: 16 }}>
-                        <TouchableOpacity
-                          style={styles.shareButton}
-                          onPress={() => setStep(3)}
+                        <ThemedText
+                          style={{ marginTop: 12, alignSelf: "flex-start" }}
                         >
-                          <ThemedText style={{ color: "#fff" }}>
-                            Volgende
-                          </ThemedText>
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                          Met wie woon je samen?
+                        </ThemedText>
+                        <View
                           style={[
-                            styles.shareButton,
-                            { backgroundColor: "#eee", marginTop: 8 },
+                            styles.speciesRow,
+                            { flexWrap: "wrap", marginTop: 8 },
                           ]}
-                          onPress={() => setStep(1)}
                         >
-                          <ThemedText>Terug</ThemedText>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ) : (
-                    <View style={{ width: "100%", alignItems: "center" }}>
-                      <ThemedText type="title">Wie zoeken we?</ThemedText>
+                          {whoLivingOptions.map((opt) => (
+                            <TouchableOpacity
+                              key={opt}
+                              style={[
+                                styles.propertyButton,
+                                whoProperties.includes(opt)
+                                  ? styles.propertyActive
+                                  : null,
+                              ]}
+                              onPress={() => toggleWhoProperty(opt)}
+                            >
+                              <ThemedText>{opt}</ThemedText>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
 
-                      <ThemedText
-                        style={{ marginTop: 12, alignSelf: "flex-start" }}
-                      >
-                        Werk of opleiding?
-                      </ThemedText>
-                      <View
-                        style={[
-                          styles.speciesRow,
-                          { flexWrap: "wrap", marginTop: 8 },
-                        ]}
-                      >
-                        {whoWorkOptions.map((opt) => (
+                        <View style={{ width: "100%", marginTop: 16 }}>
                           <TouchableOpacity
-                            key={opt}
-                            style={[
-                              styles.propertyButton,
-                              whoProperties.includes(opt)
-                                ? styles.propertyActive
-                                : null,
-                            ]}
-                            onPress={() => toggleWhoProperty(opt)}
+                            style={styles.shareButton}
+                            onPress={submitAnimal}
+                            disabled={submitting}
                           >
-                            <ThemedText>{opt}</ThemedText>
+                            {submitting ? (
+                              <ActivityIndicator color="#fff" />
+                            ) : (
+                              <ThemedText style={{ color: "#fff" }}>
+                                {submitLabel}
+                              </ThemedText>
+                            )}
                           </TouchableOpacity>
-                        ))}
-                      </View>
-
-                      <ThemedText
-                        style={{ marginTop: 12, alignSelf: "flex-start" }}
-                      >
-                        In mijn vrije tijd houdt ze van...
-                      </ThemedText>
-                      <View
-                        style={[
-                          styles.speciesRow,
-                          { flexWrap: "wrap", marginTop: 8 },
-                        ]}
-                      >
-                        {whoHobbyOptions.map((opt) => (
                           <TouchableOpacity
-                            key={opt}
                             style={[
-                              styles.propertyButton,
-                              whoProperties.includes(opt)
-                                ? styles.propertyActive
-                                : null,
+                              styles.shareButton,
+                              { backgroundColor: "#eee", marginTop: 8 },
                             ]}
-                            onPress={() => toggleWhoProperty(opt)}
+                            onPress={() => setStep(2)}
                           >
-                            <ThemedText>{opt}</ThemedText>
+                            <ThemedText>Terug</ThemedText>
                           </TouchableOpacity>
-                        ))}
+                        </View>
                       </View>
-
-                      <ThemedText
-                        style={{ marginTop: 12, alignSelf: "flex-start" }}
-                      >
-                        Met wie woon je samen?
-                      </ThemedText>
-                      <View
-                        style={[
-                          styles.speciesRow,
-                          { flexWrap: "wrap", marginTop: 8 },
-                        ]}
-                      >
-                        {whoLivingOptions.map((opt) => (
-                          <TouchableOpacity
-                            key={opt}
-                            style={[
-                              styles.propertyButton,
-                              whoProperties.includes(opt)
-                                ? styles.propertyActive
-                                : null,
-                            ]}
-                            onPress={() => toggleWhoProperty(opt)}
-                          >
-                            <ThemedText>{opt}</ThemedText>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-
-                      <View style={{ width: "100%", marginTop: 16 }}>
-                        <TouchableOpacity
-                          style={styles.shareButton}
-                          onPress={submitAnimal}
-                          disabled={submitting}
-                        >
-                          {submitting ? (
-                            <ActivityIndicator color="#fff" />
-                          ) : (
-                            <ThemedText style={{ color: "#fff" }}>
-                              {submitLabel}
-                            </ThemedText>
-                          )}
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[
-                            styles.shareButton,
-                            { backgroundColor: "#eee", marginTop: 8 },
-                          ]}
-                          onPress={() => setStep(2)}
-                        >
-                          <ThemedText>Terug</ThemedText>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  )}
-                </ScrollView>
-              </KeyboardAvoidingView>
-            </TouchableWithoutFeedback>
-          </SafeAreaView>
-        </Modal>
-        <CameraCapture
-          visible={cameraVisible}
-          onClose={() => setCameraVisible(false)}
-          onCapture={(res) => {
-            if (!res || !res.previewBase64) {
-              Alert.alert("Fout", "Kon foto niet verwerken.");
-              return;
-            }
-            setPhotoPreview(res.previewBase64);
-            setPhotoPayload(res.previewBase64);
-          }}
-        />
-      </View>
-    </SafeAreaView>
+                    )}
+                  </ScrollView>
+                </KeyboardAvoidingView>
+              </TouchableWithoutFeedback>
+            </SafeAreaView>
+          </Modal>
+          <CameraCapture
+            visible={cameraVisible}
+            onClose={() => setCameraVisible(false)}
+            onCapture={(res) => {
+              if (!res || !res.previewBase64) {
+                Alert.alert("Fout", "Kon foto niet verwerken.");
+                return;
+              }
+              setPhotoPreview(res.previewBase64);
+              setPhotoPayload(res.previewBase64);
+            }}
+          />
+        </View>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
 
@@ -994,14 +1043,31 @@ const styles = StyleSheet.create({
     width: "100%",
     marginBottom: 12,
   },
+  swipeRowContainer: {
+    backgroundColor: "#fff",
+    borderRadius: 28,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginVertical: 6,
+    marginHorizontal: 4,
+    shadowColor: "#00000020",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 3,
+    overflow: "hidden",
+  },
   animalRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    width: "100%",
   },
-  avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#ddd" },
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#f2f2f2",
+  },
   animalName: { fontWeight: "700", fontSize: 18 },
   animalBreed: { color: "#666", fontSize: 14 },
   animalDescription: {
@@ -1014,10 +1080,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
+    marginLeft: 12,
   },
   animalsBadgeText: { color: "#333", fontSize: 13 },
-  editBtn: { paddingHorizontal: 12, paddingVertical: 6, marginLeft: 8 },
-  deleteBtn: { paddingHorizontal: 12, paddingVertical: 6, marginLeft: 8 },
+  swipeActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  swipeActionButton: {
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 26,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginHorizontal: 4,
+    minWidth: 72,
+  },
+  swipeMoreButton: { backgroundColor: "#E5E7EB" },
+  swipeEditButton: { backgroundColor: "#AEBA40" },
+  swipeDeleteButton: { backgroundColor: "#FDA0E9" },
+  swipeActionText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 12,
+    marginTop: 4,
+  },
+  swipeActionTextDark: { color: "#374151" },
 });
 
 export const options = { title: "Animals" };
