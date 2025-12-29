@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
+  Easing,
   PanResponder,
   StyleSheet,
   Text,
@@ -13,10 +14,13 @@ import TimesIcon from "../icons/TimesIcon";
 import SwipeCard, { SwipeCardProps } from "./swipe-cards";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
-const SWIPE_THRESHOLD = 120;
-const SWIPE_OUT_DURATION = 250;
+const KEEP_DISTANCE = 80;
+const KEEP_VELOCITY = 0.35;
+const THROW_DISTANCE = SCREEN_WIDTH * 1.1;
 
 type Item = Omit<SwipeCardProps, "imageSource"> & {
+  id?: string | number;
+  key?: string;
   imageSource?: any;
   imageUri?: string;
 };
@@ -27,73 +31,157 @@ type Props = {
   onNope?: (item: Item) => void;
 };
 
+function getStableItemKey(item?: Item) {
+  if (!item) return undefined;
+  if (item.id !== undefined && item.id !== null) {
+    return `id:${item.id}`;
+  }
+  if (item.key) {
+    return `key:${item.key}`;
+  }
+  if (item.name) {
+    return `name:${item.name.toLowerCase()}`;
+  }
+  if (item.imageUri) {
+    return `uri:${item.imageUri}`;
+  }
+  return undefined;
+}
+
+function filterItemsWithDismissed(source: Item[], dismissed: Set<string>) {
+  return source.filter((item) => {
+    const key = getStableItemKey(item);
+    if (!key) return true;
+    return !dismissed.has(key);
+  });
+}
+
 export default function SwipeDeck({ items, onLike, onNope }: Props) {
-  const [cards, setCards] = useState(items);
+  const dismissedKeysRef = useRef<Set<string>>(new Set());
+  const [cards, setCards] = useState<Item[]>(() =>
+    filterItemsWithDismissed(items, dismissedKeysRef.current)
+  );
+  const cardsRef = useRef<Item[]>(cards);
+  const isAnimatingRef = useRef(false);
+  const position = useRef(new Animated.ValueXY()).current;
+
   useEffect(() => {
-    setCards(items);
+    const filtered = filterItemsWithDismissed(items, dismissedKeysRef.current);
+    cardsRef.current = filtered;
+    setCards(filtered);
   }, [items]);
 
-  const position = useRef(new Animated.ValueXY()).current;
+  useEffect(() => {
+    cardsRef.current = cards;
+  }, [cards]);
 
   const panResponder = useRef(
     PanResponder.create({
-      // Only become responder for horizontal gestures. This lets inner
-      // vertical ScrollViews (like the tags area in SwipeCard) receive
-      // vertical touch events and scroll normally.
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gesture) => {
+        if (!cardsRef.current.length || isAnimatingRef.current) {
+          return false;
+        }
         const { dx, dy } = gesture;
         const absDx = Math.abs(dx);
         const absDy = Math.abs(dy);
-        // require some horizontal movement and more horizontal than vertical
-        return absDx > 8 && absDx > absDy;
+        return absDx > 6 && absDx > absDy;
       },
       onPanResponderMove: (_, gesture) => {
-        position.setValue({ x: gesture.dx, y: gesture.dy });
+        if (!cardsRef.current.length || isAnimatingRef.current) {
+          return;
+        }
+        position.setValue({ x: gesture.dx, y: 0 });
       },
       onPanResponderRelease: (_, gesture) => {
-        if (Math.abs(gesture.dx) > SWIPE_THRESHOLD) {
-          const direction = gesture.dx > 0 ? 1 : -1;
-          forceSwipe(direction);
-        } else {
+        if (!cardsRef.current.length || isAnimatingRef.current) {
           resetPosition();
+          return;
         }
+
+        const { dx, vx } = gesture;
+        const absDx = Math.abs(dx);
+        const absVx = Math.abs(vx);
+        const keep = absDx < KEEP_DISTANCE && absVx < KEEP_VELOCITY;
+
+        if (keep) {
+          resetPosition();
+          return;
+        }
+
+        const direction = dx > 0 ? 1 : -1;
+        animateCardOff(direction, vx);
       },
       onPanResponderTerminationRequest: () => true,
     })
   ).current;
 
-  function forceSwipe(direction: number) {
+  function animateCardOff(direction: number, velocityX = 0) {
+    if (!cardsRef.current.length) {
+      return;
+    }
+    isAnimatingRef.current = true;
+
+    const endX = Math.max(
+      THROW_DISTANCE,
+      THROW_DISTANCE * (1 + Math.min(Math.abs(velocityX) * 0.5, 1))
+    );
+    const toX = direction > 0 ? endX : -endX;
+
     Animated.timing(position, {
-      toValue: { x: direction * SCREEN_WIDTH * 1.5, y: -100 },
-      duration: SWIPE_OUT_DURATION,
+      toValue: { x: toX, y: 0 },
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start(() => onSwipeComplete(direction));
   }
 
+  function forceSwipe(direction: number) {
+    if (!cardsRef.current.length || isAnimatingRef.current) {
+      return;
+    }
+    animateCardOff(direction);
+  }
+
   function onSwipeComplete(direction: number) {
-    // determine which card was swiped (the top one)
-    const swiped = cards[0];
-    try {
-      if (direction > 0) {
-        onLike?.(swiped);
-      } else {
-        onNope?.(swiped);
-      }
-    } catch (e) {
-      // ignore callback errors
-      console.warn("swipe callback error", e);
+    const currentCards = cardsRef.current;
+    if (!currentCards.length) {
+      resetPosition();
+      isAnimatingRef.current = false;
+      return;
     }
 
-    const remaining = cards.slice(1);
-    setCards(remaining);
+    const [swiped, ...rest] = currentCards;
+    const key = getStableItemKey(swiped);
+    if (key) {
+      dismissedKeysRef.current.add(key);
+    }
+
+    try {
+      if (direction > 0) {
+        swiped && onLike?.(swiped);
+      } else {
+        swiped && onNope?.(swiped);
+      }
+    } catch (error) {
+      console.warn("swipe callback error", error);
+    }
+
     position.setValue({ x: 0, y: 0 });
+    position.setOffset({ x: 0, y: 0 });
+
+    requestAnimationFrame(() => {
+      cardsRef.current = rest;
+      setCards(rest);
+      isAnimatingRef.current = false;
+    });
   }
 
   function resetPosition() {
     Animated.spring(position, {
       toValue: { x: 0, y: 0 },
       friction: 6,
+      tension: 80,
       useNativeDriver: true,
     }).start();
   }
@@ -102,19 +190,27 @@ export default function SwipeDeck({ items, onLike, onNope }: Props) {
     if (!cards.length) {
       return (
         <View style={styles.noMoreWrap}>
-          <Text style={styles.noMoreText}>Volledig uitgeswiped, morgen hebben we weer nieuwe diertjes in</Text>
+          <Text style={styles.noMoreText}>
+            Volledig uitgeswiped, morgen hebben we weer nieuwe diertjes in
+          </Text>
           <View style={styles.noMoreTextLargeRow}>
             {(() => {
               const word = "Petto";
               const colors = [
-                "#037D4E", // M-green
-                "#FDA0E9", // A-pink
-                "#FF8E28", // T-orange
-                "#AEBA40", // C-lightgreen
-                "#D3D1F6", // H-lila
+                "#037D4E",
+                "#FDA0E9",
+                "#FF8E28",
+                "#AEBA40",
+                "#D3D1F6",
               ];
               return word.split("").map((ch, i) => (
-                <Text key={i} style={[styles.noMoreTextLarge, { color: colors[i % colors.length] }]}>
+                <Text
+                  key={i}
+                  style={[
+                    styles.noMoreTextLarge,
+                    { color: colors[i % colors.length] },
+                  ]}
+                >
                   {ch}
                 </Text>
               ));
@@ -124,88 +220,69 @@ export default function SwipeDeck({ items, onLike, onNope }: Props) {
       );
     }
 
-    return cards
-      .map((item, index) => {
-        if (index === 0) {
-          const rotate = position.x.interpolate({
-            inputRange: [-SCREEN_WIDTH * 1.5, 0, SCREEN_WIDTH * 1.5],
-            outputRange: ["-20deg", "0deg", "20deg"],
-            extrapolate: "clamp",
-          });
+    const [currentCard, nextCard] = cards;
+    if (!currentCard) {
+      return null;
+    }
+    const rotate = position.x.interpolate({
+      inputRange: [-SCREEN_WIDTH * 1.5, 0, SCREEN_WIDTH * 1.5],
+      outputRange: ["-20deg", "0deg", "20deg"],
+      extrapolate: "clamp",
+    });
 
-          const animatedStyle = {
-            transform: [
-              { translateX: position.x },
-              { translateY: position.y },
-              { rotate },
-            ],
-          } as any;
+    const animatedStyle = {
+      transform: [{ translateX: position.x }, { rotate }],
+    } as const;
 
-          const heartOpacity = position.x.interpolate({
-            inputRange: [0, 80],
-            outputRange: [0, 0.8],
-            extrapolate: "clamp",
-          });
-          const nopeOpacity = position.x.interpolate({
-            inputRange: [-80, 0],
-            outputRange: [0.8, 0],
-            extrapolate: "clamp",
-          });
+    const heartOpacity = position.x.interpolate({
+      inputRange: [0, 80],
+      outputRange: [0, 0.8],
+      extrapolate: "clamp",
+    });
+    const nopeOpacity = position.x.interpolate({
+      inputRange: [-80, 0],
+      outputRange: [0.8, 0],
+      extrapolate: "clamp",
+    });
 
-          return (
-            <Animated.View
-              key={`card-${index}-${item.name}`}
-              style={[styles.animatedCard, animatedStyle]}
-              {...panResponder.panHandlers}
-            >
-              <Animated.View
-                style={[styles.statusWrap, { opacity: heartOpacity }]}
-              >
-                <Text style={[styles.statusHeart]}>💚</Text>
-              </Animated.View>
-              <Animated.View
-                style={[styles.statusWrapLeft, { opacity: nopeOpacity }]}
-              >
-                <Text style={[styles.statusNope]}>❌</Text>
-              </Animated.View>
-              <SwipeCard
-                {...(item as SwipeCardProps)}
-                imageSource={item.imageSource}
-                imageUri={item.imageUri}
-              />
-            </Animated.View>
-          );
-        }
-
-        // stacked cards
-        const scale = 1 - index * 0.04;
-        const translateY = -30 * index;
-        const opacity = Math.max(0, (10 - index) / 10);
-
-        return (
-          <Animated.View
-            key={`card-${index}-${item.name}`}
-            style={[
-              styles.underCard,
-              { transform: [{ scale }, { translateY }], opacity },
-            ]}
+    return (
+      <>
+        {nextCard ? (
+          <View
+            key={getStableItemKey(nextCard) ?? "card-next"}
+            style={styles.bufferCard}
+            pointerEvents="none"
           >
-            <SwipeCard
-              {...(item as SwipeCardProps)}
-              imageSource={item.imageSource}
-              imageUri={item.imageUri}
-            />
+            <View style={styles.bufferInner}>
+              <SwipeCard
+                {...(nextCard as SwipeCardProps)}
+                imageSource={nextCard.imageSource}
+                imageUri={nextCard.imageUri}
+              />
+            </View>
+          </View>
+        ) : null}
+        <Animated.View
+          key={getStableItemKey(currentCard) ?? "card-active"}
+          style={[styles.animatedCard, animatedStyle]}
+          {...panResponder.panHandlers}
+        >
+          <Animated.View style={[styles.statusWrap, { opacity: heartOpacity }]}>
+            <Text style={[styles.statusHeart]}>💚</Text>
           </Animated.View>
-        );
-      })
-      .reverse();
-  }
-
-  function onPressNope() {
-    forceSwipe(-1);
-  }
-  function onPressLove() {
-    forceSwipe(1);
+          <Animated.View
+            style={[styles.statusWrapLeft, { opacity: nopeOpacity }]}
+          >
+            <Text style={[styles.statusNope]}>❌</Text>
+          </Animated.View>
+          <SwipeCard
+            {...(currentCard as SwipeCardProps)}
+            imageSource={currentCard.imageSource}
+            imageUri={currentCard.imageUri}
+          />
+        </Animated.View>
+      </>
+    );
   }
 
   return (
@@ -215,7 +292,8 @@ export default function SwipeDeck({ items, onLike, onNope }: Props) {
       <View style={styles.buttonsRow} pointerEvents="box-none">
         <TouchableOpacity
           style={[styles.button, styles.nopeButton]}
-          onPress={onPressNope}
+          onPress={() => forceSwipe(-1)}
+          disabled={!cards.length}
           accessibilityLabel="Nope"
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
@@ -224,7 +302,8 @@ export default function SwipeDeck({ items, onLike, onNope }: Props) {
 
         <TouchableOpacity
           style={[styles.button, styles.loveButton]}
-          onPress={onPressLove}
+          onPress={() => forceSwipe(1)}
+          disabled={!cards.length}
           accessibilityLabel="Like"
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
@@ -238,7 +317,6 @@ export default function SwipeDeck({ items, onLike, onNope }: Props) {
 const styles = StyleSheet.create({
   container: { width: "100%", alignItems: "center", paddingBottom: 40 },
   cardsContainer: {
-    // keep the cards container a bit smaller so the action buttons remain visible on most phones
     height: 600,
     width: "100%",
     alignItems: "center",
@@ -248,6 +326,17 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 355,
     maxHeight: 693,
+  },
+  bufferCard: {
+    position: "absolute",
+    width: 355,
+    maxHeight: 693,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bufferInner: {
+    transform: [{ scale: 0.97 }],
+    opacity: 0.75,
   },
   underCard: {
     position: "absolute",
@@ -279,24 +368,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginHorizontal: 12,
-    elevation: 6, // Android shadow
-    // iOS shadow
+    elevation: 6,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
-    // keep visible overflow so shadow is not clipped
     overflow: "visible",
   },
-  buttonText: { fontSize: 28 },
-  // button variants
   nopeButton: { backgroundColor: "#FFFFFF" },
   loveButton: { backgroundColor: "#FFFFFF" },
-  buttonIcon: { fontSize: 28 },
   loveIcon: { color: "#AEBA40" },
   nopeIcon: { color: "#FDA0E9" },
   noMoreWrap: { height: 300, alignItems: "center", justifyContent: "center" },
-  noMoreText: { fontSize: 16, color: "#666", textAlign: 'center', fontFamily: "montserrat" },
-  noMoreTextLarge: { fontSize: 48, fontFamily:"barriecito", color: "#666"},
-  noMoreTextLargeRow: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
+  noMoreText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    fontFamily: "montserrat",
+  },
+  noMoreTextLarge: { fontSize: 48, fontFamily: "barriecito", color: "#666" },
+  noMoreTextLargeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });
