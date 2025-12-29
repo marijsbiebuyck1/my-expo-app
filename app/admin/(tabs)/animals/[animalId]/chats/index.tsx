@@ -1,6 +1,13 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoHeader from "../../../../../../components/logo-header";
 import { ThemedText } from "../../../../../../components/themed-text";
@@ -42,11 +49,29 @@ export default function AnimalChatsScreen() {
             const json = await resp.json().catch(() => null);
             if (!json) continue;
 
-            const list: Conversation[] = (Array.isArray(json) ? json : json.items || [])
+            const list: Conversation[] = (
+              Array.isArray(json) ? json : json.items || []
+            )
               .map((it: any) => ({
-                id: it.id || it._id || it.userId || it.from || it.with || String(Math.random()),
-                name: it.name || it.displayName || it.withName || it.fromName || "Onbekend",
-                lastMessage: it.lastMessage || it.preview || it.message || (it.text && String(it.text).slice(0, 80)) || "",
+                id:
+                  it.id ||
+                  it._id ||
+                  it.userId ||
+                  it.from ||
+                  it.with ||
+                  String(Math.random()),
+                name:
+                  it.name ||
+                  it.displayName ||
+                  it.withName ||
+                  it.fromName ||
+                  "Onbekend",
+                lastMessage:
+                  it.lastMessage ||
+                  it.preview ||
+                  it.message ||
+                  (it.text && String(it.text).slice(0, 80)) ||
+                  "",
                 avatar: it.avatar || it.photo || null,
               }))
               .filter(Boolean);
@@ -73,16 +98,27 @@ export default function AnimalChatsScreen() {
 
   function openConversation(userId: string) {
     // navigate to the user profile chat (admin can view) — reuse existing user chat route
-    router.push({ pathname: "/users/[profileId]", params: { profileId: userId } } as any);
+    router.push({
+      pathname: "/users/[profileId]",
+      params: { profileId: userId },
+    } as any);
   }
 
   function renderItem({ item }: { item: Conversation }) {
     return (
       <Pressable onPress={() => openConversation(item.id)} style={styles.row}>
-        {item.avatar ? <Image source={{ uri: item.avatar }} style={styles.avatar} /> : <View style={styles.avatarPlaceholder} />}
+        {item.avatar ? (
+          <Image source={{ uri: item.avatar }} style={styles.avatar} />
+        ) : (
+          <View style={styles.avatarPlaceholder} />
+        )}
         <View style={styles.meta}>
           <ThemedText type="subtitle">{item.name}</ThemedText>
-          <ThemedText style={styles.preview} numberOfLines={1} ellipsizeMode="tail">
+          <ThemedText
+            style={styles.preview}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
             {item.lastMessage}
           </ThemedText>
         </View>
@@ -103,18 +139,18 @@ export default function AnimalChatsScreen() {
             <ActivityIndicator />
           </View>
         ) : (
-        <FlatList
-          data={conversations}
-          keyExtractor={(i) => i.id}
-          renderItem={({ item }) => renderItem({ item })}
-          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-          contentContainerStyle={{ padding: 16 }}
-          ListEmptyComponent={() => (
-            <View style={{ padding: 16 }}>
-              <ThemedText>Geen gesprekken gevonden voor dit dier.</ThemedText>
-            </View>
-          )}
-        />
+          <FlatList
+            data={conversations}
+            keyExtractor={(i) => i.id}
+            renderItem={({ item }) => renderItem({ item })}
+            ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+            contentContainerStyle={{ padding: 16 }}
+            ListEmptyComponent={() => (
+              <View style={{ padding: 16 }}>
+                <ThemedText>Geen gesprekken gevonden voor dit dier.</ThemedText>
+              </View>
+            )}
+          />
         )}
       </View>
     </SafeAreaView>
@@ -122,10 +158,22 @@ export default function AnimalChatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  row: { flexDirection: "row", alignItems: "center", padding: 12, backgroundColor: "#fff", borderRadius: 12 },
+  container: { flex: 1, backgroundColor: "#FFFCF5", padding: 30 },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+  },
   avatar: { width: 56, height: 56, borderRadius: 12, marginRight: 12 },
-  avatarPlaceholder: { width: 56, height: 56, borderRadius: 12, marginRight: 12, backgroundColor: "#f0f0f0" },
+  avatarPlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    marginRight: 12,
+    backgroundColor: "#f0f0f0",
+  },
   meta: { flex: 1 },
   preview: { color: "#666", marginTop: 4 },
 });

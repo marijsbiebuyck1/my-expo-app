@@ -12,7 +12,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
-import { getLocalConversations, subscribeLocalConversations } from "../../../../lib/localConversations";
+import {
+  getLocalConversations,
+  subscribeLocalConversations,
+} from "../../../../lib/localConversations";
 import { api } from "../../../_lib/api";
 
 type Conversation = {
@@ -110,7 +113,9 @@ export default function ChatListScreen() {
           lastMessage: l.lastMessage || "",
           avatar: l.avatar ?? null,
         }));
-        const fetched = prev.filter((p) => !localAsConv.some((i) => i.id === p.id));
+        const fetched = prev.filter(
+          (p) => !localAsConv.some((i) => i.id === p.id)
+        );
         return [...localAsConv, ...fetched];
       });
     });
@@ -142,7 +147,11 @@ export default function ChatListScreen() {
         )}
         <View style={styles.meta}>
           <ThemedText type="subtitle">{item.name}</ThemedText>
-          <ThemedText style={styles.preview} numberOfLines={1} ellipsizeMode="tail">
+          <ThemedText
+            style={styles.preview}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
             {item.lastMessage}
           </ThemedText>
         </View>
@@ -155,7 +164,7 @@ export default function ChatListScreen() {
       <LogoHeader />
 
       <View style={styles.container}>
-        <ThemedText type="title" style={{ marginBottom: 12 }}>
+        <ThemedText type="title" style={{ marginBottom: 12, paddingLeft: 30 }}>
           Chats
         </ThemedText>
 
@@ -185,8 +194,8 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
+    width: "100%",
+    padding: 15,
     backgroundColor: "#fff",
     borderRadius: 12,
     shadowColor: "#000",

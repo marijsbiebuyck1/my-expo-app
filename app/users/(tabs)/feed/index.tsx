@@ -461,14 +461,16 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 30,
   },
   addButton: {
     backgroundColor: "#037D4E",
-    paddingVertical: 12,
-    borderRadius: 24,
+    paddingVertical: 10,
+    borderRadius: 60,
     alignItems: "center",
     marginVertical: 12,
+    marginTop: 24,
+    marginBottom: 24,
   },
   addButtonText: {
     color: "#fff",
