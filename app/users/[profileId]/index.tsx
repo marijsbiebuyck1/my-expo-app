@@ -1,14 +1,16 @@
-import BgCard from "@/components/ui/bg-card";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import {
@@ -16,6 +18,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
+import LogoHeader from "../../../components/logo-header";
 import { ThemedText } from "../../../components/themed-text";
 import { api } from "../../_lib/api";
 
@@ -29,17 +32,36 @@ type Message = {
 export default function ChatDetailScreen() {
   const params = useLocalSearchParams();
   const profileId = String(params.profileId ?? "unknown");
-  const autoMessageParam = typeof params.autoMessage === "string" ? params.autoMessage : undefined;
+  const autoMessageParam =
+    typeof params.autoMessage === "string" ? params.autoMessage : undefined;
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const [animal, setAnimal] = useState<{ name?: string; photo?: string } | null>(null);
+  const [animal, setAnimal] = useState<{
+    name?: string;
+    photo?: string;
+  } | null>(null);
 
-  const [messages, setMessages] = useState<Message[]>(() => [
-  ]);
+  const [messages, setMessages] = useState<Message[]>(() => []);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const scroller = useRef<ScrollView | null>(null);
+  const firstIncomingIndex = useMemo(
+    () => messages.findIndex((m) => !m.fromMe),
+    [messages]
+  );
+  const avatarInitial = useMemo(() => {
+    if (animal?.name) {
+      return animal.name.trim().charAt(0).toUpperCase();
+    }
+    return "P";
+  }, [animal?.name]);
+
+  const keyboardOffset = Platform.OS === "ios" ? -80 : 0; // keep chat card just above keyboard on iOS
+
+  const handleFormPress = () => {
+    router.push("/users/register-owner" as any);
+  };
 
   useEffect(() => {
     // scroll to bottom when messages change
@@ -90,7 +112,7 @@ export default function ChatDetailScreen() {
             }
           } catch (err) {
             // try next
-            console.warn && console.warn('message fetch attempt failed', err);
+            console.warn && console.warn("message fetch attempt failed", err);
           }
         }
       } finally {
@@ -106,11 +128,14 @@ export default function ChatDetailScreen() {
           if (r.ok) {
             const j = await r.json().catch(() => null);
             if (j) {
-              setAnimal({ name: j.name || j.title || undefined, photo: j.photo || undefined });
+              setAnimal({
+                name: j.name || j.title || undefined,
+                photo: j.photo || undefined,
+              });
             }
           }
         } catch (err) {
-          console.warn('fetch animal failed', err);
+          console.warn("fetch animal failed", err);
         }
       })();
 
@@ -164,120 +189,299 @@ export default function ChatDetailScreen() {
   }
 
   return (
-    <SafeAreaView
-      style={styles.screen}
-      edges={["top", "left", "right", "bottom"]}
-    >
-    
-
-      <View style={styles.pageContainer}>
-        <BgCard style={styles.bgCard} contentStyle={{ padding: 0 }}>
-          <KeyboardAvoidingView
-            style={{ flex: 1, width: "100%" }}
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-          >
-            <View style={styles.headerRow}>
-              <Pressable onPress={() => router.push('/users/chat')} style={styles.backBtn} accessibilityLabel="Terug naar chats">
-                <ThemedText>{'‹ Terug'}</ThemedText>
-              </Pressable>
-
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                {animal?.photo ? (
-                  <Image source={{ uri: animal.photo }} style={{ width: 40, height: 40, borderRadius: 20 }} />
-                ) : null}
-                <ThemedText type="title">{animal?.name ? `${animal.name}` : "Chat"}</ThemedText>
-              </View>
-            </View>
-
-            {loading ? (
-              <View style={{ padding: 16 }}>
-                <ThemedText>Bezig met laden...</ThemedText>
-              </View>
-            ) : (
-              <ScrollView
-                ref={scroller}
-                contentContainerStyle={styles.messages}
-                keyboardShouldPersistTaps="handled"
-              >
-                {messages.map((m) => (
-                  <View
-                    key={m.id}
-                    style={[
-                      styles.bubble,
-                      m.fromMe ? styles.bubbleRight : styles.bubbleLeft,
-                    ]}
+    <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={keyboardOffset}
+        >
+          <LogoHeader style={styles.logoHeader} />
+          <View style={styles.pageContainer}>
+            <View style={styles.chatCard}>
+              <View style={styles.cardInner}>
+                <View style={styles.headerRow}>
+                  <Pressable
+                    onPress={() => router.push("/users/chat")}
+                    style={styles.backBtn}
+                    accessibilityLabel="Terug naar chats"
                   >
-                    <ThemedText style={{ color: m.fromMe ? "#fff" : "#111" }}>
-                      {m.text}
+                    <Ionicons name="chevron-back" size={24} color="#2F2A28" />
+                  </Pressable>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 10,
+                    }}
+                  >
+                    {animal?.photo ? (
+                      <Image
+                        source={{ uri: animal.photo }}
+                        style={styles.headerAvatar}
+                      />
+                    ) : (
+                      <View style={styles.headerAvatarFallback}>
+                        <ThemedText style={styles.headerAvatarText}>
+                          {avatarInitial}
+                        </ThemedText>
+                      </View>
+                    )}
+                    <ThemedText style={styles.headerTitle}>
+                      {animal?.name ? `${animal.name}` : "Chat"}
                     </ThemedText>
                   </View>
-                ))}
-              </ScrollView>
-            )}
+                </View>
 
-            <View
-              style={[
-                styles.composerRow,
-                { paddingBottom: Math.max(12, insets.bottom) },
-              ]}
-            >
-              <TextInput
-                value={text}
-                onChangeText={setText}
-                placeholder="Schrijf een bericht..."
-                style={styles.input}
-                multiline
-              />
-              <Pressable onPress={send} style={styles.sendBtn}>
-                <ThemedText style={{ color: "#fff" }}>Verstuur</ThemedText>
-              </Pressable>
+                {loading ? (
+                  <View style={styles.loadingState}>
+                    <ThemedText>Bezig met laden...</ThemedText>
+                  </View>
+                ) : (
+                  <ScrollView
+                    style={{ flex: 1 }}
+                    ref={scroller}
+                    contentContainerStyle={styles.messagesList}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                  >
+                    {messages.length === 0 ? (
+                      <View style={styles.emptyState}>
+                        <ThemedText style={styles.emptyTitle}>
+                          Start een gesprek met {animal?.name ?? "dit diertje"}
+                        </ThemedText>
+                        <ThemedText style={styles.emptySubtitle}>
+                          Stel vragen of vertel meer over jezelf.
+                        </ThemedText>
+                      </View>
+                    ) : null}
+                    {messages.map((m, index) => {
+                      const isMine = !!m.fromMe;
+                      const showCta = !isMine && index === firstIncomingIndex;
+                      return (
+                        <View
+                          key={m.id}
+                          style={[
+                            styles.messageRow,
+                            isMine ? styles.rowRight : styles.rowLeft,
+                          ]}
+                        >
+                          {!isMine && (
+                            <View style={styles.avatarHolder}>
+                              {animal?.photo ? (
+                                <Image
+                                  source={{ uri: animal.photo }}
+                                  style={styles.messageAvatar}
+                                />
+                              ) : (
+                                <View style={styles.avatarFallback}>
+                                  <ThemedText style={styles.avatarInitial}>
+                                    {avatarInitial}
+                                  </ThemedText>
+                                </View>
+                              )}
+                            </View>
+                          )}
+                          <View
+                            style={[
+                              styles.bubble,
+                              isMine ? styles.bubbleRight : styles.bubbleLeft,
+                            ]}
+                          >
+                            <ThemedText
+                              style={[
+                                styles.messageText,
+                                isMine
+                                  ? styles.messageTextDark
+                                  : styles.messageTextLight,
+                              ]}
+                            >
+                              {m.text}
+                            </ThemedText>
+                            {showCta ? (
+                              <Pressable
+                                style={styles.ctaButton}
+                                onPress={handleFormPress}
+                              >
+                                <ThemedText style={styles.ctaButtonText}>
+                                  Invulformulier
+                                </ThemedText>
+                              </Pressable>
+                            ) : null}
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </ScrollView>
+                )}
+
+                <View
+                  style={[
+                    styles.composerRow,
+                    { paddingBottom: Math.max(20, insets.bottom) },
+                  ]}
+                >
+                  <TextInput
+                    value={text}
+                    onChangeText={setText}
+                    placeholder="Verstuur een bericht"
+                    placeholderTextColor="#9CA1AF"
+                    style={styles.input}
+                    multiline
+                  />
+                  <Pressable
+                    onPress={send}
+                    style={styles.sendBtn}
+                    accessibilityLabel="Verstuur bericht"
+                  >
+                    <Ionicons name="paper-plane" size={20} color="#fff" />
+                  </Pressable>
+                </View>
+              </View>
             </View>
-          </KeyboardAvoidingView>
-        </BgCard>
-      </View>
+          </View>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#FFFCF5" },
-  // page container centers the white card on the screen
-  pageContainer: { padding: 10, alignItems: "center" },
-  // white background card dimensions and shadow
-  bgCard: { width: "100%", maxWidth: 343, height: 666 },
-  header: { padding: 5, borderBottomWidth: 0 },
-  headerRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 6 },
-  backBtn: { marginRight: 8, paddingVertical: 6, paddingHorizontal: 8 },
-  messages: { padding: 5, paddingBottom: 24 },
-  bubble: {
-    maxWidth: "100%",
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 8,
+  screen: { flex: 1, backgroundColor: "#FFF8EF" },
+  logoHeader: { marginTop: 12, alignSelf: "center" },
+  pageContainer: {
+    flex: 1,
+    width: "100%",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 24,
   },
-  bubbleLeft: { backgroundColor: "#fff", alignSelf: "flex-start" },
-  bubbleRight: { backgroundColor: "#1a73e8", alignSelf: "flex-end" },
-  composerRow: {
+  chatCard: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#fff",
+    borderRadius: 36,
+    paddingHorizontal: 24,
+    paddingVertical: 26,
+    shadowColor: "#0F0B06",
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.12,
+    shadowRadius: 28,
+    elevation: 8,
+  },
+  cardInner: { flex: 1 },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F1EFE8",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  headerAvatar: { width: 44, height: 44, borderRadius: 22 },
+  headerAvatarFallback: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#FFE3EE",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerAvatarText: { fontWeight: "700", color: "#B4448C" },
+  headerTitle: { fontSize: 22, fontWeight: "700", color: "#2A1F1A" },
+  loadingState: { flex: 1, alignItems: "center", justifyContent: "center" },
+  messagesList: { paddingVertical: 12, flexGrow: 1 },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#2F2A28",
+    textAlign: "center",
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: "#726C67",
+    textAlign: "center",
+    marginTop: 6,
+  },
+  messageRow: {
     flexDirection: "row",
     alignItems: "flex-end",
-    padding: 12,
-    borderTopWidth: 0,
+    marginBottom: 18,
+  },
+  rowLeft: { justifyContent: "flex-start" },
+  rowRight: { justifyContent: "flex-end" },
+  avatarHolder: { marginRight: 12 },
+  messageAvatar: { width: 34, height: 34, borderRadius: 17 },
+  avatarFallback: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#FFE3EE",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarInitial: { fontWeight: "700", color: "#C05FA0" },
+  bubble: {
+    maxWidth: "80%",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 28,
+  },
+  bubbleLeft: {
+    backgroundColor: "#F3F0EB",
+    borderBottomLeftRadius: 12,
+  },
+  bubbleRight: {
+    backgroundColor: "#E7F6E6",
+    borderBottomRightRadius: 12,
+    alignSelf: "flex-end",
+  },
+  messageText: { fontSize: 16, lineHeight: 22 },
+  messageTextLight: { color: "#2F2A28" },
+  messageTextDark: { color: "#1F3C1A" },
+  ctaButton: {
+    marginTop: 18,
+    alignSelf: "flex-start",
+    backgroundColor: "#FDA0E9",
+    borderRadius: 22,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+  },
+  ctaButtonText: { color: "#fff", fontWeight: "700" },
+  composerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 12,
   },
   input: {
     flex: 1,
-    minHeight: 100,
-    maxHeight: 120,
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 8,
+    minHeight: 50,
+    maxHeight: 110,
+    borderRadius: 28,
+    backgroundColor: "#F1F1F4",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: "#2F2A28",
+    marginRight: 12,
   },
   sendBtn: {
-    backgroundColor: "#1a73e8",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#AEBA40",
     alignItems: "center",
     justifyContent: "center",
   },
