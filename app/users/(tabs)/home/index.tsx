@@ -77,7 +77,6 @@ Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan he
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
-     
       <View style={styles.container}>
         {loading ? (
           <View style={styles.stateWrap}>
@@ -85,7 +84,7 @@ Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan he
             <ThemedText style={styles.stateText}>Dieren laden…</ThemedText>
           </View>
         ) : hasCards ? (
-          <>
+          <View style={styles.deckWrap}>
             <SwipeDeck
               items={items}
               onLike={async (raw) => {
@@ -98,7 +97,10 @@ Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan he
                     if (res.ok) {
                       const data = await res.json().catch(() => null);
                       const photo = data?.photo || item.imageUri;
-                      setMatchItem({ ...(item as SwipeDeckItem), imageUri: photo });
+                      setMatchItem({
+                        ...(item as SwipeDeckItem),
+                        imageUri: photo,
+                      });
                       return;
                     }
                   }
@@ -125,7 +127,10 @@ Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan he
                 if (!resolvedId) return;
 
                 try {
-                  await api.post("/messages", { to: String(resolvedId), text: AUTO_MESSAGE });
+                  await api.post("/messages", {
+                    to: String(resolvedId),
+                    text: AUTO_MESSAGE,
+                  });
                 } catch (e) {
                   console.warn("failed to send auto-message", e);
                 }
@@ -140,12 +145,14 @@ Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan he
                   });
                 } catch {}
 
-                router.push(`/users/${encodeURIComponent(String(resolvedId))}?autoMessage=${encodeURIComponent(
-                  AUTO_MESSAGE
-                )}`);
+                router.push(
+                  `/users/${encodeURIComponent(
+                    String(resolvedId)
+                  )}?autoMessage=${encodeURIComponent(AUTO_MESSAGE)}`
+                );
               }}
             />
-          </>
+          </View>
         ) : (
           <View style={styles.stateWrap}>
             <ThemedText style={styles.stateTitle}>
@@ -342,10 +349,18 @@ export const options = {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
+    width: "100%",
+    justifyContent: "flex-start",
     alignItems: "center",
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 32,
     gap: 12,
+  },
+  deckWrap: {
+    flex: 1,
+    width: "100%",
+    alignItems: "center",
   },
   msgCard: {
     width: "92%",

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  Dimensions,
   Image,
   ImageSourcePropType,
   ScrollView,
@@ -25,7 +26,9 @@ export interface SwipeCardProps {
 }
 
 const CARD_WIDTH = 355;
-const CARD_MAX_HEIGHT = 610;
+const WINDOW_HEIGHT = Dimensions.get("window").height;
+const CARD_MAX_HEIGHT = Math.min(WINDOW_HEIGHT * 0.78, 760);
+const CARD_IMAGE_HEIGHT = Math.min(CARD_MAX_HEIGHT * 0.52, 420);
 
 export default function SwipeCard({
   title,
@@ -163,7 +166,7 @@ const styles = StyleSheet.create({
 
   image: {
     width: CARD_WIDTH - 32,
-    height: 320,
+    height: CARD_IMAGE_HEIGHT,
     resizeMode: "cover",
     alignSelf: "center",
     marginTop: 12,
@@ -175,7 +178,7 @@ const styles = StyleSheet.create({
   },
   imagePlaceholder: {
     width: CARD_WIDTH - 32,
-    height: 320,
+    height: CARD_IMAGE_HEIGHT,
     backgroundColor: "#f2f2f2",
     alignSelf: "center",
     marginTop: 12,
@@ -190,7 +193,7 @@ const styles = StyleSheet.create({
 
   content: {
     flexGrow: 0,
-    maxHeight: CARD_MAX_HEIGHT - 320,
+    maxHeight: CARD_MAX_HEIGHT - CARD_IMAGE_HEIGHT,
   },
   contentInner: {
     padding: 20,

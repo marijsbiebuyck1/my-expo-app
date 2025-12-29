@@ -14,6 +14,8 @@ import TimesIcon from "../icons/TimesIcon";
 import SwipeCard, { SwipeCardProps } from "./swipe-cards";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
+const SCREEN_HEIGHT = Dimensions.get("window").height;
+const CARD_STACK_HEIGHT = Math.min(SCREEN_HEIGHT * 0.78, 760);
 const KEEP_DISTANCE = 80;
 const KEEP_VELOCITY = 0.35;
 const THROW_DISTANCE = SCREEN_WIDTH * 1.1;
@@ -315,22 +317,31 @@ export default function SwipeDeck({ items, onLike, onNope }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { width: "100%", alignItems: "center", paddingBottom: 40 },
+  container: {
+    width: "100%",
+    alignItems: "center",
+    paddingBottom: 0,
+    minHeight: CARD_STACK_HEIGHT + 90,
+    position: "relative",
+  },
   cardsContainer: {
-    height: 600,
+    height: CARD_STACK_HEIGHT,
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
+    paddingBottom: 32,
   },
   animatedCard: {
     position: "absolute",
     width: 355,
-    maxHeight: 693,
+    height: CARD_STACK_HEIGHT,
+    maxHeight: CARD_STACK_HEIGHT,
   },
   bufferCard: {
     position: "absolute",
     width: 355,
-    maxHeight: 693,
+    height: CARD_STACK_HEIGHT,
+    maxHeight: CARD_STACK_HEIGHT,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -341,7 +352,8 @@ const styles = StyleSheet.create({
   underCard: {
     position: "absolute",
     width: 355,
-    maxHeight: 693,
+    height: CARD_STACK_HEIGHT,
+    maxHeight: CARD_STACK_HEIGHT,
   },
   statusWrap: {
     position: "absolute",
@@ -359,7 +371,16 @@ const styles = StyleSheet.create({
   },
   statusHeart: { fontSize: 80, transform: [{ scale: 1 }] },
   statusNope: { fontSize: 80, transform: [{ scale: 1 }] },
-  buttonsRow: { flexDirection: "row", marginTop: 12, zIndex: 20 },
+  buttonsRow: {
+    flexDirection: "row",
+    position: "absolute",
+    bottom: 78,
+    left: 0,
+    right: 0,
+    justifyContent: "center",
+    zIndex: 40,
+    elevation: 12,
+  },
   button: {
     width: 64,
     height: 64,
