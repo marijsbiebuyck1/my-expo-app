@@ -1,4 +1,5 @@
 import * as SecureStore from "expo-secure-store";
+import { getDeviceKey } from "./deviceKey";
 
 // Public base for the main API and a separate admin base. Change these to your deployed URLs.
 const BASE = "https://my-express-app-ne4l.onrender.com";
@@ -15,6 +16,12 @@ async function buildHeaders(
     ...extra,
   };
   if (token) headers.Authorization = `Bearer ${token}`;
+  try {
+    const deviceKey = await getDeviceKey();
+    if (deviceKey) headers["X-Device-Key"] = deviceKey;
+  } catch (err) {
+    console.warn("Failed to attach device key header", err);
+  }
   return headers;
 }
 

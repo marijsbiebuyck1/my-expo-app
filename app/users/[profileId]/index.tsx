@@ -32,8 +32,6 @@ type Message = {
 export default function ChatDetailScreen() {
   const params = useLocalSearchParams();
   const profileId = String(params.profileId ?? "unknown");
-  const autoMessageParam =
-    typeof params.autoMessage === "string" ? params.autoMessage : undefined;
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -74,47 +72,38 @@ export default function ChatDetailScreen() {
     async function loadMessages() {
       setLoading(true);
       try {
-        const tryPaths = [
-          `/messages?profileId=${encodeURIComponent(profileId)}`,
-          `/messages/profile/${encodeURIComponent(profileId)}`,
-          `/messages/${encodeURIComponent(profileId)}`,
-          "/messages",
-        ];
+        const resp = await api.get(
+          `/conversations/${encodeURIComponent(profileId)}/messages`
+        );
+        if (!mounted) return;
+        if (!resp.ok) throw new Error(`status ${resp.status}`);
+        const payload = await resp.json().catch(() => null);
+        if (!payload) throw new Error("Invalid payload");
 
-        for (const p of tryPaths) {
-          try {
-            const resp = await api.get(p);
-            if (!mounted) return;
-            if (!resp.ok) continue;
-            const json = await resp.json().catch(() => null);
-            if (!json) continue;
+        const listSource = Array.isArray(payload?.messages)
+          ? payload.messages
+          : Array.isArray(payload)
+          ? payload
+          : [];
 
-            let list: Message[] = [];
-            if (Array.isArray(json)) {
-              list = json.map((m: any) => ({
-                id: m.id || m._id || String(Math.random()),
-                text: m.text || m.message || m.body || "",
-                fromMe: !!(m.from === "me" || m.fromMe || m.isFromCurrentUser),
-                time: m.time || m.createdAt || m.ts || undefined,
-              }));
-            } else if (Array.isArray(json.items)) {
-              list = json.items.map((m: any) => ({
-                id: m.id || m._id || String(Math.random()),
-                text: m.text || m.message || m.body || "",
-                fromMe: !!(m.from === "me" || m.fromMe || m.isFromCurrentUser),
-                time: m.time || m.createdAt || m.ts || undefined,
-              }));
-            }
+        const list: Message[] = listSource.map((m: any) => ({
+          id: m.id || m._id || String(Math.random()),
+          text: m.text || "",
+          fromMe: !m.fromKind || m.fromKind === "user",
+          time: m.createdAt || m.updatedAt || undefined,
+        }));
 
-            if (list.length > 0) {
-              setMessages(list);
-              return;
-            }
-          } catch (err) {
-            // try next
-            console.warn && console.warn("message fetch attempt failed", err);
-          }
+        setMessages(list);
+
+        if (payload?.conversation) {
+          setAnimal((prev) => ({
+            name: payload.conversation.animalName || prev?.name,
+            photo: payload.conversation.animalPhoto || prev?.photo,
+          }));
         }
+      } catch (err) {
+        console.warn("Failed to load conversation", err);
+        setMessages([]);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -138,26 +127,12 @@ export default function ChatDetailScreen() {
           console.warn("fetch animal failed", err);
         }
       })();
-
-      // If an auto message param was provided, ensure it's shown (avoid duplicates)
-      if (autoMessageParam) {
-        setMessages((prev) => {
-          if (prev.some((m) => m.text === autoMessageParam)) return prev;
-          const autoMsg: Message = {
-            id: `auto-${Date.now()}`,
-            text: autoMessageParam,
-            fromMe: false,
-            time: new Date().toLocaleTimeString().slice(0, 5),
-          };
-          return [...prev, autoMsg];
-        });
-      }
     });
 
     return () => {
       mounted = false;
     };
-  }, [profileId, autoMessageParam]);
+  }, [profileId]);
 
   function send() {
     if (!text.trim()) return;
@@ -173,8 +148,10 @@ export default function ChatDetailScreen() {
 
     (async () => {
       try {
-        const payload = { to: profileId, text: next.text };
-        const resp = await api.post("/messages", payload);
+        const resp = await api.post(
+          `/conversations/${encodeURIComponent(profileId)}/messages`,
+          { text: next.text }
+        );
         if (!resp.ok) return;
         const json = await resp.json().catch(() => null);
         if (json && json.id) {

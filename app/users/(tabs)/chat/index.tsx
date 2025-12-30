@@ -32,70 +32,46 @@ export default function ChatListScreen() {
 
   useEffect(() => {
     let mounted = true;
+    const mergeWithLocal = (remote: Conversation[]) => {
+      const local = getLocalConversations();
+      const localAsConv: Conversation[] = local.map((l) => ({
+        id: l.id,
+        name: l.name,
+        lastMessage: l.lastMessage || "",
+        avatar: l.avatar ?? null,
+      }));
+      const merged = [
+        ...localAsConv,
+        ...remote.filter((l) => !localAsConv.some((x) => x.id === l.id)),
+      ];
+      return merged;
+    };
+
     async function load() {
       setLoading(true);
       try {
-        // Try a few likely endpoints; fall back to MOCK
-        const tryPaths = [
-          "/conversations",
-          "/messages/conversations",
-          "/messages",
-        ];
-
-        for (const p of tryPaths) {
-          try {
-            const resp = await api.get(p);
-            if (!mounted) return;
-            if (!resp.ok) continue;
-            const json = await resp.json().catch(() => null);
-            if (!json) continue;
-
-            // Normalize into Conversation[]
-            const list: Conversation[] = (
-              Array.isArray(json) ? json : json.items || []
-            )
-              .map((it: any) => ({
-                id:
-                  it.id ||
-                  it._id ||
-                  it.conversationId ||
-                  String(it.to || it.with || it.userId || Math.random()),
-                name:
-                  it.name ||
-                  it.title ||
-                  it.displayName ||
-                  it.withName ||
-                  it.fromName ||
-                  "Onbekend",
-                lastMessage:
-                  it.lastMessage ||
-                  it.preview ||
-                  it.message ||
-                  (it.text && String(it.text).slice(0, 80)) ||
-                  "",
-                avatar: it.avatar || it.photo || null,
-              }))
-              .filter(Boolean);
-
-            if (list.length > 0) {
-              const local = getLocalConversations();
-              const localAsConv: Conversation[] = local.map((l) => ({
-                id: l.id,
-                name: l.name,
-                lastMessage: l.lastMessage || "",
-                avatar: l.avatar ?? null,
-              }));
-              const merged = [
-                ...localAsConv,
-                ...list.filter((l) => !localAsConv.some((x) => x.id === l.id)),
-              ];
-              setConversations(merged);
-              return;
-            }
-          } catch {
-            // try next
-          }
-        }
+        const resp = await api.get("/conversations");
+        if (!mounted) return;
+        if (!resp.ok) throw new Error(`status ${resp.status}`);
+        const json = await resp.json().catch(() => null);
+        if (!json || !Array.isArray(json)) throw new Error("Invalid payload");
+        const list: Conversation[] = json.map((it: any) => ({
+          id: it.animalId || it.id || String(Math.random()),
+          name: it.name || it.animalName || "Onbekend",
+          lastMessage: it.lastMessage || "",
+          avatar: it.avatar || it.animalPhoto || null,
+        }));
+        setConversations(mergeWithLocal(list));
+      } catch (err) {
+        console.warn("Failed to fetch conversations", err);
+        const local = getLocalConversations().map((l) => ({
+          id: l.id,
+          name: l.name,
+          lastMessage: l.lastMessage || "",
+          avatar: l.avatar ?? null,
+        }));
+        if (!mounted) return;
+        setConversations(local);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -106,7 +82,6 @@ export default function ChatListScreen() {
     // subscribe to local optimistic conversations so the list updates immediately
     const unsub = subscribeLocalConversations((items) => {
       setConversations((prev) => {
-        // convert items to Conversation[] and keep fetched items that aren't in local
         const localAsConv: Conversation[] = items.map((l) => ({
           id: l.id,
           name: l.name,

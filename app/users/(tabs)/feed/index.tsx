@@ -355,19 +355,20 @@ export default function FeedScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
       <LogoHeader />
       <View style={styles.container}>
-        <ThemedText type="title">Happy tails Feed</ThemedText>
+        <View style={styles.headerRow}>
+          <ThemedText type="title">Happy tails Feed</ThemedText>
 
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <View style={styles.addButtonInner}>
-            <View style={styles.addIconCircle}>
-              <ThemedText style={styles.addIcon}>+</ThemedText>
-            </View>
-            <ThemedText style={styles.addButtonText}>Dier toevoegen</ThemedText>
-          </View>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setModalVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Nieuw dier toevoegen"
+            accessibilityHint="Open het uploadscherm"
+            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+          >
+            <ThemedText style={styles.addButtonIcon}>+</ThemedText>
+          </TouchableOpacity>
+        </View>
 
         <Modal
           visible={modalVisible}
@@ -463,18 +464,31 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 30,
   },
-  addButton: {
-    backgroundColor: "#037D4E",
-    paddingVertical: 10,
-    borderRadius: 60,
+  headerRow: {
+    flexDirection: "row",
     alignItems: "center",
-    marginVertical: 12,
-    marginTop: 24,
+    justifyContent: "space-between",
+    marginTop: 8,
     marginBottom: 24,
   },
-  addButtonText: {
+  addButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#F7A5D8",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#E36FC0",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  addButtonIcon: {
     color: "#fff",
-    fontWeight: "700",
+    fontWeight: "800",
+    fontSize: 24,
+    marginTop: -2,
   },
   postCard: {
     backgroundColor: "#fff",
@@ -498,23 +512,6 @@ const styles = StyleSheet.create({
     height: 220,
     borderRadius: 8,
     marginTop: 8,
-  },
-  addButtonInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  addIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addIcon: {
-    color: "#fff",
-    fontWeight: "700",
   },
   modalContainer: {
     flex: 1,

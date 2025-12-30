@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MatchCard from "../../../../components/match-card";
@@ -32,6 +32,46 @@ export default function HomeScreen() {
   const AUTO_MESSAGE = `Ik heb 9 levens… wil jij er eentje met mij delen?
 
 Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan het formulier in en wie weet claim ik binnenkort mijn plekje op jouw bank 😸.`;
+
+  const persistMatch = useCallback(
+    async (itemSnapshot: SwipeDeckItem | null) => {
+      if (!itemSnapshot?.id) return;
+      const animalId = String(itemSnapshot.id);
+      const optimistic = {
+        id: animalId,
+        name: itemSnapshot.name || "Onbekend",
+        lastMessage: AUTO_MESSAGE,
+        avatar: itemSnapshot.imageUri || null,
+      };
+      addLocalConversation(optimistic);
+      try {
+        const resp = await api.post("/conversations", {
+          animalId,
+          autoMessage: AUTO_MESSAGE,
+        });
+        if (!resp.ok) throw new Error(`status ${resp.status}`);
+        const payload = await resp.json().catch(() => null);
+        const conversation = payload?.conversation || {};
+        addLocalConversation({
+          id: conversation.animalId || animalId,
+          name:
+            conversation.animalName ||
+            itemSnapshot.name ||
+            conversation.name ||
+            "Onbekend",
+          lastMessage: conversation.lastMessage || AUTO_MESSAGE,
+          avatar:
+            conversation.animalPhoto ||
+            itemSnapshot.imageUri ||
+            conversation.avatar ||
+            null,
+        });
+      } catch (err) {
+        console.warn("Failed to persist match", err);
+      }
+    },
+    [AUTO_MESSAGE]
+  );
 
   useEffect(() => {
     let active = true;
@@ -97,10 +137,12 @@ Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan he
                     if (res.ok) {
                       const data = await res.json().catch(() => null);
                       const photo = data?.photo || item.imageUri;
-                      setMatchItem({
+                      const normalized = {
                         ...(item as SwipeDeckItem),
                         imageUri: photo,
-                      });
+                      };
+                      setMatchItem(normalized);
+                      persistMatch(normalized);
                       return;
                     }
                   }
@@ -111,7 +153,7 @@ Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan he
 
                 // fallback: use the mapped imageUri
                 setMatchItem(item);
-                // NOTE: you can also trigger backend conversation creation here
+                persistMatch(item);
               }}
             />
             <MatchCard
@@ -122,34 +164,18 @@ Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan he
               onOpenChat={async (id) => {
                 // use the id provided by the MatchCard so we don't depend on state
                 const resolvedId = id ?? (matchItem as any)?.id;
-                const snapshot = matchItem;
                 setMatchItem(null);
                 if (!resolvedId) return;
 
                 try {
-                  await api.post("/messages", {
-                    to: String(resolvedId),
-                    text: AUTO_MESSAGE,
+                  await api.post("/conversations", {
+                    animalId: String(resolvedId),
                   });
                 } catch (e) {
-                  console.warn("failed to send auto-message", e);
+                  console.warn("failed to ensure conversation", e);
                 }
 
-                // add an optimistic local conversation so it appears immediately in the chat list
-                try {
-                  addLocalConversation({
-                    id: String(resolvedId),
-                    name: snapshot?.name || "Onbekend",
-                    lastMessage: AUTO_MESSAGE,
-                    avatar: snapshot?.imageUri || null,
-                  });
-                } catch {}
-
-                router.push(
-                  `/users/${encodeURIComponent(
-                    String(resolvedId)
-                  )}?autoMessage=${encodeURIComponent(AUTO_MESSAGE)}`
-                );
+                router.push(`/users/${encodeURIComponent(String(resolvedId))}`);
               }}
             />
           </View>
