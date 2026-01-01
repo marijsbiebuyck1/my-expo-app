@@ -16,8 +16,11 @@ import { api } from "../../../../../_lib/api";
 type Conversation = {
   id: string;
   name: string;
+  userId?: string | null;
+  animalName?: string;
   lastMessage: string;
   avatar?: string | null;
+  userAvatar?: string | null;
 };
 
 export default function AnimalChatsScreen() {
@@ -32,59 +35,32 @@ export default function AnimalChatsScreen() {
     async function load() {
       setLoading(true);
       try {
-        const tryPaths = [
-          `/conversations?to=${encodeURIComponent(animalId)}`,
-          `/conversations?profileId=${encodeURIComponent(animalId)}`,
-          `/messages/conversations?to=${encodeURIComponent(animalId)}`,
-          `/messages/conversations?profileId=${encodeURIComponent(animalId)}`,
-          `/messages?to=${encodeURIComponent(animalId)}`,
-          `/messages?profileId=${encodeURIComponent(animalId)}`,
-        ];
-
-        for (const p of tryPaths) {
-          try {
-            const resp = await api.get(p, true);
-            if (!mounted) return;
-            if (!resp.ok) continue;
-            const json = await resp.json().catch(() => null);
-            if (!json) continue;
-
-            const list: Conversation[] = (
-              Array.isArray(json) ? json : json.items || []
-            )
-              .map((it: any) => ({
-                id:
-                  it.id ||
-                  it._id ||
-                  it.userId ||
-                  it.from ||
-                  it.with ||
-                  String(Math.random()),
-                name:
-                  it.name ||
-                  it.displayName ||
-                  it.withName ||
-                  it.fromName ||
-                  "Onbekend",
-                lastMessage:
-                  it.lastMessage ||
-                  it.preview ||
-                  it.message ||
-                  (it.text && String(it.text).slice(0, 80)) ||
-                  "",
-                avatar: it.avatar || it.photo || null,
-              }))
-              .filter(Boolean);
-
-            if (list.length > 0) {
-              setConversations(list);
-              return;
-            }
-          } catch (err) {
-            console.warn(err);
-            // try next
-          }
+        const resp = await api.get(
+          `/conversations?animalId=${encodeURIComponent(animalId)}`,
+          true
+        );
+        if (!mounted) return;
+        if (!resp.ok) {
+          const text = await resp.text().catch(() => "");
+          throw new Error(text || `status ${resp.status}`);
         }
+        const json = await resp.json().catch(() => []);
+        if (!mounted) return;
+        const listSource = Array.isArray(json) ? json : [];
+        const mapped: Conversation[] = listSource.map((item: any) => ({
+          id: String(item.id || item._id || Math.random()),
+          name:
+            item.userName ||
+            item.name ||
+            item.displayName ||
+            "Onbekende gebruiker",
+          userId: item.userId || null,
+          animalName: item.animalName || undefined,
+          lastMessage: item.lastMessage || "",
+          userAvatar: item.userAvatar || null,
+          avatar: item.userAvatar || item.avatar || null,
+        }));
+        setConversations(mapped);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -96,17 +72,22 @@ export default function AnimalChatsScreen() {
     };
   }, [animalId]);
 
-  function openConversation(userId: string) {
-    // navigate to the user profile chat (admin can view) — reuse existing user chat route
+  function openConversation(conversation: Conversation) {
     router.push({
-      pathname: "/users/[profileId]",
-      params: { profileId: userId },
+      pathname: "/admin/animals/[animalId]/chats/[conversationId]",
+      params: {
+        animalId,
+        conversationId: conversation.id,
+        animalName: conversation.animalName || "",
+        userName: conversation.name,
+        avatar: conversation.userAvatar || conversation.avatar || "",
+      },
     } as any);
   }
 
   function renderItem({ item }: { item: Conversation }) {
     return (
-      <Pressable onPress={() => openConversation(item.id)} style={styles.row}>
+      <Pressable onPress={() => openConversation(item)} style={styles.row}>
         {item.avatar ? (
           <Image source={{ uri: item.avatar }} style={styles.avatar} />
         ) : (

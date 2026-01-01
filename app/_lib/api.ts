@@ -16,6 +16,39 @@ async function buildHeaders(
     ...extra,
   };
   if (token) headers.Authorization = `Bearer ${token}`;
+  if (isAdmin) {
+    try {
+      const rawAdmin = await SecureStore.getItemAsync("admin");
+      let parsed: Record<string, any> | null = null;
+      if (rawAdmin) {
+        try {
+          parsed = JSON.parse(rawAdmin);
+        } catch {
+          parsed = null;
+        }
+      }
+      let adminId =
+        parsed?.id ??
+        parsed?._id ??
+        parsed?.shelterId ??
+        parsed?.adminId ??
+        null;
+      if (!adminId) {
+        const storedId = await SecureStore.getItemAsync("adminId");
+        if (storedId) adminId = storedId;
+      }
+      if (adminId) headers["X-Shelter-Id"] = String(adminId);
+
+      const adminName =
+        parsed?.name ||
+        parsed?.contactPerson ||
+        parsed?.shelterName ||
+        parsed?.displayName;
+      if (adminName) headers["X-Shelter-Name"] = String(adminName);
+    } catch (err) {
+      console.warn("Failed to attach admin headers", err);
+    }
+  }
   try {
     const deviceKey = await getDeviceKey();
     if (deviceKey) headers["X-Device-Key"] = deviceKey;
