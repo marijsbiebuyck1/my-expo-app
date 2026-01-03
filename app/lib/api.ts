@@ -15,6 +15,7 @@ async function buildHeaders(
     ...extra,
   };
   if (token) headers.Authorization = `Bearer ${token}`;
+  if (isAdmin) headers["X-Admin-Client"] = "1";
   return headers;
 }
 

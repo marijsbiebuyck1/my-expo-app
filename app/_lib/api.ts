@@ -17,6 +17,7 @@ async function buildHeaders(
   };
   if (token) headers.Authorization = `Bearer ${token}`;
   if (isAdmin) {
+    headers["X-Admin-Client"] = "1";
     try {
       const rawAdmin = await SecureStore.getItemAsync("admin");
       let parsed: Record<string, any> | null = null;
