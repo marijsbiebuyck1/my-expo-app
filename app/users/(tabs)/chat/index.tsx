@@ -1,7 +1,9 @@
 import { useRouter } from "expo-router";
 // SecureStore usage removed - prefer provided ids from the conversation list
+import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   FlatList,
   Image,
   ListRenderItemInfo,
@@ -9,6 +11,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import { GestureHandlerRootView, RectButton, Swipeable } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
@@ -29,6 +32,28 @@ export default function ChatListScreen() {
   const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  async function removeConversationLocal(id: string) {
+    // remove locally immediately
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    try {
+      await api.del(`/conversations/${encodeURIComponent(id)}`, true);
+    } catch (err) {
+      console.warn("Failed to delete conversation", err);
+      Alert.alert("Verwijderen mislukt", "Kon gesprek niet verwijderen. Probeer het opnieuw.");
+    }
+    // also remove any optimistic local conversation
+    try {
+      const { removeLocalConversation } = await import(
+        "../../../../lib/localConversations"
+      );
+      removeLocalConversation(id);
+    } catch {
+      // ignore
+    }
+    // NOTE: Do NOT delete the animal resource here. Only remove the conversation
+    // so the animal no longer appears in the conversation list.
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -109,28 +134,62 @@ export default function ChatListScreen() {
     } as any);
   }
 
+  function renderRightActions(item: Conversation) {
+    return (
+      <View style={{ width: 120, flexDirection: "row", justifyContent: "flex-end" }}>
+        <RectButton
+          style={[styles.swipeActionButton, styles.swipeDeleteButton]}
+          onPress={() => {
+            Alert.alert(
+              "Verwijder gesprek",
+              "Weet je zeker dat je dit gesprek wilt verwijderen?",
+              [
+                { text: "Annuleer", style: "cancel" },
+                {
+                  text: "Verwijder",
+                  style: "destructive",
+                  onPress: () => removeConversationLocal(item.id),
+                },
+              ]
+            );
+          }}
+        >
+          <Ionicons name="trash-outline" size={20} color="#fff" />
+          <ThemedText style={styles.swipeActionText}>Verwijder</ThemedText>
+        </RectButton>
+      </View>
+    );
+  }
+
   function renderItem({ item }: ListRenderItemInfo<Conversation>) {
     return (
-      <Pressable
-        onPress={() => openConversation(item.id)}
-        style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+      <Swipeable
+        renderRightActions={() => renderRightActions(item)}
+        overshootRight={false}
+        friction={2}
+        rightThreshold={40}
       >
-        {item.avatar ? (
-          <Image source={{ uri: item.avatar }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarPlaceholder} />
-        )}
-        <View style={styles.meta}>
-          <ThemedText type="subtitle">{item.name}</ThemedText>
-          <ThemedText
-            style={styles.preview}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {item.lastMessage}
-          </ThemedText>
-        </View>
-      </Pressable>
+        <Pressable
+          onPress={() => openConversation(item.id)}
+          style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+        >
+          {item.avatar ? (
+            <Image source={{ uri: item.avatar }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder} />
+          )}
+          <View style={styles.meta}>
+            <ThemedText type="subtitle">{item.name}</ThemedText>
+            <ThemedText
+              style={styles.preview}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.lastMessage}
+            </ThemedText>
+          </View>
+        </Pressable>
+      </Swipeable>
     );
   }
 
@@ -148,13 +207,20 @@ export default function ChatListScreen() {
             <ThemedText>Bezig met laden...</ThemedText>
           </View>
         ) : (
+          <GestureHandlerRootView style={{ flex: 1 }}>
           <FlatList
             data={conversations}
             keyExtractor={(i) => i.id}
             renderItem={renderItem}
             ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
             contentContainerStyle={{ padding: 16 }}
+            ListEmptyComponent={() => (
+              <View style={{ padding: 16, alignItems: "center" }}>
+                <ThemedText style={{ color: "#666" }}>Nog geen matches</ThemedText>
+              </View>
+            )}
           />
+          </GestureHandlerRootView>
         )}
         {/* Could show a loading indicator here if desired */}
       </View>
@@ -189,6 +255,21 @@ const styles = StyleSheet.create({
   },
   meta: { flex: 1 },
   preview: { color: "#666", marginTop: 4 },
+  swipeActionButton: {
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    minWidth: 72,
+  },
+  swipeDeleteButton: { backgroundColor: "#FDA0E9" },
+  swipeActionText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 12,
+    marginTop: 6,
+  },
 });
 
 export const options = {

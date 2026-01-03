@@ -18,9 +18,9 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import LogoHeader from "../../../../../../components/logo-header";
-import { ThemedText } from "../../../../../../components/themed-text";
-import { api } from "../../../../../_lib/api";
+import LogoHeader from "../../../components/logo-header";
+import { ThemedText } from "../../../components/themed-text";
+import { api } from "../../_lib/api";
 
 interface MessageItem {
   id: string;
@@ -40,6 +40,7 @@ export default function AdminConversationDetailScreen() {
     typeof params.avatar === "string" && params.avatar.length > 0
       ? params.avatar
       : null;
+  const userId = params.userId ? String(params.userId) : "";
   const insets = useSafeAreaInsets();
 
   const [messages, setMessages] = useState<MessageItem[]>([]);
@@ -158,7 +159,7 @@ export default function AdminConversationDetailScreen() {
                     <Ionicons name="chevron-back" size={24} color="#2F2A28" />
                   </Pressable>
                   <View style={styles.headerMeta}>
-                    {avatar ? (
+                      {avatar ? (
                       <Image
                         source={{ uri: avatar }}
                         style={styles.headerAvatar}
@@ -170,10 +171,20 @@ export default function AdminConversationDetailScreen() {
                         </ThemedText>
                       </View>
                     )}
-                    <View>
-                      <ThemedText style={styles.headerTitle}>
-                        {userName}
-                      </ThemedText>
+                      <View>
+                        <Pressable
+                          onPress={() => {
+                            if (!userId) return;
+                            router.push({
+                              pathname: "/users/[profileId]",
+                              params: { profileId: userId },
+                            } as any);
+                          }}
+                        >
+                          <ThemedText style={styles.headerTitle}>
+                            {userName}
+                          </ThemedText>
+                        </Pressable>
                       {animalName ? (
                         <ThemedText style={styles.headerSubtitle}>
                           {animalName}

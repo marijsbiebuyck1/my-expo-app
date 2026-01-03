@@ -51,6 +51,14 @@ export default function AnimalsScreen() {
   const [description, setDescription] = useState("");
   const [properties, setProperties] = useState<string[]>([]);
   const [whoProperties, setWhoProperties] = useState<string[]>([]);
+  // home-situation labels (extra step)
+  const [hasGarden, setHasGarden] = useState<boolean | null>(null);
+  const [canWithCats, setCanWithCats] = useState(false);
+  const [canWithDogs, setCanWithDogs] = useState(false);
+  const [canWithRodents, setCanWithRodents] = useState(false);
+  const [kidsOption, setKidsOption] = useState<"no" | "young" | "between" | null>(null);
+  const [catTypes, setCatTypes] = useState<string[]>([]);
+  
   const [submitting, setSubmitting] = useState(false);
   const [cameraVisible, setCameraVisible] = useState(false);
 
@@ -221,8 +229,15 @@ export default function AnimalsScreen() {
       if (breed || isEditing) attributes.breed = breed || "";
       if (gender) attributes.sex = gender;
       if (properties.length > 0 || isEditing) attributes.traits = properties;
-      if (whoProperties.length > 0) attributes.notes = whoProperties.join(", ");
-      else if (isEditing) attributes.notes = "";
+  if (whoProperties.length > 0) attributes.notes = whoProperties.join(", ");
+  else if (isEditing) attributes.notes = "";
+  // home-situation attributes
+  if (hasGarden !== null || isEditing) attributes.hasGarden = hasGarden;
+  if (canWithCats || isEditing) attributes.canWithCats = canWithCats;
+  if (canWithDogs || isEditing) attributes.canWithDogs = canWithDogs;
+  if (canWithRodents || isEditing) attributes.canWithRodents = canWithRodents;
+  if (kidsOption || isEditing) attributes.kids = kidsOption;
+  if (catTypes.length > 0 || isEditing) attributes.catTypes = catTypes;
       if (Object.keys(attributes).length > 0) payload.attributes = attributes;
 
       let endpoint = "/animals";
@@ -309,7 +324,7 @@ export default function AnimalsScreen() {
 
   const isEditing = Boolean(editingAnimal);
   const modalTitle = isEditing ? "Dier bewerken" : "Dier toevoegen";
-  const submitLabel = isEditing ? "Wijzigingen opslaan" : "Opslaan";
+  // submitLabel was previously used for the modal submit; for the step-4 flow we show a fixed label
 
   const genderLabelMale = species === "cat" ? "Kat (mannetje)" : "Reu";
   const genderLabelFemale = species === "cat" ? "Kattin (vrouwtje)" : "Teefje";
@@ -325,20 +340,20 @@ export default function AnimalsScreen() {
   ];
 
   const whoWorkOptions = [
-    "Telewerk",
-    "Vaak reizen",
-    "9-to-5",
-    "Nog op school",
-    "Op pensioen",
+    "💻 Telewerk",
+    "✈️ Vaak reizen",
+    "🕘 9-to-5",
+    "🎓 Nog op school",
+    "🧓 Op pensioen",
   ];
   const whoHobbyOptions = [
-    "Wandelen",
-    "Op vakantie gaan",
-    "Series kijken",
-    "Iets gaan drinken",
-    "Sporten",
+    "🚶 Wandelen",
+    "✈️ Op vakantie gaan",
+    "📺 Series kijken",
+    "🍻 Iets gaan drinken",
+    "🏋️ Sporten",
   ];
-  const whoLivingOptions = ["Gezin", "Alleen", "Met roomies", "Met partner"];
+  const whoLivingOptions = ["👪 Gezin", "🏠 Alleen", "🛋️ Met roomies", "❤️ Met partner"];
 
   function normalizeSpecies(value?: string | null): "cat" | "dog" | null {
     if (!value) return null;
@@ -437,6 +452,13 @@ export default function AnimalsScreen() {
       Array.isArray(attrs.traits) ? attrs.traits.map((t: any) => String(t)) : []
     );
     setWhoProperties(extractWhoPreferences(animal));
+  // load home-situation labels when editing
+  setHasGarden(typeof attrs.hasGarden === "boolean" ? attrs.hasGarden : null);
+  setCanWithCats(Boolean(attrs.canWithCats));
+  setCanWithDogs(Boolean(attrs.canWithDogs));
+  setCanWithRodents(Boolean(attrs.canWithRodents));
+  setKidsOption(typeof attrs.kids === "string" ? attrs.kids : null);
+  setCatTypes(Array.isArray(attrs.catTypes) ? attrs.catTypes.map(String) : []);
     const existingPhoto =
       typeof animal.photo === "string" && animal.photo ? animal.photo : null;
     setPhotoPreview(existingPhoto);
@@ -683,7 +705,7 @@ export default function AnimalsScreen() {
                             ]}
                             onPress={() => setSpecies("cat")}
                           >
-                            <ThemedText>Kat</ThemedText>
+                            <ThemedText>🐱 Kat</ThemedText>
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[
@@ -692,7 +714,7 @@ export default function AnimalsScreen() {
                             ]}
                             onPress={() => setSpecies("dog")}
                           >
-                            <ThemedText>Hond</ThemedText>
+                            <ThemedText>🐶 Hond</ThemedText>
                           </TouchableOpacity>
                         </View>
 
@@ -706,13 +728,10 @@ export default function AnimalsScreen() {
                             </ThemedText>
                           </TouchableOpacity>
                           <TouchableOpacity
-                            style={[
-                              styles.shareButton,
-                              { backgroundColor: "#eee", marginTop: 8 },
-                            ]}
+                            style={styles.pinkOutline}
                             onPress={closeModal}
                           >
-                            <ThemedText>Annuleren</ThemedText>
+                            <ThemedText style={{ color: "#037D4E" }}>Annuleren</ThemedText>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -799,17 +818,14 @@ export default function AnimalsScreen() {
                             </ThemedText>
                           </TouchableOpacity>
                           <TouchableOpacity
-                            style={[
-                              styles.shareButton,
-                              { backgroundColor: "#eee", marginTop: 8 },
-                            ]}
+                            style={styles.pinkOutline}
                             onPress={() => setStep(1)}
                           >
-                            <ThemedText>Terug</ThemedText>
+                            <ThemedText style={{ color: "#037D4E" }}>Terug</ThemedText>
                           </TouchableOpacity>
                         </View>
                       </View>
-                    ) : (
+                    ) : step === 3 ? (
                       <View style={{ width: "100%", alignItems: "center" }}>
                         <ThemedText type="title">Wie zoeken we?</ThemedText>
 
@@ -897,34 +913,140 @@ export default function AnimalsScreen() {
                         <View style={{ width: "100%", marginTop: 16 }}>
                           <TouchableOpacity
                             style={styles.shareButton}
-                            onPress={submitAnimal}
+                            onPress={() => setStep(4)}
                             disabled={submitting}
                           >
                             {submitting ? (
                               <ActivityIndicator color="#fff" />
                             ) : (
                               <ThemedText style={{ color: "#fff" }}>
-                                {submitLabel}
+                                Volgende
                               </ThemedText>
                             )}
                           </TouchableOpacity>
                           <TouchableOpacity
-                            style={[
-                              styles.shareButton,
-                              { backgroundColor: "#eee", marginTop: 8 },
-                            ]}
+                            style={styles.pinkOutline}
                             onPress={() => setStep(2)}
                           >
-                            <ThemedText>Terug</ThemedText>
+                            <ThemedText style={{ color: "#037D4E" }}>Terug</ThemedText>
                           </TouchableOpacity>
                         </View>
                       </View>
-                    )}
+                    ) : step === 4 ? (
+                      <View style={{ width: "100%", alignItems: "flex-start" }}>
+                        <ThemedText type="title">Over de thuissituatie</ThemedText>
+
+                        <ThemedText style={{ marginTop: 12 }}>Heeft toegang tot een tuin?</ThemedText>
+                        <View style={[styles.speciesRow, { marginTop: 8 }]}>
+                          <TouchableOpacity
+                            style={[styles.speciesButton, hasGarden === true ? styles.speciesActive : null]}
+                            onPress={() => setHasGarden(true)}
+                          >
+                            <ThemedText>🌳  Ja</ThemedText>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.speciesButton, hasGarden === false ? styles.speciesActive : null]}
+                            onPress={() => setHasGarden(false)}
+                          >
+                            <ThemedText>🏙️  Nee</ThemedText>
+                          </TouchableOpacity>
+                        </View>
+
+                        <ThemedText style={{ marginTop: 12 }}>Kan omgaan met andere dieren?</ThemedText>
+                        <View style={[styles.speciesRow, { marginTop: 8 }]}>
+                          <TouchableOpacity
+                            style={canWithCats ? [styles.propertyButton, styles.propertyActive] : styles.propertyButton}
+                            onPress={() => setCanWithCats((v) => !v)}
+                          >
+                            <ThemedText>🐱  Kan met katten</ThemedText>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={canWithDogs ? [styles.propertyButton, styles.propertyActive] : styles.propertyButton}
+                            onPress={() => setCanWithDogs((v) => !v)}
+                          >
+                            <ThemedText>🐶  Kan met honden</ThemedText>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={canWithRodents ? [styles.propertyButton, styles.propertyActive] : styles.propertyButton}
+                            onPress={() => setCanWithRodents((v) => !v)}
+                          >
+                            <ThemedText>🐭  Kan met knaagdieren</ThemedText>
+                          </TouchableOpacity>
+                        </View>
+
+                        <ThemedText style={{ marginTop: 12 }}>Kan omgaan met kinderen</ThemedText>
+                        <View style={[styles.speciesRow, { marginTop: 8 }]}>
+                          <TouchableOpacity
+                            style={[styles.propertyButton, kidsOption === "no" ? styles.propertyActive : null]}
+                            onPress={() => setKidsOption("no")}
+                          >
+                            <ThemedText>❌  Nee</ThemedText>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.propertyButton, kidsOption === "young" ? styles.propertyActive : null]}
+                            onPress={() => setKidsOption("young")}
+                          >
+                            <ThemedText>🧒  Ja, jonger dan 6 jaar</ThemedText>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.propertyButton, kidsOption === "between" ? styles.propertyActive : null]}
+                            onPress={() => setKidsOption("between")}
+                          >
+                            <ThemedText>👦  Ja, tussen 6 - 14 jaar</ThemedText>
+                          </TouchableOpacity>
+                        </View>
+
+                        {species === "cat" ? (
+                          <>
+                            <ThemedText style={{ marginTop: 12 }}>Soort kat</ThemedText>
+                            <View style={[styles.speciesRow, { flexWrap: "wrap", marginTop: 8 }]}> 
+                              {[
+                                { key: "Binnenkat", label: "🐱 Binnenkat" },
+                                { key: "Buitenkat", label: "🌳 Buitenkat" },
+                                { key: "Knuffelkat", label: "😽 Knuffelkat" },
+                                { key: "Boerderijkat", label: "🌾 Boerderijkat" },
+                              ].map((opt) => (
+                                <TouchableOpacity
+                                  key={opt.key}
+                                  style={catTypes.includes(opt.key) ? [styles.propertyButton, styles.propertyActive] : styles.propertyButton}
+                                  onPress={() => setCatTypes((prev) => prev.includes(opt.key) ? prev.filter((p) => p !== opt.key) : [...prev, opt.key])}
+                                >
+                                  <ThemedText>{opt.label}</ThemedText>
+                                </TouchableOpacity>
+                              ))}
+                            </View>
+                          </>
+                        ) : null}
+
+                        <View style={{ width: "100%", marginTop: 16 }}>
+                          <TouchableOpacity
+                            style={styles.pinkButton}
+                            onPress={() => {
+                              submitAnimal();
+                            }}
+                            disabled={submitting}
+                          >
+                            {submitting ? (
+                              <ActivityIndicator color="#fff" />
+                            ) : (
+                              <ThemedText style={{ color: "#fff" }}>Klaar!</ThemedText>
+                            )}
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.pinkOutline}
+                            onPress={() => setStep(3)}
+                          >
+                            <ThemedText style={{ color: "#037D4E" }}>Terug</ThemedText>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : null}
                   </ScrollView>
                 </KeyboardAvoidingView>
               </TouchableWithoutFeedback>
             </SafeAreaView>
           </Modal>
+          
           <CameraCapture
             visible={cameraVisible}
             onClose={() => setCameraVisible(false)}
@@ -1016,24 +1138,39 @@ const styles = StyleSheet.create({
   speciesButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#F6F9EE",
     borderRadius: 20,
   },
-  speciesActive: { backgroundColor: "#E6F4FE" },
+  speciesActive: { backgroundColor: "#E6F3C9" },
   propertyButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: "#f7f7f2",
+    backgroundColor: "#F6F9EE",
     borderRadius: 20,
     marginRight: 8,
     marginBottom: 8,
   },
-  propertyActive: { backgroundColor: "#E6F4FE" },
+  propertyActive: { backgroundColor: "#E6F3C9" },
   shareButton: {
     backgroundColor: "#037D4E",
     paddingVertical: 12,
     borderRadius: 24,
     alignItems: "center",
+  },
+  pinkButton: {
+    backgroundColor: "#037D4E",
+    paddingVertical: 12,
+    borderRadius: 24,
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  pinkOutline: {
+    borderWidth: 2,
+    borderColor: "#037D4E",
+    paddingVertical: 12,
+    borderRadius: 24,
+    alignItems: "center",
+    marginTop: 6,
   },
   addButtonFull: {
     backgroundColor: "#037D4E",

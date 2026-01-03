@@ -23,6 +23,11 @@ export function clearLocalConversations() {
   listeners.forEach((l) => l(items.slice()));
 }
 
+export function removeLocalConversation(id: string) {
+  items = items.filter((c) => c.id !== id);
+  listeners.forEach((l) => l(items.slice()));
+}
+
 export function subscribeLocalConversations(cb: (items: LocalConversation[]) => void) {
   listeners.push(cb);
   // call immediately

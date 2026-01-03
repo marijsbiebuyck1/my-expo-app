@@ -149,6 +149,8 @@ export default function RegisterOwnerScreen() {
   } catch (e) {
     console.warn('Could not copy content URI to cache, using original uri', e);
   }
+
+  
   if (Platform.OS === 'ios' && !uploadUri.startsWith('file://')) uploadUri = 'file://' + uploadUri;
 
   // @ts-ignore - React Native FormData file object
@@ -368,10 +370,10 @@ export default function RegisterOwnerScreen() {
         console.warn("No auth token or id found in register response", json);
       }
 
-      // success - continue onboarding to interests selection
-      // replace so user cannot go back to registration
-      // router types are generated; assert `any` to avoid a compile error if route type isn't present yet
-      router.replace("/register-interests" as any);
+  // success - continue onboarding to interests selection
+  // replace so user cannot go back to registration
+  // router types are generated; assert `any` to avoid a compile error if route type isn't present yet
+  router.replace("/users/register-interests" as any);
     } catch (e) {
       console.error("register error", e);
       Alert.alert(
@@ -382,6 +384,25 @@ export default function RegisterOwnerScreen() {
       setLoading(false);
     }
   }
+
+    // New flow: validate and save the current form locally, then navigate to interests
+    async function continueToInterests() {
+      const err = validate();
+      if (err) {
+        Alert.alert("Ongeldige invoer", err);
+        return;
+      }
+
+      try {
+        const pending = { name, email, password, birthdate, region, photoUri };
+        await SecureStore.setItemAsync("pendingRegistration", JSON.stringify(pending));
+  // navigate to the interests step of onboarding
+  router.push("/users/register-interests" as any);
+      } catch (e) {
+        console.error("Could not save pending registration", e);
+        Alert.alert("Fout", "Kon niet doorgaan. Probeer opnieuw.");
+      }
+    }
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -479,7 +500,7 @@ export default function RegisterOwnerScreen() {
 
           <TouchableOpacity
             style={styles.cta}
-            onPress={onContinue}
+            onPress={continueToInterests}
             disabled={loading}
           >
             {loading ? (
