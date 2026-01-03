@@ -3,14 +3,14 @@ import * as SecureStore from "expo-secure-store";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "../../components/themed-text";
@@ -262,20 +262,19 @@ export default function RegisterPet() {
           ))}
         </View>
 
-        <View style={{ height: 20 }} />
-
-        <TouchableOpacity
-          style={styles.cta}
-          onPress={onSave}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.ctaText}>Verder</Text>
-          )}
-        </TouchableOpacity>
+        <View style={{ height: 120 }} />
       </ScrollView>
+
+      {/* fixed footer CTA */}
+      <View style={styles.footerBar} pointerEvents={loading ? 'none' : 'auto'}>
+        <View style={styles.footerInner}>
+          <View style={styles.footerBox}>
+            <TouchableOpacity style={styles.ctaButton} onPress={onSave} disabled={loading}>
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Verder</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -317,10 +316,39 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   cta: {
-    backgroundColor: "#FDA0E9",
-    paddingVertical: 14,
-    borderRadius: 50,
+    // legacy
+    backgroundColor: "#037D4E",
     alignItems: "center",
   },
   ctaText: { color: "#fff", fontFamily: "Montserrat_600SemiBold" },
+  footerBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#FBF4E2",
+    borderTopWidth: 1,
+    borderTopColor: "#F0E9DB",
+    paddingVertical: 12,
+    paddingTop: 10,
+    paddingBottom: 24,
+  },
+  footerInner: { alignItems: "center" },
+  footerBox: {
+    width: "94%",
+    backgroundColor: "#FBF4E2",
+    borderRadius: 16,
+    paddingVertical: 8,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#F0E9DB",
+  },
+  ctaButton: {
+    backgroundColor: "#037D4E",
+    height: 56,
+    width: "90%",
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

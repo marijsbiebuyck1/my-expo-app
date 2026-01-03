@@ -122,7 +122,7 @@ export default function RegisterHome() {
     >
       <StatusBar hidden />
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[styles.container, { paddingBottom: 140 }]}
         keyboardShouldPersistTaps="handled"
       >
         <ThemedText type="title" style={styles.title}>
@@ -166,18 +166,10 @@ export default function RegisterHome() {
           {animalOptions.map((a) => (
             <TouchableOpacity
               key={a}
-              style={[
-                styles.chip,
-                otherAnimals.includes(a) && styles.chipSelected,
-              ]}
+              style={[styles.chip, otherAnimals.includes(a) && styles.chipSelected]}
               onPress={() => toggleOther(a)}
             >
-              <Text
-                style={[
-                  styles.chipText,
-                  otherAnimals.includes(a) && styles.chipTextSelected,
-                ]}
-              >
+              <Text style={[styles.chipText, otherAnimals.includes(a) && styles.chipTextSelected]}>
                 {a}
               </Text>
             </TouchableOpacity>
@@ -189,38 +181,26 @@ export default function RegisterHome() {
         </Text>
         <View style={styles.chipsRow}>
           {childrenOptions.map((c) => (
-            <TouchableOpacity
-              key={c}
-              style={[styles.chip, children === c && styles.chipSelected]}
-              onPress={() => setChildren(c)}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  children === c && styles.chipTextSelected,
-                ]}
-              >
-                {c}
-              </Text>
+            <TouchableOpacity key={c} style={[styles.chip, children === c && styles.chipSelected]} onPress={() => setChildren(c)}>
+              <Text style={[styles.chipText, children === c && styles.chipTextSelected]}>{c}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         <View style={{ height: 18 }} />
         <View style={{ height: 24 }} />
-
-        <TouchableOpacity
-          style={styles.cta}
-          onPress={onSave}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.ctaText}>Klaar!</Text>
-          )}
-        </TouchableOpacity>
       </ScrollView>
+
+      {/* fixed footer CTA */}
+      <View style={styles.footerBar} pointerEvents={loading ? 'none' : 'auto'}>
+        <View style={styles.footerInner}>
+          <View style={styles.footerBox}>
+            <TouchableOpacity style={styles.ctaButton} onPress={onSave} disabled={loading}>
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Klaar!</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -253,10 +233,39 @@ const styles = StyleSheet.create({
   chipText: { color: "#333", fontFamily: "Montserrat_400Regular" },
   chipTextSelected: { fontFamily: "Montserrat_600SemiBold" },
   cta: {
-    backgroundColor: "#FDA0E9",
-    paddingVertical: 14,
-    borderRadius: 50,
-    alignItems: "center",
+      // legacy: kept for fallback
+      backgroundColor: "#037D4E",
+      alignItems: "center",
   },
   ctaText: { color: "#fff", fontFamily: "Montserrat_600SemiBold" },
+    footerBar: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "#FBF4E2",
+      borderTopWidth: 1,
+      borderTopColor: "#F0E9DB",
+      paddingVertical: 12,
+      paddingTop: 10,
+      paddingBottom: 24,
+    },
+    footerInner: { alignItems: "center" },
+    footerBox: {
+      width: "94%",
+      backgroundColor: "#FBF4E2",
+      borderRadius: 16,
+      paddingVertical: 8,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: "#F0E9DB",
+    },
+    ctaButton: {
+      backgroundColor: "#037D4E",
+      height: 56,
+      width: "90%",
+      borderRadius: 28,
+      alignItems: "center",
+      justifyContent: "center",
+    },
 });

@@ -91,11 +91,11 @@ export default function RegisterOwnerScreen() {
     if (!name.trim()) return "Vul je naam in.";
     if (!email.trim() || !email.includes("@"))
       return "Vul een geldig e-mail adres in.";
-    if (!birthdate.trim()) return "Vul je geboortedatum in (YYYY-MM-DD).";
-    // simple YYYY-MM-DD format check to avoid backend validation errors
-    const dateMatch = /^\d{4}-\d{2}-\d{2}$/;
+    if (!birthdate.trim()) return "Vul je geboortedatum in (DD/MM/YYYY).";
+    // expect DD/MM/YYYY from the user; we'll normalize to YYYY-MM-DD for the API
+    const dateMatch = /^\d{2}\/\d{2}\/\d{4}$/;
     if (!dateMatch.test(birthdate.trim()))
-      return "Gebruik het formaat DD-MM-YYYY voor je geboortedatum.";
+      return "Gebruik het formaat DD/MM/YYYY voor je geboortedatum.";
     if (!password || password.length < 6)
       return "Kies een wachtwoord van minstens 6 tekens.";
     if (!region.trim()) return "Vul je regio in.";
@@ -117,8 +117,29 @@ export default function RegisterOwnerScreen() {
   // If user picked a photo, send multipart/form-data so backend can handle file upload.
   let resp;
   let parsedRespJson: any = null;
+      // normalize birthdate (DD/MM/YYYY -> YYYY-MM-DD) for backend
+      function normalizeBirthdate(input: string) {
+        const parts = input.split("/");
+        if (parts.length !== 3) return null;
+        const [dd, mm, yyyy] = parts;
+        const d = parseInt(dd, 10);
+        const m = parseInt(mm, 10);
+        const y = parseInt(yyyy, 10);
+        if (!d || !m || !y) return null;
+        const ddP = String(d).padStart(2, "0");
+        const mmP = String(m).padStart(2, "0");
+        return `${y}-${mmP}-${ddP}`;
+      }
+
+      const normalizedBirth = normalizeBirthdate(birthdate.trim());
+      if (!normalizedBirth) {
+        setLoading(false);
+        Alert.alert("Ongeldige invoer", "Gebruik het formaat DD/MM/YYYY voor je geboortedatum.");
+        return;
+      }
+
       // build a debug payload object for logging when something fails
-      const payload = { name, email, password, birthdate, region };
+      const payload = { name, email, password, birthdate: normalizedBirth, region };
       const debugPayload: any = { ...payload };
       if (photoUri) {
         const form = new FormData();
@@ -477,7 +498,7 @@ export default function RegisterOwnerScreen() {
             style={styles.input}
             value={birthdate}
             onChangeText={setBirthdate}
-            placeholder="DD-MM-YYYY"
+            placeholder="DD/MM/YYYY"
             ref={birthdateRef}
             returnKeyType="next"
             onSubmitEditing={() => regionRef.current?.focus()}
@@ -496,21 +517,22 @@ export default function RegisterOwnerScreen() {
             blurOnSubmit={true}
           />
 
-          <View style={{ height: 20 }} />
+          <View style={{ height: 120 }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
 
-          <TouchableOpacity
-            style={styles.cta}
-            onPress={continueToInterests}
-            disabled={loading}
-          >
+      {/* fixed footer CTA */}
+      <View style={styles.footerBar} pointerEvents={loading ? 'none' : 'auto'}>
+        <View style={styles.footerInner}>
+          <TouchableOpacity style={styles.ctaButton} onPress={continueToInterests} disabled={loading}>
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.ctaText}>Verder</Text>
             )}
           </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -544,7 +566,7 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat_400Regular",
   },
   cta: {
-    backgroundColor: "#FDA0E9",
+    backgroundColor: "#037D4E",
     paddingVertical: 14,
     borderRadius: 50,
     alignItems: "center",
@@ -573,5 +595,26 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     alignSelf: "center",
     marginBottom: 12,
+  },
+  footerBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#FBF4E2",
+    borderTopWidth: 1,
+    borderTopColor: "#F0E9DB",
+    paddingVertical: 12,
+    paddingTop: 10,
+    paddingBottom: 24,
+  },
+  footerInner: { alignItems: "center" },
+  ctaButton: {
+    backgroundColor: "#037D4E",
+    height: 56,
+    width: "90%",
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

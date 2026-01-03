@@ -330,13 +330,7 @@ export default function AnimalsScreen() {
   const genderLabelFemale = species === "cat" ? "Kattin (vrouwtje)" : "Teefje";
 
   const propertyOptions = [
-    "Zindelijk",
-    "Kent basiscommando's",
-    "Gecastreerd",
-    "Kan in de auto",
-    "Kan alleen zijn",
-    "Ervaring vereist",
-    "Andere...",
+    "🚽 Zindelijk","✂️ Gecastreerd", "🤓 Kent basiscommando's","🚗 Kan in de auto", "🏠 Kan alleen zijn", "👩‍🏫 Ervaring vereist",
   ];
 
   const whoWorkOptions = [
@@ -601,10 +595,10 @@ export default function AnimalsScreen() {
           ) : (
             <View style={styles.emptyState}>
               <ThemedText style={{ fontSize: 18, marginBottom: 8 }}>
-                Nog geen Animals
+                Nog geen dieren
               </ThemedText>
               <ThemedText style={{ color: "#666" }}>
-                Er zijn nog geen Animals om te tonen. Voeg een dier toe om te
+                Er zijn nog geen dieren om te tonen. Voeg een dier toe om te
                 beginnen.
               </ThemedText>
             </View>
@@ -718,30 +712,11 @@ export default function AnimalsScreen() {
                           </TouchableOpacity>
                         </View>
 
-                        <View style={{ width: "100%", marginTop: 16 }}>
-                          <TouchableOpacity
-                            style={styles.shareButton}
-                            onPress={() => setStep(2)}
-                          >
-                            <ThemedText style={{ color: "#fff" }}>
-                              Volgende
-                            </ThemedText>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.pinkOutline}
-                            onPress={closeModal}
-                          >
-                            <ThemedText style={{ color: "#037D4E" }}>Annuleren</ThemedText>
-                          </TouchableOpacity>
-                        </View>
+                        {/* Buttons moved to fixed footer */}
                       </View>
                     ) : step === 2 ? (
                       <View style={{ width: "100%", alignItems: "center" }}>
-                        <ThemedText>
-                          Is het dier een {species === "cat" ? "kat" : "hond"}?
-                          Vul ook het ras en eigenschappen in.
-                        </ThemedText>
-
+                        
                         <TextInput
                           placeholder="Welk ras?"
                           value={breed}
@@ -763,9 +738,7 @@ export default function AnimalsScreen() {
                           <ThemedText style={{ marginBottom: 8 }}>
                             Eigenschappen
                           </ThemedText>
-                          <View
-                            style={[styles.speciesRow, { flexWrap: "wrap" }]}
-                          >
+                          <View style={[styles.speciesRow, { flexWrap: "wrap" }]}> 
                             {propertyOptions.map((opt) => (
                               <TouchableOpacity
                                 key={opt}
@@ -777,7 +750,7 @@ export default function AnimalsScreen() {
                                 ]}
                                 onPress={() => toggleProperty(opt)}
                               >
-                                <ThemedText>{opt}</ThemedText>
+                                <ThemedText style={properties.includes(opt) ? styles.propertyActiveText : undefined}>{opt}</ThemedText>
                               </TouchableOpacity>
                             ))}
                           </View>
@@ -808,22 +781,7 @@ export default function AnimalsScreen() {
                           </TouchableOpacity>
                         </View>
 
-                        <View style={{ width: "100%", marginTop: 16 }}>
-                          <TouchableOpacity
-                            style={styles.shareButton}
-                            onPress={() => setStep(3)}
-                          >
-                            <ThemedText style={{ color: "#fff" }}>
-                              Volgende
-                            </ThemedText>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.pinkOutline}
-                            onPress={() => setStep(1)}
-                          >
-                            <ThemedText style={{ color: "#037D4E" }}>Terug</ThemedText>
-                          </TouchableOpacity>
-                        </View>
+                        {/* Buttons moved to fixed footer */}
                       </View>
                     ) : step === 3 ? (
                       <View style={{ width: "100%", alignItems: "center" }}>
@@ -910,27 +868,7 @@ export default function AnimalsScreen() {
                           ))}
                         </View>
 
-                        <View style={{ width: "100%", marginTop: 16 }}>
-                          <TouchableOpacity
-                            style={styles.shareButton}
-                            onPress={() => setStep(4)}
-                            disabled={submitting}
-                          >
-                            {submitting ? (
-                              <ActivityIndicator color="#fff" />
-                            ) : (
-                              <ThemedText style={{ color: "#fff" }}>
-                                Volgende
-                              </ThemedText>
-                            )}
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.pinkOutline}
-                            onPress={() => setStep(2)}
-                          >
-                            <ThemedText style={{ color: "#037D4E" }}>Terug</ThemedText>
-                          </TouchableOpacity>
-                        </View>
+                        {/* Buttons moved to fixed footer */}
                       </View>
                     ) : step === 4 ? (
                       <View style={{ width: "100%", alignItems: "flex-start" }}>
@@ -1018,32 +956,60 @@ export default function AnimalsScreen() {
                           </>
                         ) : null}
 
-                        <View style={{ width: "100%", marginTop: 16 }}>
-                          <TouchableOpacity
-                            style={styles.pinkButton}
-                            onPress={() => {
-                              submitAnimal();
-                            }}
-                            disabled={submitting}
-                          >
-                            {submitting ? (
-                              <ActivityIndicator color="#fff" />
-                            ) : (
-                              <ThemedText style={{ color: "#fff" }}>Klaar!</ThemedText>
-                            )}
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.pinkOutline}
-                            onPress={() => setStep(3)}
-                          >
-                            <ThemedText style={{ color: "#037D4E" }}>Terug</ThemedText>
-                          </TouchableOpacity>
-                        </View>
+                        {/* Buttons moved to fixed footer */}
                       </View>
                     ) : null}
                   </ScrollView>
-                </KeyboardAvoidingView>
+                  </KeyboardAvoidingView>
               </TouchableWithoutFeedback>
+
+              {/* Fixed footer with action buttons (matches modal background) */}
+              <View style={styles.footerWrap}>
+                <View style={styles.footerInner}>
+                  {step > 1 ? (
+                    <TouchableOpacity
+                      style={styles.footerSecondary}
+                      onPress={() => setStep((s) => Math.max(1, s - 1))}
+                    >
+                      <ThemedText style={{ color: "#037D4E" }}>Terug</ThemedText>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.footerSecondary}
+                      onPress={closeModal}
+                    >
+                      <ThemedText style={{ color: "#037D4E" }}>Annuleren</ThemedText>
+                    </TouchableOpacity>
+                  )}
+
+                  {step < 4 ? (
+                    <TouchableOpacity
+                      style={styles.footerPrimary}
+                      onPress={() => setStep((s) => Math.min(4, s + 1))}
+                      disabled={submitting}
+                    >
+                      {submitting ? (
+                        <ActivityIndicator color="#fff" />
+                      ) : (
+                        <ThemedText style={{ color: "#fff" }}>Volgende</ThemedText>
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.footerPrimary}
+                      onPress={submitAnimal}
+                      disabled={submitting}
+                    >
+                      {submitting ? (
+                        <ActivityIndicator color="#fff" />
+                      ) : (
+                        <ThemedText style={{ color: "#fff" }}>Klaar!</ThemedText>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+
             </SafeAreaView>
           </Modal>
           
@@ -1094,12 +1060,13 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     width: "100%",
     alignItems: "center",
-    paddingBottom: 32,
+    // leave space for the fixed footer
+    paddingBottom: 140,
   },
   imagePicker: {
     width: 140,
     height: 140,
-    backgroundColor: "#E6F0F8",
+    backgroundColor: "#e6f8f2ff",
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -1150,7 +1117,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 8,
   },
-  propertyActive: { backgroundColor: "#E6F3C9" },
+  propertyActive: { backgroundColor: "#AEBA40" },
+  propertyActiveText: { color: "#fff" },
   shareButton: {
     backgroundColor: "#037D4E",
     paddingVertical: 12,
@@ -1244,6 +1212,42 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   swipeActionTextDark: { color: "#374151" },
+  footerWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#FFFCF5",
+    borderTopWidth: 1,
+    borderTopColor: "#EFEFEF",
+    paddingTop: 12,
+    paddingBottom: Platform.OS === "ios" ? 26 : 14,
+    paddingHorizontal: 20,
+  },
+  footerInner: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  footerPrimary: {
+    backgroundColor: "#037D4E",
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 120,
+  },
+  footerSecondary: {
+    borderWidth: 2,
+    borderColor: "#037D4E",
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+  },
 });
 
 export const options = { title: "Animals" };
