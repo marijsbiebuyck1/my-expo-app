@@ -87,11 +87,12 @@ Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan he
         }
         const payload = await res.json().catch(() => []);
         if (!active) return;
-        const mapped = Array.isArray(payload)
-          ? (payload
-              .map((animal) => mapAnimalToCard(animal))
-              .filter(Boolean) as SwipeDeckItem[])
+        const source = Array.isArray(payload)
+          ? payload.filter((animal) => isAdminAnimal(animal))
           : [];
+        const mapped = source
+          .map((animal) => mapAnimalToCard(animal))
+          .filter(Boolean) as SwipeDeckItem[];
         setItems(mapped);
       } catch (err: any) {
         console.error("fetch animals failed", err);
@@ -193,6 +194,18 @@ Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan he
       </View>
     </SafeAreaView>
   );
+}
+
+function isAdminAnimal(animal: any) {
+  if (!animal) return false;
+  if (animal.createdViaAdmin !== undefined) {
+    return Boolean(animal.createdViaAdmin);
+  }
+  const shelter = animal.shelter;
+  if (!shelter) return false;
+  if (typeof shelter === "string") return shelter.trim().length > 0;
+  if (typeof shelter === "object") return Boolean(shelter._id || shelter.id);
+  return false;
 }
 
 function mapAnimalToCard(animal: any): SwipeDeckItem | null {
