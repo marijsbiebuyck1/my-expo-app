@@ -330,7 +330,7 @@ export default function AnimalsScreen() {
   const genderLabelFemale = species === "cat" ? "Kattin (vrouwtje)" : "Teefje";
 
   const propertyOptions = [
-    "🚽 Zindelijk","✂️ Gecastreerd", "🤓 Kent basiscommando's","🚗 Kan in de auto", "🏠 Kan alleen zijn", "👩‍🏫 Ervaring vereist",
+    " Zindelijk","✂️ Gecastreerd", "🤓 Kent basiscommando's","🚗 Kan in de auto", "🏠 Kan alleen zijn", "👩‍🏫 Ervaring vereist",
   ];
 
   const whoWorkOptions = [
