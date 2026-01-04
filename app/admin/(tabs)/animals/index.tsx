@@ -389,12 +389,9 @@ export default function AnimalsScreen() {
   const modalTitle = isEditing ? "Dier bewerken" : "Dier toevoegen";
   // submitLabel was previously used for the modal submit; for the step-4 flow we show a fixed label
 
-  const genderLabelMale = species === "cat" ? "Kat (mannetje)" : "Reu";
-  const genderLabelFemale = species === "cat" ? "Kattin (vrouwtje)" : "Teefje";
 
   const propertyOptions = [
-    " Zindelijk",
-    "✂️ Gecastreerd",
+  "🚽Zindelijk", "✂️ Gecastreerd",
     "🤓 Kent basiscommando's",
     "🚗 Kan in de auto",
     "🏠 Kan alleen zijn",
@@ -700,71 +697,78 @@ export default function AnimalsScreen() {
                     <ThemedText type="title">{modalTitle}</ThemedText>
 
                     {step === 1 ? (
-                      <View style={{ width: "100%", alignItems: "center" }}>
-                        <TouchableOpacity
-                          style={styles.imagePicker}
-                          onPress={pickImage}
-                        >
-                          {photoPreview ? (
-                            <Image
-                              source={{ uri: photoPreview }}
-                              style={styles.pickedImage}
-                            />
-                          ) : (
-                            <ThemedText style={{ color: "#999" }}>
-                              Upload foto
-                            </ThemedText>
-                          )}
-                        </TouchableOpacity>
-
-                        <View
-                          style={{ flexDirection: "row", gap: 4, marginTop: 8 }}
-                        >
+                      <View style={{ width: "100%", alignItems: "flex-start" }}>
+                        <View style={{ width: "100%", alignItems: "center" }}>
                           <TouchableOpacity
-                            style={[styles.speciesButton]}
+                            style={styles.imagePicker}
                             onPress={pickImage}
                           >
-                            <ThemedText>Choose</ThemedText>
+                            {photoPreview ? (
+                              <Image
+                                source={{ uri: photoPreview }}
+                                style={styles.pickedImage}
+                              />
+                            ) : (
+                              <Ionicons name="camera-outline" size={28} color="#999" />
+                            )}
                           </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.speciesButton]}
-                            onPress={takePhoto}
-                          >
-                            <ThemedText>Camera</ThemedText>
-                          </TouchableOpacity>
+
+                          <View style={{ flexDirection: "row", gap: 4, marginTop: 8 }}>
+                            <TouchableOpacity style={[styles.speciesButton]} onPress={pickImage}>
+                              <ThemedText>Kies</ThemedText>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.speciesButton]} onPress={takePhoto}>
+                              <ThemedText>Camera</ThemedText>
+                            </TouchableOpacity>
+                          </View>
                         </View>
 
+   <ThemedText
+                          style={{ marginTop: 12, alignSelf: "flex-start",  fontFamily: 'montserrat-bold' }}
+                        >
+                          Naam van het diertje
+                        </ThemedText>
                         <TextInput
                           placeholder="Naam"
                           value={name}
                           onChangeText={setName}
-                          style={styles.input}
+                          style={[styles.input, styles.inputWithBorder]}
                         />
 
+   <ThemedText
+                          style={{ marginTop: 12, alignSelf: "flex-start",  fontFamily: 'montserrat-bold' }}
+                        >
+                          Geboortedatum
+                        </ThemedText>
                         <View style={styles.rowSmall}>
+                
                           <TextInput
                             placeholder="DD"
                             value={day}
                             onChangeText={setDay}
                             keyboardType="number-pad"
-                            style={[styles.inputSmall]}
+                            style={[styles.inputSmall, styles.inputWithBorder]}
                           />
                           <TextInput
                             placeholder="MM"
                             value={month}
                             onChangeText={setMonth}
                             keyboardType="number-pad"
-                            style={[styles.inputSmall]}
+                            style={[styles.inputSmall, styles.inputWithBorder]}
                           />
                           <TextInput
                             placeholder="YYYY"
                             value={year}
                             onChangeText={setYear}
                             keyboardType="number-pad"
-                            style={[styles.inputLarge]}
+                            style={[styles.inputLarge, styles.inputWithBorder]}
                           />
                         </View>
-
+<ThemedText
+                          style={{ marginTop: 12, alignSelf: "flex-start",  fontFamily: 'montserrat-bold' }}
+                        >
+                          Kat of hond?
+                        </ThemedText>
                         <View style={styles.speciesRow}>
                           <TouchableOpacity
                             style={[
@@ -786,29 +790,67 @@ export default function AnimalsScreen() {
                           </TouchableOpacity>
                         </View>
 
+                        {/* Geslacht: alleen tonen nadat soort (kat/hond) gekozen is */}
+                        {species ? (
+                          <>
+                            <ThemedText style={{ marginTop: 12, fontFamily: 'montserrat-bold' }}>
+                              Kies het geslacht
+                            </ThemedText>
+                            <View style={styles.speciesRow}>
+                              <TouchableOpacity
+                                style={[
+                                  styles.speciesButton,
+                                  gender === "male" ? styles.speciesActive : null,
+                                ]}
+                                onPress={() => setGender("male")}
+                              >
+                                <ThemedText style={gender === "male" ? styles.propertyActiveText : undefined}>{species === "cat" ? "Kater" : "Reu"}</ThemedText>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={[
+                                  styles.speciesButton,
+                                  gender === "female" ? styles.speciesActive : null,
+                                ]}
+                                onPress={() => setGender("female")}
+                              >
+                                <ThemedText style={gender === "female" ? styles.propertyActiveText : undefined}>{species === "cat" ? "Kattin" : "Teefje"}</ThemedText>
+                              </TouchableOpacity>
+                            </View>
+                          </>
+                        ) : null}
+
                         {/* Buttons moved to fixed footer */}
                       </View>
                     ) : step === 2 ? (
                       <View style={{ width: "100%", alignItems: "center" }}>
+                          <ThemedText
+                          style={{ marginTop: 12, alignSelf: "flex-start",  fontFamily: 'montserrat-bold' }}
+                        >
+                         Wat is het ras?
+                        </ThemedText>
                         <TextInput
-                          placeholder="Welk ras?"
                           value={breed}
                           onChangeText={setBreed}
-                          style={[styles.input, { marginTop: 12 }]}
+                          style={[styles.input, styles.inputWithBorder,{ marginTop: 12 }]}
                         />
 
+                          <ThemedText
+                          style={{ marginTop: 12, alignSelf: "flex-start",  fontFamily: 'montserrat-bold' }}
+                        >
+                          Beschrijving van het diertje
+                        </ThemedText>
+
                         <TextInput
-                          placeholder="Beschrijf het dier (karakter, gewoontes, ...)"
                           value={description}
                           onChangeText={setDescription}
                           multiline
                           numberOfLines={4}
                           textAlignVertical="top"
-                          style={[styles.input, styles.textArea]}
+                          style={[styles.input, styles.textArea, styles.inputWithBorder]}
                         />
 
                         <View style={{ width: "100%", marginTop: 12 }}>
-                          <ThemedText style={{ marginBottom: 8 }}>
+                          <ThemedText style={{ marginBottom: 8, fontFamily: 'montserrat-bold' }}>
                             Eigenschappen
                           </ThemedText>
                           <View
@@ -839,41 +881,16 @@ export default function AnimalsScreen() {
                           </View>
                         </View>
 
-                        <ThemedText style={{ marginTop: 12 }}>
-                          Kies het geslacht
-                        </ThemedText>
-
-                        <View style={styles.speciesRow}>
-                          <TouchableOpacity
-                            style={[
-                              styles.speciesButton,
-                              gender === "male" ? styles.speciesActive : null,
-                            ]}
-                            onPress={() => setGender("male")}
-                          >
-                            <ThemedText style={gender === "male" ? styles.propertyActiveText : undefined}>{genderLabelMale}</ThemedText>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[
-                              styles.speciesButton,
-                              gender === "female" ? styles.speciesActive : null,
-                            ]}
-                            onPress={() => setGender("female")}
-                          >
-                            <ThemedText style={gender === "female" ? styles.propertyActiveText : undefined}>{genderLabelFemale}</ThemedText>
-                          </TouchableOpacity>
-                        </View>
-
-                        {/* Buttons moved to fixed footer */}
+                        {/* Buttons moved to fixed footer (geslacht verplaatst naar stap 1) */}
                       </View>
                     ) : step === 3 ? (
                       <View style={{ width: "100%", alignItems: "center" }}>
-                        <ThemedText type="title">Wie zoeken we?</ThemedText>
+  
 
                         <ThemedText
-                          style={{ marginTop: 12, alignSelf: "flex-start" }}
+                          style={{ marginTop: 12, alignSelf: "flex-start" , fontFamily: 'montserrat-bold'}}
                         >
-                          Werk of opleiding?
+                          Ideale werkomstandigheden baasje?
                         </ThemedText>
                         <View
                           style={[
@@ -898,9 +915,9 @@ export default function AnimalsScreen() {
                         </View>
 
                         <ThemedText
-                          style={{ marginTop: 12, alignSelf: "flex-start" }}
+                          style={{ marginTop: 12, alignSelf: "flex-start", fontFamily: 'montserrat-bold' }}
                         >
-                          In mijn vrije tijd houdt ze van...
+                          Tijdens vrije tijd houdt hij/zij/x van...
                         </ThemedText>
                         <View
                           style={[
@@ -925,9 +942,9 @@ export default function AnimalsScreen() {
                         </View>
 
                         <ThemedText
-                          style={{ marginTop: 12, alignSelf: "flex-start" }}
+                          style={{ marginTop: 12, alignSelf: "flex-start",  fontFamily: 'montserrat-bold' }}
                         >
-                          Met wie woon je samen?
+                          Met wie woont hij/zij/x samen?
                         </ThemedText>
                         <View
                           style={[
@@ -955,14 +972,12 @@ export default function AnimalsScreen() {
                       </View>
                     ) : step === 4 ? (
                       <View style={{ width: "100%", alignItems: "flex-start" }}>
-                        <ThemedText type="title">
-                          Over de thuissituatie
-                        </ThemedText>
+                    
 
-                        <ThemedText style={{ marginTop: 12 }}>
-                          Heeft toegang tot een tuin?
+                        <ThemedText style={{ marginTop: 12, fontFamily: 'montserrat-bold' }}>
+                          Heeft het diertje toegang nodig tot een tuin?
                         </ThemedText>
-                        <View style={[styles.speciesRow, { marginTop: 8 }]}>
+                        <View style={[styles.speciesRow, { flexWrap: "wrap", marginTop: 8 }]}>
                           <TouchableOpacity
                             style={[
                               styles.speciesButton,
@@ -983,10 +998,10 @@ export default function AnimalsScreen() {
                           </TouchableOpacity>
                         </View>
 
-                        <ThemedText style={{ marginTop: 12 }}>
-                          Kan omgaan met andere dieren?
+                        <ThemedText style={{ marginTop: 12, fontFamily: 'montserrat-bold' }}>
+                          Kan het diertje omgaan met andere dieren?
                         </ThemedText>
-                        <View style={[styles.speciesRow, { marginTop: 8 }]}>
+                        <View style={[styles.speciesRow, { flexWrap: "wrap", marginTop: 8 }]}>
                           <TouchableOpacity
                             style={
                               canWithCats
@@ -1019,10 +1034,10 @@ export default function AnimalsScreen() {
                           </TouchableOpacity>
                         </View>
 
-                        <ThemedText style={{ marginTop: 12 }}>
-                          Kan omgaan met kinderen
+                        <ThemedText style={{ marginTop: 12, fontFamily: 'montserrat-bold' }}>
+                          Kan het diertje omgaan met kinderen?
                         </ThemedText>
-                        <View style={[styles.speciesRow, { marginTop: 8 }]}>
+                        <View style={[styles.speciesRow, { flexWrap: "wrap", marginTop: 8 }]}>
                           <TouchableOpacity
                             style={[
                               styles.propertyButton,
@@ -1060,8 +1075,8 @@ export default function AnimalsScreen() {
 
                         {species === "cat" ? (
                           <>
-                            <ThemedText style={{ marginTop: 12 }}>
-                              Soort kat
+                            <ThemedText style={{ marginTop: 12, fontFamily: 'montserrat-bold' }}>
+                              Soort kat?
                             </ThemedText>
                             <View
                               style={[
@@ -1220,7 +1235,7 @@ const styles = StyleSheet.create({
   imagePicker: {
     width: 140,
     height: 140,
-    backgroundColor: "#e6f8f2ff",
+    backgroundColor: "#EFEFD1",
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -1237,6 +1252,10 @@ const styles = StyleSheet.create({
   },
   textArea: {
     minHeight: 120,
+  },
+  inputWithBorder: {
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
   inputSmall: {
     width: 60,
@@ -1255,7 +1274,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   rowSmall: { flexDirection: "row", width: "100%", gap: 2 },
-  speciesRow: { flexDirection: "row", marginTop: 12, gap: 2 },
+  speciesRow: { justifyContent: "flex-start", flexDirection: "row", marginTop: 12, gap: 2 },
   speciesButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
