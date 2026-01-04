@@ -28,11 +28,7 @@ export default function LoginScreen() {
     router.replace("/admin/register-owner");
   }
 
-  function goToHomeDirect() {
-    // quick access to home while working on onboarding
-    // go to the user home (users' tabs)
-    router.replace("/users/home");
-  }
+  // quick access navigation helpers removed (buttons live on login-email now)
 
   return (
     // Put the background color on the SafeAreaView so it fills full screen
@@ -42,6 +38,13 @@ export default function LoginScreen() {
         style={styles.pootje}
         resizeMode="contain"
       />
+      <Image
+        source={require("../assets/images/skateboard.png")}
+        style={styles.skateboard}
+        resizeMode="contain"
+      />
+      {/* decorative images only; navigation buttons are on the login-email screen */}
+
       <View style={styles.container}>
         {/* Brand group: logo + tagline */}
         <View style={styles.brand}>
@@ -60,6 +63,11 @@ export default function LoginScreen() {
           >
             Swipe. Match. Adopt. Forever.
           </Text>
+          <Image
+            source={require("../assets/images/kat-start.png")}
+            style={styles.katStart}
+            resizeMode="contain"
+          />
         </View>
 
         {/* Action group: subtitle + buttons */}
@@ -86,27 +94,14 @@ export default function LoginScreen() {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.skip} onPress={goToHomeDirect}>
-            <Text style={styles.skipText}>Ga naar home user</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.skip, { marginTop: 8 }]}
-            onPress={() => {
-              router.replace("/admin/animals");
-            }}
-          >
-            <Text style={styles.skipText}>Ga naar Animals (asiel)</Text>
-          </TouchableOpacity>
+          {/* icon buttons moved to top */}
 
           {/* Quick access to existing-user login */}
           <TouchableOpacity
-            style={[styles.skip, { marginTop: 12 }]}
+            style={{ marginTop: 12 }}
             onPress={() => router.replace("/users/login-email" as any)}
           >
-            <Text style={styles.skipText}>
-              Inloggen als bestaande gebruiker
-            </Text>
+            <Text style={[styles.skipText, styles.linkText]}>Al een account? Log in!</Text>
           </TouchableOpacity>
         </View>
 
@@ -132,7 +127,6 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
   },
-
   subtitle: {
     fontFamily: "Montserrat_400Regular",
     color: "#037D4E",
@@ -141,6 +135,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
+  katStart: {
+    width: 200,
+    height: 140,
+    marginTop: 8,
+    marginBottom: 6,
+    marginLeft: 180,
+  },
+  teckelStar: {
+    position: "absolute",
+   left: -20,
+    top: 350,
+    width: 200,
+    height: 200,
+    zIndex: 60,
+  },
   alternateTag: {
     color: "#FF8E28",
     fontSize: 18,
@@ -159,7 +168,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 50,
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 5,
   },
   owner: {
     backgroundColor: "#037D4E",
@@ -193,6 +202,56 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat_400Regular",
     color: "#3F3F3F",
     fontSize: 15,
+  },
+  linkText: {
+    textDecorationLine: "underline",
+    textDecorationColor: "#3F3F3F",
+  },
+  iconRowTop: {
+    position: "absolute",
+    bottom: 32,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 20,
+  },
+  iconRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  roundButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  homeButton: {
+    backgroundColor: "#037D4E",
+  },
+  animalsButton: {
+    backgroundColor: "#AEBA40",
+  },
+  iconLabel: {
+    fontFamily: "Montserrat_400Regular",
+    fontSize: 12,
+    color: "#3F3F3F",
+    textAlign: "center",
+    width: 90,
+  },
+  skateboard: {
+    position: "absolute",
+    top: 64,
+    right: 0,
+    width: 220,
+    height: 140,
+    zIndex: 100,
   },
   pootje: {
     position: "absolute",

@@ -1,7 +1,8 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
-import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "../../components/themed-text";
 import { api } from "../_lib/api";
@@ -93,11 +94,11 @@ export default function LoginEmailScreen() {
         const id = (user.id ?? user._id ?? "") as string;
         if (id) await SecureStore.setItemAsync("userId", String(id));
       }
-  // navigate to users home
-  router.replace("/users/home" as any);
+
+      // navigate to users home
+      router.replace("/users/home" as any);
     } catch (err) {
       console.warn("Login failed", err);
-      // err already shown above for non-OK responses, but ensure user sees something
       Alert.alert("Login mislukt", (err && (err as any).message) || String(err));
     } finally {
       setLoading(false);
@@ -107,11 +108,17 @@ export default function LoginEmailScreen() {
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.container}>
-        <ThemedText style={styles.title} type="title">Inloggen</ThemedText>
-        <View style={styles.centerGroup}>
+        <View style={styles.brand}>
+          <Image source={require("../../assets/images/logo.png")} style={styles.logo} resizeMode="contain" />
+        </View>
+
+  <ThemedText style={styles.title} type="title">Inloggen</ThemedText>
+  <Image source={require("../../assets/images/teckel.png")} style={styles.teckel} resizeMode="contain" />
+
+  <View style={styles.centerGroup}>
           <Text style={styles.label}>E-mailadres</Text>
           <TextInput
-            placeholder="E-mail"
+            placeholder="naam@voorbeeld.com"
             value={email}
             onChangeText={setEmail}
             style={[styles.input, styles.inputGap]}
@@ -121,7 +128,7 @@ export default function LoginEmailScreen() {
 
           <Text style={styles.label}>Wachtwoord</Text>
           <TextInput
-            placeholder="Wachtwoord"
+            placeholder ="Wachtwoord"
             value={password}
             onChangeText={setPassword}
             style={styles.input}
@@ -131,6 +138,7 @@ export default function LoginEmailScreen() {
           {/* button moved to bottom bar */}
         </View>
       </View>
+
       {/* bottom fixed CTA */}
       <View style={styles.bottomBar} pointerEvents={loading ? 'none' : 'auto'}>
         <View style={styles.bottomBarInner}>
@@ -138,6 +146,21 @@ export default function LoginEmailScreen() {
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Inloggen</Text>}
           </TouchableOpacity>
         </View>
+      </View>
+      <View style={styles.iconRowTop}>
+        <TouchableOpacity
+          style={[styles.roundButton, styles.homeButton]}
+          onPress={() => router.replace("/users/home" as any)}
+        >
+          <Ionicons name="person" size={24} color="#fff" />
+        </TouchableOpacity>
+        <View style={{ width: 12 }} />
+        <TouchableOpacity
+          style={[styles.roundButton, styles.animalsButton]}
+          onPress={() => router.replace("/admin/animals" as any)}
+        >
+          <Ionicons name="paw" size={22} color="#fff" />
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -149,8 +172,9 @@ const styles = StyleSheet.create({
   centerGroup: {
     alignItems: "center",
     width: "100%",
-    flex: 1,
+    flex: 0.6,
     justifyContent: "center",
+    marginTop: 6,
   },
   bottomBar: {
     position: "absolute",
@@ -170,11 +194,12 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: "MontserratAlternates-SemiBold",
     fontSize: 28,
-    textAlign: "center",} ,
+    textAlign: "center",
+  },
   inputGap: {
     marginBottom: 24,
   },
-  input: { width: "100%", backgroundColor: "#fff", padding: 12, borderRadius: 8, marginTop: 12, borderColor: "#ccc", borderWidth: 1 },
+  input: { width: "100%", backgroundColor: "#fff", padding: 12, borderRadius: 8, marginTop: 12, borderColor: "#ccc", borderWidth: 1, fontFamily: "Montserrat_400Regular" },
   button: { width: "100%", padding: 14, borderRadius: 50, alignItems: "center", marginTop: 16, backgroundColor: "#037D4E" },
   buttonText: { color: "#fff", fontWeight: "700", fontFamily: "Montserrat_600SemiBold" },
   label: {
@@ -184,5 +209,50 @@ const styles = StyleSheet.create({
     color: "#333",
     alignSelf: "flex-start",
     textAlign: "left",
+  },
+  brand: {
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  logo: {
+    width: 72,
+    height: 72,
+    marginBottom: 8,
+  },
+  teckel: {
+    width: 200,
+    height: 180,
+    alignSelf: "center",
+    marginBottom: 4,
+  },
+  iconRowTop: {
+    position: "absolute",
+    top: 60,
+    right: 10,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 20,
+  },
+  iconRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  roundButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  homeButton: {
+    backgroundColor: "#037D4E",
+  },
+  animalsButton: {
+    backgroundColor: "#AEBA40",
   },
 });
