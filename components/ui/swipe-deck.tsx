@@ -3,6 +3,7 @@ import {
   Animated,
   Dimensions,
   Easing,
+  Image,
   PanResponder,
   StyleSheet,
   Text,
@@ -218,6 +219,11 @@ export default function SwipeDeck({ items, onLike, onNope }: Props) {
               ));
             })()}
           </View>
+            <Image
+              source={require("../../assets/images/kat-uitgeswiped.png")}
+              style={styles.noMoreImage}
+              resizeMode="contain"
+            />
         </View>
       );
     }
@@ -412,5 +418,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+  },
+  noMoreImage: {
+    width: 220,
+    height: 140,
+    marginTop: 12,
+    alignSelf: "center",
   },
 });

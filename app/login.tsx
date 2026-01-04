@@ -37,6 +37,11 @@ export default function LoginScreen() {
   return (
     // Put the background color on the SafeAreaView so it fills full screen
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FBF4E2" }}>
+      <Image
+        source={require("../assets/images/pootje.png")}
+        style={styles.pootje}
+        resizeMode="contain"
+      />
       <View style={styles.container}>
         {/* Brand group: logo + tagline */}
         <View style={styles.brand}>
@@ -188,5 +193,14 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat_400Regular",
     color: "#3F3F3F",
     fontSize: 15,
+  },
+  pootje: {
+    position: "absolute",
+    left: 0,
+    top: 150,
+    width: 100,
+    height: 100,
+    zIndex: 10,
+    opacity: 1,
   },
 });

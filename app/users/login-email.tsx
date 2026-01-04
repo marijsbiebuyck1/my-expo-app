@@ -107,28 +107,37 @@ export default function LoginEmailScreen() {
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.container}>
-        <ThemedText type="title">Inloggen</ThemedText>
+        <ThemedText style={styles.title} type="title">Inloggen</ThemedText>
+        <View style={styles.centerGroup}>
+          <Text style={styles.label}>E-mailadres</Text>
+          <TextInput
+            placeholder="E-mail"
+            value={email}
+            onChangeText={setEmail}
+            style={[styles.input, styles.inputGap]}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
 
-        <TextInput
-          placeholder="E-mail"
-          value={email}
-          onChangeText={setEmail}
-          style={styles.input}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+          <Text style={styles.label}>Wachtwoord</Text>
+          <TextInput
+            placeholder="Wachtwoord"
+            value={password}
+            onChangeText={setPassword}
+            style={styles.input}
+            secureTextEntry
+          />
 
-        <TextInput
-          placeholder="Wachtwoord"
-          value={password}
-          onChangeText={setPassword}
-          style={styles.input}
-          secureTextEntry
-        />
-
-        <TouchableOpacity style={styles.button} onPress={submit} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Inloggen</Text>}
-        </TouchableOpacity>
+          {/* button moved to bottom bar */}
+        </View>
+      </View>
+      {/* bottom fixed CTA */}
+      <View style={styles.bottomBar} pointerEvents={loading ? 'none' : 'auto'}>
+        <View style={styles.bottomBarInner}>
+          <TouchableOpacity style={styles.button} onPress={submit} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Inloggen</Text>}
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -136,8 +145,44 @@ export default function LoginEmailScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#FBF4E2" },
-  container: { flex: 1, padding: 20, alignItems: "center", justifyContent: "center" },
-  input: { width: "100%", backgroundColor: "#fff", padding: 12, borderRadius: 8, marginTop: 12 },
-  button: { width: "100%", padding: 14, borderRadius: 50, alignItems: "center", marginTop: 16, backgroundColor: "#FDA0E9" },
-  buttonText: { color: "#fff", fontWeight: "700" },
+  container: { flex: 1, padding: 20, paddingTop: 40, alignItems: "stretch", justifyContent: "flex-start" },
+  centerGroup: {
+    alignItems: "center",
+    width: "100%",
+    flex: 1,
+    justifyContent: "center",
+  },
+  bottomBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#FBF4E2",
+    borderTopWidth: 1,
+    borderTopColor: "#F0E9DB",
+    paddingVertical: 12,
+    paddingBottom: 24,
+  },
+  bottomBarInner: {
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  title: {
+    fontFamily: "MontserratAlternates-SemiBold",
+    fontSize: 28,
+    textAlign: "center",} ,
+  inputGap: {
+    marginBottom: 24,
+  },
+  input: { width: "100%", backgroundColor: "#fff", padding: 12, borderRadius: 8, marginTop: 12, borderColor: "#ccc", borderWidth: 1 },
+  button: { width: "100%", padding: 14, borderRadius: 50, alignItems: "center", marginTop: 16, backgroundColor: "#037D4E" },
+  buttonText: { color: "#fff", fontWeight: "700", fontFamily: "Montserrat_600SemiBold" },
+  label: {
+    fontFamily: "Montserrat_700Bold",
+    fontSize: 16,
+    marginBottom: 6,
+    color: "#333",
+    alignSelf: "flex-start",
+    textAlign: "left",
+  },
 });

@@ -257,16 +257,16 @@ const styles = StyleSheet.create({
   },
   chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 2 },
   chip: {
-    backgroundColor: "#EFEFD1",
+    backgroundColor: "#EFF1D9",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 2,
     marginBottom: 2,
   },
-  chipSelected: { backgroundColor: "#E0F0D9" },
+  chipSelected: { backgroundColor: "#AEBA40" },
   chipText: { color: "#333", fontFamily: "Montserrat_400Regular" },
-  chipTextSelected: { fontFamily: "Montserrat_600SemiBold" },
+  chipTextSelected: { fontFamily: "Montserrat_600SemiBold", color: "#fff" },
   cta: {
     // kept for backward-compat if used elsewhere; CTA button moved to footer
     backgroundColor: "#037D4E",

@@ -451,7 +451,7 @@ export default function RegisterOwnerScreen() {
 
           <Text style={styles.label}>Wat is je naam?</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, styles.inputWithBorder]}
             value={name}
             onChangeText={setName}
             placeholder="Voornaam Achternaam"
@@ -465,7 +465,7 @@ export default function RegisterOwnerScreen() {
 
           <Text style={styles.label}>Wat is je e-mailadres?</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, styles.inputWithBorder]}
             value={email}
             onChangeText={setEmail}
             placeholder="email@example.com"
@@ -480,7 +480,7 @@ export default function RegisterOwnerScreen() {
 
           <Text style={styles.label}>Wachtwoord</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, styles.inputWithBorder]}
             value={password}
             onChangeText={setPassword}
             placeholder="Wachtwoord"
@@ -495,7 +495,7 @@ export default function RegisterOwnerScreen() {
 
           <Text style={styles.label}>Je geboortedatum</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, styles.inputWithBorder]}
             value={birthdate}
             onChangeText={setBirthdate}
             placeholder="DD/MM/YYYY"
@@ -507,7 +507,7 @@ export default function RegisterOwnerScreen() {
 
           <Text style={styles.label}>Regio</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, styles.inputWithBorder]}
             value={region}
             onChangeText={setRegion}
             placeholder="Bijv. Antwerpen"
@@ -520,6 +520,12 @@ export default function RegisterOwnerScreen() {
           <View style={{ height: 120 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Image
+        source={require("../../assets/images/kat.png")}
+        style={styles.katBottom}
+        resizeMode="contain"
+      />
 
       {/* fixed footer CTA */}
       <View style={styles.footerBar} pointerEvents={loading ? 'none' : 'auto'}>
@@ -551,7 +557,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   label: {
-    fontFamily: "Montserrat_400Regular",
+    fontFamily: "Montserrat_700Bold",
     fontSize: 14,
     marginBottom: 6,
     color: "#333",
@@ -559,11 +565,15 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: "#fff",
     padding: 12,
-    borderRadius: 50,
+    borderRadius: 8,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#eee",
     fontFamily: "Montserrat_400Regular",
+  },
+  inputWithBorder: {
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
   cta: {
     backgroundColor: "#037D4E",
@@ -616,5 +626,14 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
+  },
+  katBottom: {
+    position: "absolute",
+    right: 16,
+    bottom: 88,
+    width: 120,
+    height: 120,
+    zIndex: 5,
+    opacity: 1,
   },
 });
