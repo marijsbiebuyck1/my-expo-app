@@ -55,7 +55,7 @@ export default function MatchCard({ visible, imageUri, onClose, profileId, onOpe
                   T: "#FF8E28", // orange
                   C: "#AEBA40", // light green
                   H: "#D3D1F6", // lila
-                  "!": "#FF8E28",
+                  "!": "#FF8E28"
                 };
                 return letters.map((ch, i) => (
                   <Text
@@ -73,10 +73,7 @@ export default function MatchCard({ visible, imageUri, onClose, profileId, onOpe
             </View>
           </View>
 
-          <View style={styles.actionsRow}>
-            <TouchableOpacity onPress={onClose} style={styles.actionButton} accessibilityLabel="Close">
-              <Text style={styles.actionText}>Sluiten</Text>
-            </TouchableOpacity>
+          <View style={styles.actionsColumn}>
             {onOpenChat ? (
               <TouchableOpacity
                 onPress={() => {
@@ -92,6 +89,10 @@ export default function MatchCard({ visible, imageUri, onClose, profileId, onOpe
                 <Text style={[styles.actionText, styles.chatText]}>Open chat</Text>
               </TouchableOpacity>
             ) : null}
+
+            <TouchableOpacity onPress={onClose} style={styles.actionButton} accessibilityLabel="Close">
+              <Text style={styles.actionText}>Sluiten</Text>
+            </TouchableOpacity>
           </View>
         </Animated.View>
       </View>
@@ -145,6 +146,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  actionsColumn: {
+    flexDirection: "column",
+    alignItems: "center",
+    marginTop: 12,
+  },
   actionsRow: {
     flexDirection: "row",
     gap: 8,
@@ -152,19 +158,27 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 20,
     backgroundColor: "#F2F2F2",
-    marginHorizontal: 6,
+    marginVertical: 6,
+    width: 150,
   },
   actionText: {
+    textAlign: "center",
     color: "#333",
-    fontSize: 14,
+    fontSize: 16,
+    fontFamily: "montserrat",
   },
   chatButton: {
+    width: 150,
     backgroundColor: "#037D4E",
+    fontFamily: 'montserrat',
   },
   chatText: {
+    textAlign: "center",
     color: "#fff",
+    fontSize: 16,
+    fontFamily: "montserrat",
   },
 });

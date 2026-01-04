@@ -64,13 +64,20 @@ export default function LoginScreen() {
             Swipe. Match. Adopt. Forever.
           </Text>
           <Image
+            source={require("../assets/images/teckel-ster.png")}
+            style={styles.teckel}
+            resizeMode="contain"
+          />
+          <Image
             source={require("../assets/images/kat-start.png")}
             style={styles.katStart}
             resizeMode="contain"
           />
         </View>
 
-        {/* Action group: subtitle + buttons */}
+
+      </View>
+      {/* Action group: subtitle + buttons */}
         <View style={styles.actions}>
           <ThemedText style={styles.subtitle}>
             Kies hoe je wilt registreren:
@@ -104,9 +111,6 @@ export default function LoginScreen() {
             <Text style={[styles.skipText, styles.linkText]}>Al een account? Log in!</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Dev buttons removed */}
-      </View>
     </SafeAreaView>
   );
 }
@@ -138,18 +142,18 @@ const styles = StyleSheet.create({
   katStart: {
     width: 200,
     height: 140,
-    marginTop: 8,
-    marginBottom: 6,
+    marginTop: 28,
     marginLeft: 180,
   },
-  teckelStar: {
-    position: "absolute",
-   left: -20,
-    top: 350,
+  teckel: {
+       position: "absolute",
+   left: -30,
+    top: 200,
     width: 200,
     height: 200,
     zIndex: 60,
   },
+
   alternateTag: {
     color: "#FF8E28",
     fontSize: 18,
@@ -164,7 +168,7 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    width: "100%",
+    width: "80%",
     paddingVertical: 14,
     borderRadius: 50,
     alignItems: "center",
@@ -207,44 +211,7 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
     textDecorationColor: "#3F3F3F",
   },
-  iconRowTop: {
-    position: "absolute",
-    bottom: 32,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 20,
-  },
-  iconRow: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
-    marginTop: 20,
-    marginBottom: 8,
-  },
-  roundButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  homeButton: {
-    backgroundColor: "#037D4E",
-  },
-  animalsButton: {
-    backgroundColor: "#AEBA40",
-  },
-  iconLabel: {
-    fontFamily: "Montserrat_400Regular",
-    fontSize: 12,
-    color: "#3F3F3F",
-    textAlign: "center",
-    width: 90,
-  },
+
   skateboard: {
     position: "absolute",
     top: 64,

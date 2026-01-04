@@ -2,15 +2,16 @@ import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "../../components/themed-text";
@@ -138,54 +139,59 @@ export default function AdminRegisterOwnerScreen() {
 
           <Text style={styles.label}>Wat is de naam van het asiel?</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, styles.inputWithBorder]}
             value={name}
             onChangeText={setName}
-            placeholder=""
+            placeholder="Naam asiel"
           />
 
           <Text style={styles.label}>Wat is het adres?</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, styles.inputWithBorder]}
             value={address}
             onChangeText={setAddress}
-            placeholder=""
+            placeholder="Straatnaam 123, Stad"
           />
 
           <Text style={styles.label}>Telefoonnummer</Text>
           <TextInput
-            style={styles.input}
+        
+            style={[styles.input, styles.inputWithBorder]}
             value={phone}
             onChangeText={setPhone}
-            placeholder=""
+            placeholder="0474123456"
             keyboardType="phone-pad"
           />
 
           <Text style={styles.label}>E-mailadres</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, styles.inputWithBorder]}
             value={email}
             onChangeText={setEmail}
-            placeholder=""
+            placeholder="naam@voorbeeld.com"
             keyboardType="email-address"
             autoCapitalize="none"
           />
 
           <View style={{ height: 40 }} />
 
-          <TouchableOpacity
-            style={styles.cta}
-            onPress={onContinue}
-            disabled={loading}
-          >
-            {loading ? (
-              <Text style={styles.ctaText}>Bezig…</Text>
-            ) : (
-              <Text style={styles.ctaText}>Verder</Text>
-            )}
-          </TouchableOpacity>
+          <Image
+            source={require("../../assets/images/skateboard.png")}
+            style={styles.skateboardSmall}
+            resizeMode="contain"
+          />
         </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+
+      {/* bottom fixed CTA */}
+      <View style={styles.bottomBar} pointerEvents={loading ? "none" : "auto"}>
+        <View style={styles.bottomBarInner}>
+          <TouchableOpacity style={styles.cta} onPress={onContinue} disabled={loading}>
+            {loading ? <Text style={styles.ctaText}>Bezig…</Text> : <Text style={styles.ctaText}>Verder</Text>}
+          </TouchableOpacity>
+        </View>
+      </View>
+
     </SafeAreaView>
   );
 }
@@ -200,29 +206,55 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   label: {
-    fontFamily: "Montserrat_400Regular",
-    fontSize: 16,
+    fontFamily: "Montserrat_700Bold",
+    fontSize: 14,
     marginBottom: 6,
     color: "#333",
   },
   input: {
     backgroundColor: "#fff",
     padding: 12,
-    borderRadius: 50,
+    borderRadius: 8,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#eee",
     fontFamily: "Montserrat_400Regular",
   },
+  inputWithBorder: {
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
   cta: {
-    backgroundColor: "#FDA0E9",
+    backgroundColor: "#037D4E",
     paddingVertical: 16,
     borderRadius: 50,
     alignItems: "center",
+    width: "100%",
   },
   ctaText: {
     color: "#fff",
     fontFamily: "Montserrat_600SemiBold",
-    fontSize: 18,
+    fontSize: 16,
+  },
+  skateboardSmall: {
+    width: 450,
+    height: 200,
+    alignSelf: "center",
+    bottom: 20,
+  },
+  bottomBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#FBF4E2",
+    borderTopWidth: 1,
+    borderTopColor: "#F0E9DB",
+    paddingVertical: 12,
+    paddingBottom: 24,
+  },
+  bottomBarInner: {
+    alignItems: "center",
+    paddingHorizontal: 20,
   },
 });

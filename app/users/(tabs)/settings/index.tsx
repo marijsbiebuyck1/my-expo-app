@@ -1,5 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import BgCard from "@/components/ui/bg-card";
+import { Ionicons } from "@expo/vector-icons";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
@@ -51,7 +52,9 @@ function mapHomePetLabel(raw?: string) {
 function Chip({ label }: { label: string }) {
   return (
     <View style={styles.chip}>
-      <ThemedText>{label}</ThemedText>
+      <ThemedText style={styles.chipText} numberOfLines={2} ellipsizeMode="tail">
+        {label}
+      </ThemedText>
     </View>
   );
 }
@@ -68,10 +71,16 @@ function Section({
   return (
     <View style={{ marginBottom: 14 }}>
       <View style={styles.sectionHeader}>
-        <ThemedText type="subtitle">{title}</ThemedText>
+        <ThemedText type="subtitle" style={styles.sectionTitle}>{title}</ThemedText>
         {onEdit ? (
-          <Pressable onPress={onEdit} style={{ padding: 6 }}>
-            <ThemedText style={{ color: "#1a73e8" }}>Bewerk</ThemedText>
+          <Pressable
+            onPress={onEdit}
+            style={({ pressed }) => [
+              styles.editIconBtn,
+              pressed && { opacity: 0.85 },
+            ]}
+          >
+            <Ionicons name="pencil" size={16} color="#fff" />
           </Pressable>
         ) : null}
       </View>
@@ -100,6 +109,30 @@ export default function SettingsScreen() {
           }
         } else {
           setUser(null);
+        }
+
+        // Try to fetch fresh user data from the backend if we have an id/token
+        try {
+          const parsed = raw ? JSON.parse(raw) : null;
+          const storedId = parsed?.id || parsed?._id || (await SecureStore.getItemAsync("userId"));
+          const token = await SecureStore.getItemAsync("userToken");
+          if (storedId && token) {
+            const resp = await api.get(`/users/${storedId}`);
+            if (resp.ok) {
+              const payload = await resp.json().catch(() => null);
+              const fetchedUser = Array.isArray(payload) && payload.length > 0
+                ? payload[0]
+                : payload?.data || payload?.user || payload;
+              if (fetchedUser && mounted) {
+                setUser(fetchedUser);
+                try {
+                  await SecureStore.setItemAsync("user", JSON.stringify(fetchedUser));
+                } catch {}
+              }
+            }
+          }
+        } catch (err) {
+          console.warn("Failed to fetch user from API", err);
         }
       } finally {
         if (mounted) setLoading(false);
@@ -318,38 +351,54 @@ export default function SettingsScreen() {
               Profiel
             </ThemedText>
 
-            <View style={styles.centerBlock}>
-              <ThemedText type="subtitle" style={styles.nameText}>
-                {displayName}
-                {age ? `, ${age}` : ""}
-              </ThemedText>
-
-              {photoUri ? (
-                <Image
-                  source={{ uri: photoUri }}
-                  style={styles.avatarLarge}
-                  resizeMode="cover"
-                />
-              ) : (
-                <View style={styles.avatarLargePlaceholder} />
-              )}
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.photoBtn,
-                  pressed && { opacity: 0.85 },
-                ]}
-                onPress={pickAndUploadPhoto}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <ActivityIndicator />
+            <View style={styles.centerRow}>
+              <View style={styles.avatarColumn}>
+                {photoUri ? (
+                  <Image
+                    source={{ uri: photoUri }}
+                    style={styles.avatarLarge}
+                    resizeMode="cover"
+                  />
                 ) : (
-                  <ThemedText style={styles.photoBtnText}>
-                    {photoUri ? "Wijzig profielfoto" : "Upload profielfoto"}
-                  </ThemedText>
+                  <Pressable
+                    onPress={pickAndUploadPhoto}
+                    style={styles.avatarLargePlaceholder}
+                  >
+                    <Ionicons name="add" size={28} color="#AEBA40" />
+                  </Pressable>
                 )}
-              </Pressable>
+              </View>
+
+              <View style={styles.nameColumn}>
+                <ThemedText type="subtitle" style={styles.nameText}>
+                  {displayName}
+                </ThemedText>
+                {age ? (
+                  <ThemedText style={styles.ageText}>{`${age} jaar`}</ThemedText>
+                ) : null}
+              </View>
+            </View>
+
+            <View style={styles.avatarBtnWrapper}>
+              <View style={{ width: 120, alignItems: "center" }}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.photoBtn,
+                    pressed && { opacity: 0.85 },
+                  ]}
+                  onPress={pickAndUploadPhoto}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <ActivityIndicator />
+                  ) : (
+                    <ThemedText style={styles.photoBtnText}>
+                      {photoUri ? "Wijzig" : "Upload"}
+                    </ThemedText>
+                  )}
+                </Pressable>
+              </View>
+              <View style={{ flex: 1 }} />
             </View>
 
             <View style={{ height: 12 }} />
@@ -433,7 +482,7 @@ export default function SettingsScreen() {
             </Section>
 
             <Section
-              title={`Regio: ${region}`}
+              title={`Regio`}
               onEdit={() => router.push("/users/register-owner")}
             >
               <ThemedText>{region}</ThemedText>
@@ -448,7 +497,7 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#FBF4E2" },
+  screen: { flex: 1, backgroundColor: "#FFFCF5" },
   container: { padding: 20 },
   // page container centers the white card on the screen
   pageContainer: { padding: 20, alignItems: "center" },
@@ -485,11 +534,35 @@ const styles = StyleSheet.create({
     textAlign: "left",
   },
   centerBlock: { alignItems: "center", marginBottom: 8, width: "100%" },
-  nameText: {
-    fontSize: 20,
-    marginBottom: 6,
+  centerRow: {
+    flexDirection: "row",
+    alignItems: "center",
     width: "100%",
-    textAlign: "center",
+  },
+  avatarColumn: {
+    alignItems: "center",
+    marginRight: 14,
+    width: 120,
+  },
+  nameColumn: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  nameText: {
+    fontSize: 16,
+    marginBottom: 6,
+    textAlign: "left",
+  },
+  ageText: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 2,
+  },
+  avatarBtnWrapper: {
+    width: "100%",
+    flexDirection: "row",
+    marginTop: 6,
+    marginBottom: 8,
   },
   centerMeta: {
     color: "#333",
@@ -498,56 +571,88 @@ const styles = StyleSheet.create({
     textAlign: "left",
   },
   avatarLarge: {
-    width: 210,
-    height: 210,
-    borderRadius: 20,
-    marginBottom: 18,
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    marginBottom: 2,
     alignSelf: "center",
   },
   avatarLargePlaceholder: {
-    width: 210,
-    height: 210,
-    borderRadius: 20,
+    width: 80,
+    height: 80,
+    borderRadius: 10,
     backgroundColor: "#fff",
-    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: "#eee",
+    marginBottom: 0,
     alignSelf: "center",
+    alignItems: "center",
+    justifyContent: "center",
   },
   editBtn: {
-    backgroundColor: "#FDA0E9",
+    backgroundColor: "#037D4E",
     paddingVertical: 14,
     paddingHorizontal: 36,
     borderRadius: 40,
     alignItems: "center",
   },
   editBtnText: { color: "#fff", fontSize: 18 },
-  chipsRow: { flexDirection: "row", flexWrap: "wrap" as any },
+  chipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap" as any,
+    alignItems: "flex-start",
+    width: "100%",
+  },
   chip: {
     backgroundColor: "#EFEFD1",
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 6,
-    marginBottom: 6,
+    borderRadius: 18,
+    marginRight: 8,
+    marginBottom: 8,
+    maxWidth: 240,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 1,
+    overflow: "hidden",
+  },
+  chipText: {
+    fontSize: 13,
+    color: "#333",
+    lineHeight: 18,
+    textAlign: "center",
   },
   photoBtn: {
-    backgroundColor: "#fff",
-    borderColor: "#eee",
-    borderWidth: 1,
-    paddingVertical: 10,
-    borderRadius: 50,
+    backgroundColor: "transparent",
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderRadius: 6,
     alignItems: "center",
     marginBottom: 12,
-    width: 220,
+    alignSelf: "center",
   },
   photoBtnText: {
-    color: "#333",
+    color: "0000",
     fontFamily: "Montserrat_600SemiBold",
+    textDecorationLine: "underline",
+    fontSize: 12,
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     width: "100%",
+  },
+  sectionTitle: {
+    fontSize: 16,
+  },
+  editIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 36,
+    backgroundColor: "#AEBA40",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 

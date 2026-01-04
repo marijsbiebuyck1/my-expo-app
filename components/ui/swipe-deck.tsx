@@ -198,13 +198,14 @@ export default function SwipeDeck({ items, onLike, onNope }: Props) {
           </Text>
           <View style={styles.noMoreTextLargeRow}>
             {(() => {
-              const word = "Petto";
+              const word = "Petto!";
               const colors = [
                 "#037D4E",
                 "#FDA0E9",
                 "#FF8E28",
                 "#AEBA40",
                 "#D3D1F6",
+                "#FF8E28"
               ];
               return word.split("").map((ch, i) => (
                 <Text

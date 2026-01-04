@@ -7,10 +7,13 @@ import {
   Alert,
   FlatList,
   Image,
+  Keyboard,
   Modal,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -375,7 +378,8 @@ export default function FeedScreen() {
           animationType="slide"
           onRequestClose={() => setModalVisible(false)}
         >
-          <SafeAreaView style={styles.modalContainer}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <SafeAreaView style={styles.modalContainer}>
             <ThemedText type="title">
               Plaats een foto met jouw nieuwste huisgenoot
             </ThemedText>
@@ -393,13 +397,13 @@ export default function FeedScreen() {
 
             <View style={{ flexDirection: "row", gap: 8 }}>
               <TouchableOpacity style={styles.smallButton} onPress={pickImage}>
-                <ThemedText>Choose</ThemedText>
+                <ThemedText>Kies foto</ThemedText>
               </TouchableOpacity>
               <TouchableOpacity style={styles.smallButton} onPress={takePhoto}>
                 <ThemedText>Camera</ThemedText>
               </TouchableOpacity>
             </View>
-
+<Text style={styles.sectionLabel}>Schrijf een leuk tekstje</Text>
             <TextInput
               placeholder="Onderschrift toevoegen..."
               value={caption}
@@ -431,7 +435,8 @@ export default function FeedScreen() {
                 <ThemedText>Annuleren</ThemedText>
               </TouchableOpacity>
             </View>
-          </SafeAreaView>
+            </SafeAreaView>
+          </TouchableWithoutFeedback>
         </Modal>
 
         <CameraCapture
@@ -475,19 +480,19 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    borderColor: "#dadadaff",
-    borderWidth: 2,
+    borderColor: "#eee",
+    borderWidth: 1,
     backgroundColor: "#FFFF",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#a2a2a2ff",
+  
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4,
   },
   addButtonIcon: {
-    color: "#037D4E",
+    color: "#AEBA40",
     fontWeight: "800",
     fontSize: 24,
     marginTop: -2,
@@ -524,7 +529,7 @@ const styles = StyleSheet.create({
   imagePicker: {
     width: 140,
     height: 140,
-    backgroundColor: "#E6F0F8",
+    backgroundColor: "#EFF1D9",
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -543,6 +548,7 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: "#fff",
     marginTop: 12,
+    fontFamily: "Montserrat_400Regular",
   },
   shareButton: {
     backgroundColor: "#037D4E",
@@ -556,6 +562,14 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
     marginTop: 8,
+  },
+  sectionLabel: {
+    fontSize: 16,
+    marginTop: 30,
+    marginBottom: 8,
+    color: "#333",
+    fontFamily: "Montserrat_700Bold",
+    alignSelf: "flex-start",
   },
 });
 
