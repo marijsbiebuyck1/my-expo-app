@@ -409,11 +409,7 @@ export default function AnimalsScreen() {
     "🧓 Op pensioen",
   ];
   const whoHobbyOptions = [
-    "🚶 Wandelen",
-    "✈️ Op vakantie gaan",
-    "📺 Series kijken",
-    "🍻 Iets gaan drinken",
-    "🏋️ Sporten",
+    "🚶 Wandelen","🏋️ Sporten", "✈️ Op vakantie gaan", "📺 Series", "🍻 Terrasje",
   ];
   const whoLivingOptions = [
     "👪 Gezin",
@@ -549,26 +545,27 @@ export default function AnimalsScreen() {
             } as any);
           }}
         >
-          <Ionicons name="ellipsis-horizontal" size={20} color="#4b5563" />
+          <Ionicons name="chatbubble-ellipses-outline" size={20} color="#4b5563" />
           <ThemedText
             style={[styles.swipeActionText, styles.swipeActionTextDark]}
           >
-            Meer
+            Chats
           </ThemedText>
         </RectButton>
-        <RectButton
-          style={[styles.swipeActionButton, styles.swipeEditButton]}
-          onPress={() => beginEditAnimal(item)}
-        >
-          <Ionicons name="flag-outline" size={20} color="#fff" />
-          <ThemedText style={styles.swipeActionText}>Bewerk</ThemedText>
-        </RectButton>
+      
         <RectButton
           style={[styles.swipeActionButton, styles.swipeDeleteButton]}
           onPress={() => deleteAnimal(id)}
         >
-          <Ionicons name="archive-outline" size={20} color="#fff" />
+          <Ionicons name="trash-outline" size={20} color="#fff" />
           <ThemedText style={styles.swipeActionText}>Verwijder</ThemedText>
+        </RectButton>
+         <RectButton
+          style={[styles.swipeActionButton, styles.swipeEditButton]}
+          onPress={() => beginEditAnimal(item)}
+        >
+          <Ionicons name="pencil-outline" size={20} color="#fff" />
+          <ThemedText style={styles.swipeActionText}>Bewerk</ThemedText>
         </RectButton>
       </View>
     );
@@ -576,8 +573,8 @@ export default function AnimalsScreen() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
-        <LogoHeader />
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5",  }}>
+  <LogoHeader />
         <View style={styles.root}>
           <View style={styles.headerRow}>
             <ThemedText type="title">Jouw dieren 🐾</ThemedText>
@@ -642,9 +639,11 @@ export default function AnimalsScreen() {
                           <ThemedText style={styles.animalName}>
                             {item.name}
                           </ThemedText>
-                          <ThemedText style={styles.animalBreed}>
-                            {item.breed || item.species || "-"}
-                          </ThemedText>
+                          {(item.breed || item.species) ? (
+                            <ThemedText style={styles.animalBreed}>
+                              {item.breed || item.species}
+                            </ThemedText>
+                          ) : null}
                           {descriptionSnippet ? (
                             <ThemedText
                               numberOfLines={2}
@@ -719,7 +718,7 @@ export default function AnimalsScreen() {
                         </TouchableOpacity>
 
                         <View
-                          style={{ flexDirection: "row", gap: 8, marginTop: 8 }}
+                          style={{ flexDirection: "row", gap: 4, marginTop: 8 }}
                         >
                           <TouchableOpacity
                             style={[styles.speciesButton]}
@@ -774,7 +773,7 @@ export default function AnimalsScreen() {
                             ]}
                             onPress={() => setSpecies("cat")}
                           >
-                            <ThemedText>🐱 Kat</ThemedText>
+                            <ThemedText style={species === "cat" ? styles.propertyActiveText : undefined}>🐱 Kat</ThemedText>
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[
@@ -783,7 +782,7 @@ export default function AnimalsScreen() {
                             ]}
                             onPress={() => setSpecies("dog")}
                           >
-                            <ThemedText>🐶 Hond</ThemedText>
+                            <ThemedText style={species === "dog" ? styles.propertyActiveText : undefined}>🐶 Hond</ThemedText>
                           </TouchableOpacity>
                         </View>
 
@@ -852,7 +851,7 @@ export default function AnimalsScreen() {
                             ]}
                             onPress={() => setGender("male")}
                           >
-                            <ThemedText>{genderLabelMale}</ThemedText>
+                            <ThemedText style={gender === "male" ? styles.propertyActiveText : undefined}>{genderLabelMale}</ThemedText>
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[
@@ -861,7 +860,7 @@ export default function AnimalsScreen() {
                             ]}
                             onPress={() => setGender("female")}
                           >
-                            <ThemedText>{genderLabelFemale}</ThemedText>
+                            <ThemedText style={gender === "female" ? styles.propertyActiveText : undefined}>{genderLabelFemale}</ThemedText>
                           </TouchableOpacity>
                         </View>
 
@@ -893,7 +892,7 @@ export default function AnimalsScreen() {
                               ]}
                               onPress={() => toggleWhoProperty(opt)}
                             >
-                              <ThemedText>{opt}</ThemedText>
+                              <ThemedText style={whoProperties.includes(opt) ? styles.propertyActiveText : undefined}>{opt}</ThemedText>
                             </TouchableOpacity>
                           ))}
                         </View>
@@ -920,7 +919,7 @@ export default function AnimalsScreen() {
                               ]}
                               onPress={() => toggleWhoProperty(opt)}
                             >
-                              <ThemedText>{opt}</ThemedText>
+                              <ThemedText style={whoProperties.includes(opt) ? styles.propertyActiveText : undefined}>{opt}</ThemedText>
                             </TouchableOpacity>
                           ))}
                         </View>
@@ -947,7 +946,7 @@ export default function AnimalsScreen() {
                               ]}
                               onPress={() => toggleWhoProperty(opt)}
                             >
-                              <ThemedText>{opt}</ThemedText>
+                              <ThemedText style={whoProperties.includes(opt) ? styles.propertyActiveText : undefined}>{opt}</ThemedText>
                             </TouchableOpacity>
                           ))}
                         </View>
@@ -996,7 +995,7 @@ export default function AnimalsScreen() {
                             }
                             onPress={() => setCanWithCats((v) => !v)}
                           >
-                            <ThemedText>🐱 Kan met katten</ThemedText>
+                            <ThemedText style={canWithCats ? styles.propertyActiveText : undefined}>🐱 Kan met katten</ThemedText>
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={
@@ -1006,7 +1005,7 @@ export default function AnimalsScreen() {
                             }
                             onPress={() => setCanWithDogs((v) => !v)}
                           >
-                            <ThemedText>🐶 Kan met honden</ThemedText>
+                            <ThemedText style={canWithDogs ? styles.propertyActiveText : undefined}>🐶 Kan met honden</ThemedText>
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={
@@ -1016,7 +1015,7 @@ export default function AnimalsScreen() {
                             }
                             onPress={() => setCanWithRodents((v) => !v)}
                           >
-                            <ThemedText>🐭 Kan met knaagdieren</ThemedText>
+                            <ThemedText style={canWithRodents ? styles.propertyActiveText : undefined}>🐭 Kan met knaagdieren</ThemedText>
                           </TouchableOpacity>
                         </View>
 
@@ -1033,7 +1032,7 @@ export default function AnimalsScreen() {
                             ]}
                             onPress={() => setKidsOption("no")}
                           >
-                            <ThemedText>❌ Nee</ThemedText>
+                            <ThemedText style={kidsOption === "no" ? styles.propertyActiveText : undefined}>❌ Nee</ThemedText>
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[
@@ -1044,7 +1043,7 @@ export default function AnimalsScreen() {
                             ]}
                             onPress={() => setKidsOption("young")}
                           >
-                            <ThemedText>🧒 Ja, jonger dan 6 jaar</ThemedText>
+                            <ThemedText style={kidsOption === "young" ? styles.propertyActiveText : undefined}>🧒 Ja, jonger dan 6 jaar</ThemedText>
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[
@@ -1055,7 +1054,7 @@ export default function AnimalsScreen() {
                             ]}
                             onPress={() => setKidsOption("between")}
                           >
-                            <ThemedText>👦 Ja, tussen 6 - 14 jaar</ThemedText>
+                            <ThemedText style={kidsOption === "between" ? styles.propertyActiveText : undefined}>👦 Ja, tussen 6 - 14 jaar</ThemedText>
                           </TouchableOpacity>
                         </View>
 
@@ -1097,7 +1096,7 @@ export default function AnimalsScreen() {
                                     )
                                   }
                                 >
-                                  <ThemedText>{opt.label}</ThemedText>
+                                  <ThemedText style={catTypes.includes(opt.key) ? styles.propertyActiveText : undefined}>{opt.label}</ThemedText>
                                 </TouchableOpacity>
                               ))}
                             </View>
@@ -1255,22 +1254,24 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginLeft: 8,
   },
-  rowSmall: { flexDirection: "row", width: "100%", gap: 8 },
-  speciesRow: { flexDirection: "row", marginTop: 12, gap: 8 },
+  rowSmall: { flexDirection: "row", width: "100%", gap: 2 },
+  speciesRow: { flexDirection: "row", marginTop: 12, gap: 2 },
   speciesButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: "#F6F9EE",
+    backgroundColor: "#EFF1D9",
     borderRadius: 20,
+    marginRight: 6,
+    marginBottom: 6,
   },
-  speciesActive: { backgroundColor: "#E6F3C9" },
+  speciesActive: { backgroundColor: "#AEBA40" },
   propertyButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: "#F6F9EE",
+    backgroundColor: "#EFF1D9",
     borderRadius: 20,
-    marginRight: 8,
-    marginBottom: 8,
+    marginRight: 4,
+    marginBottom: 4,
   },
   propertyActive: { backgroundColor: "#AEBA40" },
   propertyActiveText: { color: "#fff" },
@@ -1382,7 +1383,7 @@ const styles = StyleSheet.create({
   footerInner: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 12,
+    gap: 4,
   },
   footerPrimary: {
     backgroundColor: "#037D4E",
