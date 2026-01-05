@@ -27,9 +27,14 @@ type Conversation = {
 export default function AnimalChatsScreen() {
   const params = useLocalSearchParams();
   const animalId = String(params.animalId ?? "");
+  const initialAnimalName =
+    typeof params.animalName === "string" && params.animalName.trim().length
+      ? params.animalName
+      : "";
   const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
+  const [animalName, setAnimalName] = useState(initialAnimalName);
 
   useEffect(() => {
     let mounted = true;
@@ -62,6 +67,10 @@ export default function AnimalChatsScreen() {
           avatar: item.userAvatar || item.avatar || null,
         }));
         setConversations(mapped);
+        const nextName = mapped[0]?.animalName || "";
+        if (nextName) {
+          setAnimalName((prev) => prev || nextName);
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -114,13 +123,13 @@ export default function AnimalChatsScreen() {
       <View style={styles.container}>
         <View style={styles.headerRow}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => router.push("/admin/(tabs)/animals" as any)}
             style={styles.backButton}
             accessibilityLabel="Terug"
           >
             <Ionicons name="chevron-back" size={22} color="#2F2A28" />
           </Pressable>
-          <ThemedText type="title">Chats voor dier</ThemedText>
+          <ThemedText type="title">{`Matches voor ${animalName}`}</ThemedText>
         </View>
 
         {loading ? (
