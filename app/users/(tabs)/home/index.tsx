@@ -1,7 +1,8 @@
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Image, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { SvgUri } from "react-native-svg";
 import MatchCard from "../../../../components/match-card";
 import { ThemedText } from "../../../../components/themed-text";
 import SwipeDeck from "../../../../components/ui/swipe-deck";
@@ -28,6 +29,17 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [matchItem, setMatchItem] = useState<SwipeDeckItem | null>(null);
   const router = useRouter();
+  const katStartSvgUri = useMemo(() => {
+    try {
+      const resolved = Image.resolveAssetSource(
+        require("../../../../assets/images/kat-start.svg")
+      );
+      return resolved?.uri || null;
+    } catch (svgErr) {
+      console.warn("Failed to load kat-start.svg", svgErr);
+      return null;
+    }
+  }, []);
 
   const AUTO_MESSAGE = `Ik heb 9 levens… wil jij er eentje met mij delen?
 
@@ -182,12 +194,27 @@ Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan he
           </View>
         ) : (
           <View style={styles.stateWrap}>
+            {!error &&
+              (katStartSvgUri ? (
+                <SvgUri
+                  uri={katStartSvgUri}
+                  width={220}
+                  height={180}
+                  style={styles.stateImage}
+                />
+              ) : (
+                <Image
+                  source={require("../../../../assets/images/kat-start.png")}
+                  style={[styles.stateImage, { width: 200, height: 160 }]}
+                  resizeMode="contain"
+                />
+              ))}
             <ThemedText style={styles.stateTitle}>
-              {error ? "Oeps" : "Geen dieren gevonden"}
+              {error ? "Oeps" : "Nog even geduld…"}
             </ThemedText>
             <ThemedText style={styles.stateText}>
               {error ||
-                "Er zijn nog geen profielen beschikbaar. Kom later opnieuw terug."}
+                "Er zijn momenteel geen diertjes om te swipen. Kom later terug en ontdek jouw forever match!"}
             </ThemedText>
           </View>
         )}
@@ -429,6 +456,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
+  },
+  stateImage: {
+    marginBottom: 12,
   },
   stateTitle: {
     fontSize: 20,

@@ -27,6 +27,7 @@ export default function AdminRegisterOwnerScreen() {
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   function validate() {
@@ -35,6 +36,9 @@ export default function AdminRegisterOwnerScreen() {
     if (!phone.trim()) return "Vul een telefoonnummer in.";
     if (!email.trim() || !email.includes("@"))
       return "Vul een geldig e-mailadres in.";
+    if (!password.trim()) return "Kies een wachtwoord.";
+    if (password.trim().length < 6)
+      return "Het wachtwoord moet minstens 6 tekens bevatten.";
     return null;
   }
 
@@ -47,17 +51,13 @@ export default function AdminRegisterOwnerScreen() {
 
     setLoading(true);
     try {
-      // backend requires a password for creating a shelter; generate a random one here
-      const generatedPassword =
-        Math.random().toString(36).slice(-8) +
-        Math.random().toString(36).slice(2, 6);
       // backend expects `address` as an object matching AddressSchema
       const payload = {
         name,
         address: { street: address },
         phone,
         email,
-        password: generatedPassword,
+        password,
       };
       const resp = await api.post("/asielen", payload, true);
       if (!resp.ok) {
@@ -77,7 +77,10 @@ export default function AdminRegisterOwnerScreen() {
         const json = await resp.json();
         if (json && typeof json === "object") {
           const token =
-            (json as any).token || (json as any).accessToken || (json as any).adminToken || (json as any).authToken;
+            (json as any).token ||
+            (json as any).accessToken ||
+            (json as any).adminToken ||
+            (json as any).authToken;
           // some backends return the created admin/shelter under `admin` or `user`;
           // otherwise json may itself be the created resource.
           const adminObj = (json as any).admin || (json as any).user || json;
@@ -110,8 +113,8 @@ export default function AdminRegisterOwnerScreen() {
         // ignore JSON parse errors — it's non-fatal here
       }
 
-  // proceed to next admin step — navigate to the admin home screen
-  router.replace("/admin/home" as any);
+      // proceed to the admin dashboard (animals tab)
+      router.replace("/admin/(tabs)/animals" as any);
     } catch (e: any) {
       console.error("admin register error", e);
       Alert.alert(
@@ -155,7 +158,6 @@ export default function AdminRegisterOwnerScreen() {
 
           <Text style={styles.label}>Telefoonnummer</Text>
           <TextInput
-        
             style={[styles.input, styles.inputWithBorder]}
             value={phone}
             onChangeText={setPhone}
@@ -173,6 +175,16 @@ export default function AdminRegisterOwnerScreen() {
             autoCapitalize="none"
           />
 
+          <Text style={styles.label}>Wachtwoord</Text>
+          <TextInput
+            style={[styles.input, styles.inputWithBorder]}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Minstens 6 tekens"
+            secureTextEntry
+            autoCapitalize="none"
+          />
+
           <View style={{ height: 40 }} />
 
           <Image
@@ -181,17 +193,24 @@ export default function AdminRegisterOwnerScreen() {
             resizeMode="contain"
           />
         </ScrollView>
-        </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
 
       {/* bottom fixed CTA */}
       <View style={styles.bottomBar} pointerEvents={loading ? "none" : "auto"}>
         <View style={styles.bottomBarInner}>
-          <TouchableOpacity style={styles.cta} onPress={onContinue} disabled={loading}>
-            {loading ? <Text style={styles.ctaText}>Bezig…</Text> : <Text style={styles.ctaText}>Verder</Text>}
+          <TouchableOpacity
+            style={styles.cta}
+            onPress={onContinue}
+            disabled={loading}
+          >
+            {loading ? (
+              <Text style={styles.ctaText}>Bezig…</Text>
+            ) : (
+              <Text style={styles.ctaText}>Verder</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
-
     </SafeAreaView>
   );
 }
