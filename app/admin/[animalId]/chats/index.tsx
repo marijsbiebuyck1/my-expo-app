@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
+import BgCard from "../../../../components/ui/bg-card";
 import { api } from "../../../_lib/api";
 
 type Conversation = {
@@ -23,6 +24,8 @@ type Conversation = {
   avatar?: string | null;
   userAvatar?: string | null;
 };
+
+const rossePoes = require("../../../../assets/images/rossepoes.png");
 
 export default function AnimalChatsScreen() {
   const params = useLocalSearchParams();
@@ -97,7 +100,10 @@ export default function AnimalChatsScreen() {
 
   function renderItem({ item }: { item: Conversation }) {
     return (
-      <Pressable onPress={() => openConversation(item)} style={styles.row}>
+      <Pressable
+        onPress={() => openConversation(item)}
+        style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+      >
         {item.avatar ? (
           <Image source={{ uri: item.avatar }} style={styles.avatar} />
         ) : (
@@ -113,79 +119,164 @@ export default function AnimalChatsScreen() {
             {item.lastMessage}
           </ThemedText>
         </View>
+        <Ionicons name="chevron-forward" size={20} style={styles.chevron} />
       </Pressable>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
+    <SafeAreaView style={styles.screen}>
       <LogoHeader />
       <View style={styles.container}>
-        <View style={styles.headerRow}>
-          <Pressable
-            onPress={() => router.push("/admin/(tabs)/animals" as any)}
-            style={styles.backButton}
-            accessibilityLabel="Terug"
+        <View style={styles.cardShell}>
+          <BgCard
+            style={styles.bgCard}
+            contentStyle={styles.cardContent}
+            scrollEnabled={false}
           >
-            <Ionicons name="chevron-back" size={22} color="#2F2A28" />
-          </Pressable>
-          <ThemedText type="title">{`Matches voor ${animalName}`}</ThemedText>
-        </View>
+            <View style={styles.cardHeaderRow}>
+              <Pressable
+                onPress={() => router.push("/admin/(tabs)/animals" as any)}
+                style={styles.backButton}
+                accessibilityLabel="Terug"
+              >
+                <Ionicons name="chevron-back" size={18} color="#2F2A28" />
+              </Pressable>
+              <ThemedText type="title" style={styles.pageTitle}>
+                {`Matches voor ${animalName}`}
+              </ThemedText>
+            </View>
 
-        {loading ? (
-          <View style={{ padding: 16 }}>
-            <ActivityIndicator />
-          </View>
-        ) : (
-          <FlatList
-            data={conversations}
-            keyExtractor={(i) => i.id}
-            renderItem={({ item }) => renderItem({ item })}
-            ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-            contentContainerStyle={{ padding: 16 }}
-            ListEmptyComponent={() => (
-              <View style={{ padding: 16 }}>
-                <ThemedText>Geen gesprekken gevonden voor dit dier.</ThemedText>
+            {loading ? (
+              <View style={styles.loadingState}>
+                <ActivityIndicator />
+              </View>
+            ) : (
+              <View style={styles.listArea}>
+                <FlatList
+                  data={conversations}
+                  keyExtractor={(i) => i.id}
+                  renderItem={renderItem}
+                  ItemSeparatorComponent={() => (
+                    <View style={styles.separator} />
+                  )}
+                  contentContainerStyle={styles.listContent}
+                  style={styles.list}
+                  showsVerticalScrollIndicator={false}
+                  ListEmptyComponent={() => (
+                    <View style={styles.emptyState}>
+                      <ThemedText>
+                        Geen gesprekken gevonden voor dit dier.
+                      </ThemedText>
+                    </View>
+                  )}
+                />
+                <View style={styles.footerIllustration}>
+                  <Image
+                    source={rossePoes}
+                    style={styles.footerImage}
+                    resizeMode="contain"
+                    accessibilityIgnoresInvertColors
+                  />
+                </View>
               </View>
             )}
-          />
-        )}
+          </BgCard>
+        </View>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFCF5", padding: 30 },
-  headerRow: {
+  screen: { flex: 1, backgroundColor: "#FFFCF5" },
+  container: {
+    flex: 1,
+    padding: 20,
+  },
+  cardShell: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 360,
+    alignSelf: "center",
+  },
+  bgCard: {
+    width: "100%",
+    height: "100%",
+  },
+  cardContent: {
+    flex: 1,
+    flexGrow: 1,
+    paddingBottom: 0,
+  },
+  cardHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 12,
+    gap: 10,
+    marginBottom: 20,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: "#F1EFE8",
     alignItems: "center",
     justifyContent: "center",
   },
+  pageTitle: {
+    marginBottom: 0,
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  listArea: {
+    flex: 1,
+  },
+  list: { flex: 1 },
+  listContent: {
+    paddingHorizontal: 6,
+    paddingBottom: 0,
+  },
+  emptyState: {
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  loadingState: {
+    paddingVertical: 16,
+    paddingHorizontal: 6,
+  },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    width: "100%",
+    paddingVertical: 14,
+    paddingRight: 6,
   },
-  avatar: { width: 56, height: 56, borderRadius: 12, marginRight: 12 },
+  avatar: { width: 56, height: 56, borderRadius: 28, marginRight: 12 },
   avatarPlaceholder: {
     width: 56,
     height: 56,
-    borderRadius: 12,
+    borderRadius: 28,
     marginRight: 12,
     backgroundColor: "#f0f0f0",
   },
   meta: { flex: 1 },
   preview: { color: "#666", marginTop: 4 },
+  chevron: {
+    color: "#B5B5B5",
+  },
+  separator: {
+    height: 1,
+    backgroundColor: "#E5E2DC",
+    marginLeft: 68,
+  },
+  footerIllustration: {
+    alignItems: "flex-end",
+    paddingTop: 22,
+    marginTop: 16,
+  },
+  footerImage: {
+    width: 180,
+    height: 145,
+    marginRight: -24,
+  },
 });
