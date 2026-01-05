@@ -248,7 +248,8 @@ function mapAnimalToCard(animal: any): SwipeDeckItem | null {
   const attributes = animal.attributes || {};
   const species = attributes.species || animal.species || null;
 
-  const genderSource = animal.gender || attributes.sex;
+  const genderSource =
+    attributes.sex ?? animal.gender ?? (animal as any)?.sex ?? null;
   const gender = formatGender(genderSource, species);
   const age = formatAge(animal.birthdate);
   const breed = attributes.breed || animal.breed || null;

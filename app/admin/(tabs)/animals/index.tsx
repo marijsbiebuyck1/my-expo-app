@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  FlatList, // ✅ toevoegen
+  FlatList,
   Image,
   Keyboard,
   KeyboardAvoidingView,
@@ -119,7 +119,6 @@ export default function AnimalsScreen() {
         );
         return;
       }
-      // open the in-app camera modal which uses Camera.takePictureAsync
       setCameraVisible(true);
     } catch (err) {
       console.warn(err);
@@ -141,6 +140,14 @@ export default function AnimalsScreen() {
     setProperties([]);
     setWhoProperties([]);
     setStep(1);
+
+    // reset stap 4
+    setHasGarden(null);
+    setCanWithCats(false);
+    setCanWithDogs(false);
+    setCanWithRodents(false);
+    setKidsOption(null);
+    setCatTypes([]);
   }
 
   function buildBirthdate(): string | null {
@@ -155,6 +162,7 @@ export default function AnimalsScreen() {
 
   async function submitAnimal() {
     const isEditing = Boolean(editingAnimal);
+
     if (!name)
       return Alert.alert("Veld ontbreekt", "Vul de naam van het dier in.");
     if (!species)
@@ -162,15 +170,23 @@ export default function AnimalsScreen() {
         "Veld ontbreekt",
         "Kies of het dier een kat of een hond is."
       );
+
     const birth = buildBirthdate();
     if (!birth)
       return Alert.alert(
         "Veld ontbreekt",
         "Vul een geldige geboortedatum in (DD MM YYYY)."
       );
+
     if (!gender) return Alert.alert("Veld ontbreekt", "Kies geslacht.");
     if (!photoPreview && !photoPayload)
       return Alert.alert("Veld ontbreekt", "Upload een foto van het dier.");
+
+    // Backend eist description bij CREATE
+    const normalizedDescription = description.trim();
+    if (!isEditing && !normalizedDescription) {
+      return Alert.alert("Veld ontbreekt", "Vul een beschrijving in.");
+    }
 
     setSubmitting(true);
     try {
@@ -184,6 +200,7 @@ export default function AnimalsScreen() {
               (admin as any).adminId ??
               null
           );
+
         if (!shelterId) {
           const raw = await SecureStore.getItemAsync("admin");
           if (raw) {
@@ -199,12 +216,13 @@ export default function AnimalsScreen() {
             } catch {}
           }
         }
+
         if (!shelterId) {
           const direct = await SecureStore.getItemAsync("adminId");
           if (direct) shelterId = direct;
         }
+
         if (!shelterId) {
-          setSubmitting(false);
           return Alert.alert(
             "Veld ontbreekt",
             "Geen shelter gevonden. Log in als asiel en probeer opnieuw."
@@ -215,35 +233,62 @@ export default function AnimalsScreen() {
       const payload: Record<string, any> = {
         name,
         birthdate: birth,
+        description: normalizedDescription,
       };
 
-      const normalizedDescription = description.trim();
-      payload.description = normalizedDescription;
       if (!isEditing) payload.shelterId = shelterId;
 
+      // Foto: alleen meesturen als nieuw gekozen/genomen (edit behoudt bestaande)
       if (!isEditing || photoPayload) {
-        if (!photoPayload && !isEditing) {
-          throw new Error("Foto ontbreekt");
-        }
         if (photoPayload) payload.image = photoPayload;
       }
 
       const attributes: Record<string, any> = {};
-      if (species) attributes.species = species;
+
+      // required-ish in jouw UI
+      attributes.species = species;
+      attributes.sex = gender;
+
       if (breed || isEditing) attributes.breed = breed || "";
-      if (gender) attributes.sex = gender;
+
       if (properties.length > 0 || isEditing) attributes.traits = properties;
+
       if (whoProperties.length > 0) attributes.notes = whoProperties.join(", ");
       else if (isEditing) attributes.notes = "";
-      // home-situation attributes
-      if (hasGarden !== null || isEditing) attributes.hasGarden = hasGarden;
-      if (canWithCats || isEditing) attributes.canWithCats = canWithCats;
-      if (canWithDogs || isEditing) attributes.canWithDogs = canWithDogs;
-      if (canWithRodents || isEditing)
-        attributes.canWithRodents = canWithRodents;
-      if (kidsOption || isEditing) attributes.kids = kidsOption;
-      if (catTypes.length > 0 || isEditing) attributes.catTypes = catTypes;
-      if (Object.keys(attributes).length > 0) payload.attributes = attributes;
+
+      // gardenAccess (backend)
+      if (hasGarden !== null || isEditing)
+        attributes.gardenAccess = Boolean(hasGarden);
+
+      // otherAnimals (backend)
+      const otherAnimals: string[] = [];
+      if (canWithCats) otherAnimals.push("cats");
+      if (canWithDogs) otherAnimals.push("dogs");
+      if (canWithRodents) otherAnimals.push("rodents");
+      if (otherAnimals.length > 0 || isEditing)
+        attributes.otherAnimals = otherAnimals;
+
+      // childrenCompatibility (backend)
+      const kidsBackend = mapKidsOptionToBackend(kidsOption);
+
+      // CREATE: default "no" als niets gekozen
+      if (!isEditing) {
+        attributes.childrenCompatibility = kidsBackend ?? "no";
+      } else {
+        // EDIT: alleen updaten als user iets gekozen heeft
+        if (kidsBackend !== null)
+          attributes.childrenCompatibility = kidsBackend;
+      }
+
+      // catType (backend) - alleen relevant voor kat
+      const catTypeBackend =
+        species === "cat" ? mapCatTypesToBackend(catTypes) : null;
+
+      // CREATE: enkel meesturen als gekozen
+      // EDIT: enkel meesturen als gekozen (anders niets overschrijven)
+      if (catTypeBackend) attributes.catType = catTypeBackend;
+
+      payload.attributes = attributes;
 
       let endpoint = "/animals";
       if (isEditing) {
@@ -253,13 +298,13 @@ export default function AnimalsScreen() {
       }
       const method = isEditing ? api.patch : api.post;
 
-      console.log(payload);
       const res = await method(endpoint, payload, true);
       if (!res.ok) {
         const t = await res.text();
         throw new Error(t || `Status ${res.status}`);
       }
       await res.json().catch(() => null);
+
       Alert.alert(
         isEditing ? "Bijgewerkt" : "Klaar",
         isEditing ? "Dier succesvol aangepast." : "Dier succesvol toegevoegd."
@@ -306,20 +351,14 @@ export default function AnimalsScreen() {
           const parsed = JSON.parse(raw);
           const parsedId = pickId(parsed);
           if (parsedId) return parsedId;
-        } catch {
-          // ignore JSON parse errors
-        }
+        } catch {}
       }
-    } catch {
-      // fall through to other storage keys if SecureStore read fails
-    }
+    } catch {}
 
     try {
       const direct = await SecureStore.getItemAsync("adminId");
       if (direct) return String(direct).trim();
-    } catch {
-      // ignore
-    }
+    } catch {}
 
     return null;
   }, [admin]);
@@ -389,7 +428,6 @@ export default function AnimalsScreen() {
 
   const isEditing = Boolean(editingAnimal);
   const modalTitle = isEditing ? "Dier bewerken" : "Dier toevoegen";
-  // submitLabel was previously used for the modal submit; for the step-4 flow we show a fixed label
 
   const propertyOptions = [
     "🚽Zindelijk",
@@ -451,6 +489,46 @@ export default function AnimalsScreen() {
     return null;
   }
 
+  function mapKidsOptionToBackend(
+    v: "no" | "young" | "between" | null
+  ): "no" | "younger_than_6" | "6_to_14" | null {
+    if (!v) return null;
+    if (v === "no") return "no";
+    if (v === "young") return "younger_than_6";
+    return "6_to_14";
+  }
+
+  function mapKidsOptionFromBackend(v: any): "no" | "young" | "between" | null {
+    const s = typeof v === "string" ? v : "";
+    if (!s) return null;
+    if (s === "no") return "no";
+    if (s === "younger_than_6") return "young";
+    if (s === "6_to_14") return "between";
+    return null;
+  }
+
+  function mapCatTypesToBackend(
+    catTypes: string[]
+  ): "indoor" | "outdoor" | "cuddle" | "farm" | null {
+    const first = catTypes?.[0];
+    if (!first) return null;
+
+    if (first === "Binnenkat") return "indoor";
+    if (first === "Buitenkat") return "outdoor";
+    if (first === "Knuffelkat") return "cuddle";
+    if (first === "Boerderijkat") return "farm";
+    return null;
+  }
+
+  function mapCatTypeFromBackend(v: any): string[] {
+    if (typeof v !== "string") return [];
+    if (v === "indoor") return ["Binnenkat"];
+    if (v === "outdoor") return ["Buitenkat"];
+    if (v === "cuddle") return ["Knuffelkat"];
+    if (v === "farm") return ["Boerderijkat"];
+    return [];
+  }
+
   function extractWhoPreferences(animal: any): string[] {
     if (!animal) return [];
     if (Array.isArray(animal.whoProperties))
@@ -495,8 +573,10 @@ export default function AnimalsScreen() {
   function beginEditAnimal(animal: any) {
     resetForm();
     if (!animal) return;
+
     setEditingAnimal(animal);
     const attrs = animal.attributes || {};
+
     const birth = animal.birthdate ? new Date(animal.birthdate) : null;
     if (birth && !Number.isNaN(birth.getTime())) {
       setDay(String(birth.getUTCDate()).padStart(2, "0"));
@@ -507,30 +587,47 @@ export default function AnimalsScreen() {
       setMonth("");
       setYear("");
     }
+
     setName(animal.name || "");
     setBreed(attrs.breed || animal.breed || "");
     setDescription(
       typeof animal.description === "string" ? animal.description : ""
     );
     setSpecies(normalizeSpecies(attrs.species || animal.species));
-    setGender(normalizeGender(attrs.sex || animal.gender));
+
+    const genderRaw =
+      attrs.sex ?? attrs.gender ?? animal.sex ?? animal.gender ?? null;
+    setGender(normalizeGender(genderRaw));
+
     setProperties(
       Array.isArray(attrs.traits) ? attrs.traits.map((t: any) => String(t)) : []
     );
     setWhoProperties(extractWhoPreferences(animal));
-    // load home-situation labels when editing
-    setHasGarden(typeof attrs.hasGarden === "boolean" ? attrs.hasGarden : null);
-    setCanWithCats(Boolean(attrs.canWithCats));
-    setCanWithDogs(Boolean(attrs.canWithDogs));
-    setCanWithRodents(Boolean(attrs.canWithRodents));
-    setKidsOption(typeof attrs.kids === "string" ? attrs.kids : null);
-    setCatTypes(
-      Array.isArray(attrs.catTypes) ? attrs.catTypes.map(String) : []
+
+    // gardenAccess (backend)
+    setHasGarden(
+      typeof attrs.gardenAccess === "boolean" ? attrs.gardenAccess : null
     );
+
+    // otherAnimals (backend)
+    const oa = Array.isArray(attrs.otherAnimals)
+      ? attrs.otherAnimals.map(String)
+      : [];
+    setCanWithCats(oa.includes("cats"));
+    setCanWithDogs(oa.includes("dogs"));
+    setCanWithRodents(oa.includes("rodents"));
+
+    // childrenCompatibility (backend)
+    setKidsOption(mapKidsOptionFromBackend(attrs.childrenCompatibility));
+
+    // catType (backend)
+    setCatTypes(mapCatTypeFromBackend(attrs.catType));
+
     const existingPhoto =
       typeof animal.photo === "string" && animal.photo ? animal.photo : null;
     setPhotoPreview(existingPhoto);
     setPhotoPayload(null);
+
     setStep(1);
     setModalVisible(true);
   }
@@ -567,6 +664,7 @@ export default function AnimalsScreen() {
           <Ionicons name="trash-outline" size={20} color="#fff" />
           <ThemedText style={styles.swipeActionText}>Verwijder</ThemedText>
         </RectButton>
+
         <RectButton
           style={[styles.swipeActionButton, styles.swipeEditButton]}
           onPress={() => beginEditAnimal(item)}
@@ -584,7 +682,6 @@ export default function AnimalsScreen() {
         <LogoHeader />
         <View style={styles.root}>
           <View style={styles.root}>
-            {/* ✅ Fixed header + button (scrolt NIET mee) */}
             <View style={styles.fixedTop}>
               <View style={styles.headerRow}>
                 <ThemedText type="title">Jouw dieren 🐾</ThemedText>
@@ -606,7 +703,6 @@ export default function AnimalsScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* ✅ Alleen de lijst scrolt */}
             {loadingAnimals ? (
               <View style={styles.emptyState}>
                 <ActivityIndicator />
@@ -704,18 +800,7 @@ export default function AnimalsScreen() {
               />
             )}
 
-            <CameraCapture
-              visible={cameraVisible}
-              onClose={() => setCameraVisible(false)}
-              onCapture={(res) => {
-                if (!res || !res.previewBase64) {
-                  Alert.alert("Fout", "Kon foto niet verwerken.");
-                  return;
-                }
-                setPhotoPreview(res.previewBase64);
-                setPhotoPayload(res.previewBase64);
-              }}
-            />
+            {/* ⚠️ Verwijderd: dubbele CameraCapture (er stond er al één onderaan) */}
           </View>
 
           <Modal
@@ -830,6 +915,7 @@ export default function AnimalsScreen() {
                             style={[styles.inputLarge, styles.inputWithBorder]}
                           />
                         </View>
+
                         <ThemedText
                           style={{
                             marginTop: 12,
@@ -876,7 +962,6 @@ export default function AnimalsScreen() {
                           </TouchableOpacity>
                         </View>
 
-                        {/* Geslacht: alleen tonen nadat soort (kat/hond) gekozen is */}
                         {species ? (
                           <>
                             <ThemedText
@@ -929,8 +1014,6 @@ export default function AnimalsScreen() {
                             </View>
                           </>
                         ) : null}
-
-                        {/* Buttons moved to fixed footer */}
                       </View>
                     ) : step === 2 ? (
                       <View style={{ width: "100%", alignItems: "center" }}>
@@ -1012,8 +1095,6 @@ export default function AnimalsScreen() {
                             ))}
                           </View>
                         </View>
-
-                        {/* Buttons moved to fixed footer (geslacht verplaatst naar stap 1) */}
                       </View>
                     ) : step === 3 ? (
                       <View style={{ width: "100%", alignItems: "center" }}>
@@ -1133,8 +1214,6 @@ export default function AnimalsScreen() {
                             </TouchableOpacity>
                           ))}
                         </View>
-
-                        {/* Buttons moved to fixed footer */}
                       </View>
                     ) : step === 4 ? (
                       <View style={{ width: "100%", alignItems: "flex-start" }}>
@@ -1204,6 +1283,7 @@ export default function AnimalsScreen() {
                               🐱 Kan met katten
                             </ThemedText>
                           </TouchableOpacity>
+
                           <TouchableOpacity
                             style={
                               canWithDogs
@@ -1222,6 +1302,7 @@ export default function AnimalsScreen() {
                               🐶 Kan met honden
                             </ThemedText>
                           </TouchableOpacity>
+
                           <TouchableOpacity
                             style={
                               canWithRodents
@@ -1250,6 +1331,7 @@ export default function AnimalsScreen() {
                         >
                           Kan het diertje omgaan met kinderen?
                         </ThemedText>
+
                         <View
                           style={[
                             styles.speciesRow,
@@ -1275,6 +1357,7 @@ export default function AnimalsScreen() {
                               ❌ Nee
                             </ThemedText>
                           </TouchableOpacity>
+
                           <TouchableOpacity
                             style={[
                               styles.propertyButton,
@@ -1294,6 +1377,7 @@ export default function AnimalsScreen() {
                               🧒 Ja, jonger dan 6 jaar
                             </ThemedText>
                           </TouchableOpacity>
+
                           <TouchableOpacity
                             style={[
                               styles.propertyButton,
@@ -1372,15 +1456,12 @@ export default function AnimalsScreen() {
                             </View>
                           </>
                         ) : null}
-
-                        {/* Buttons moved to fixed footer */}
                       </View>
                     ) : null}
                   </ScrollView>
                 </KeyboardAvoidingView>
               </TouchableWithoutFeedback>
 
-              {/* Fixed footer with action buttons (matches modal background) */}
               <View style={styles.footerWrap}>
                 <View style={styles.footerInner}>
                   {step > 1 ? (
@@ -1437,6 +1518,7 @@ export default function AnimalsScreen() {
             </SafeAreaView>
           </Modal>
 
+          {/* ✅ Enige CameraCapture (niet dubbel) */}
           <CameraCapture
             visible={cameraVisible}
             onClose={() => setCameraVisible(false)}
@@ -1485,7 +1567,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     width: "100%",
     alignItems: "center",
-    // leave space for the fixed footer
     paddingBottom: 140,
   },
   imagePicker: {
@@ -1506,13 +1587,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 12,
   },
-  textArea: {
-    minHeight: 120,
-  },
-  inputWithBorder: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
+  textArea: { minHeight: 120 },
+  inputWithBorder: { borderWidth: 1, borderColor: "#E5E7EB" },
   inputSmall: {
     width: 60,
     padding: 12,
@@ -1555,27 +1631,6 @@ const styles = StyleSheet.create({
   },
   propertyActive: { backgroundColor: "#AEBA40" },
   propertyActiveText: { color: "#fff" },
-  shareButton: {
-    backgroundColor: "#037D4E",
-    paddingVertical: 12,
-    borderRadius: 24,
-    alignItems: "center",
-  },
-  pinkButton: {
-    backgroundColor: "#037D4E",
-    paddingVertical: 12,
-    borderRadius: 24,
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  pinkOutline: {
-    borderWidth: 2,
-    borderColor: "#037D4E",
-    paddingVertical: 12,
-    borderRadius: 24,
-    alignItems: "center",
-    marginTop: 6,
-  },
   addButtonFull: {
     backgroundColor: "#037D4E",
     paddingVertical: 14,
@@ -1598,11 +1653,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     overflow: "hidden",
   },
-  animalRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "100%",
-  },
+  animalRow: { flexDirection: "row", alignItems: "center", width: "100%" },
   avatar: {
     width: 60,
     height: 60,
@@ -1611,11 +1662,7 @@ const styles = StyleSheet.create({
   },
   animalName: { fontWeight: "700", fontSize: 18 },
   animalBreed: { color: "#666", fontSize: 14 },
-  animalDescription: {
-    color: "#555",
-    fontSize: 13,
-    marginTop: 4,
-  },
+  animalDescription: { color: "#555", fontSize: 13, marginTop: 4 },
   animalsBadge: {
     backgroundColor: "#E6F0C8",
     paddingHorizontal: 10,
@@ -1684,17 +1731,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "transparent",
   },
-
   fixedTop: {
     paddingHorizontal: 30,
     paddingBottom: 12,
     backgroundColor: "#FFFCF5",
     zIndex: 10,
   },
-  listContent: {
-    paddingHorizontal: 30,
-    paddingBottom: 30,
-  },
+  listContent: { paddingHorizontal: 30, paddingBottom: 30 },
 });
 
 export const options = { title: "Animals" };
