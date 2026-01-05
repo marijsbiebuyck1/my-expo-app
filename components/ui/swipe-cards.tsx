@@ -107,7 +107,7 @@ export default function SwipeCard({
 
         {tags && tags.length > 0 && (
           <>
-            <Text style={styles.sectionHeading}>Over mij</Text>
+            <Text style={styles.sectionHeading}>OVER MIJ</Text>
             <View style={styles.chipsRow}>
               {tags.map((t) => (
                 <View key={t} style={styles.chip}>
@@ -123,7 +123,7 @@ export default function SwipeCard({
         {secondaryTags && secondaryTags.length > 0 && (
           <>
             <Text style={styles.sectionHeading}>
-              {secondaryTitle || "Wie zoek ik?"}
+              {secondaryTitle || "WIE ZOEK IK?"}
             </Text>
             <View style={styles.chipsRow}>
               {secondaryTags.map((t) => (
@@ -250,7 +250,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     color: "#333",
-    marginBottom: 8,
+    marginBottom: 20,
+    fontFamily: "Montserrat_700Bold",
+    marginTop: 30,
+    textTransform: "uppercase",
   },
 
   chipsRow: {
@@ -264,7 +267,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
-    marginBottom: 8,
+    marginBottom: 1,
   },
   chipText: {
     fontSize: 13,

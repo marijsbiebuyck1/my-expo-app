@@ -28,34 +28,25 @@ export default function BgCard({ children, style, contentStyle }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    display: "flex",
-    width: 343,
-    height: 666,
-    paddingTop: 45,
-    paddingRight: 15,
-    paddingBottom: 15,
-    paddingLeft: 15,
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 32, // ignored on RN but kept for readability
-    flexShrink: 0,
-    borderRadius: 20,
+    width: "100%",
+    maxWidth: 360,
+    paddingHorizontal: 24,
+    paddingVertical: 26,
+    borderRadius: 36,
     backgroundColor: "#FFF",
-    overflow: "hidden", // clip content
-    // drop shadow (iOS)
-    shadowColor: "#000",
-    shadowOffset: { width: -1, height: 6 },
-    shadowOpacity: 0.8,
-    shadowRadius: 23.4,
+    alignSelf: "center",
+    // drop shadow (match admin chatCard styling)
+    shadowColor: "#0F0B06",
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.12,
+    shadowRadius: 28,
     // elevation for Android
-    elevation: 6,
+    elevation: 8,
   },
   contentContainer: {
     width: "100%",
-    // keep layout column + centered items
     flexDirection: "column",
-    alignItems: "center",
-    // vertical spacing between children: use margin on child elements or gap polyfill
+    alignItems: "stretch",
     paddingBottom: 10,
   },
 });

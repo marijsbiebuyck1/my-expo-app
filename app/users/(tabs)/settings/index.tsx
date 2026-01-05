@@ -12,8 +12,10 @@ import {
   Image,
   Pressable,
   ScrollView,
+  StyleProp,
   StyleSheet,
   View,
+  ViewStyle,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoHeader from "../../../../components/logo-header";
@@ -52,7 +54,11 @@ function mapHomePetLabel(raw?: string) {
 function Chip({ label }: { label: string }) {
   return (
     <View style={styles.chip}>
-      <ThemedText style={styles.chipText} numberOfLines={2} ellipsizeMode="tail">
+      <ThemedText
+        style={styles.chipText}
+        numberOfLines={2}
+        ellipsizeMode="tail"
+      >
         {label}
       </ThemedText>
     </View>
@@ -63,15 +69,19 @@ function Section({
   title,
   children,
   onEdit,
+  style,
 }: {
   title: string;
   children?: any;
   onEdit?: () => void;
+  style?: StyleProp<ViewStyle>;
 }) {
   return (
-    <View style={{ marginBottom: 14 }}>
+    <View style={[styles.sectionContainer, style]}>
       <View style={styles.sectionHeader}>
-        <ThemedText type="subtitle" style={styles.sectionTitle}>{title}</ThemedText>
+        <ThemedText type="subtitle" style={styles.sectionTitle}>
+          {title}
+        </ThemedText>
         {onEdit ? (
           <Pressable
             onPress={onEdit}
@@ -114,19 +124,26 @@ export default function SettingsScreen() {
         // Try to fetch fresh user data from the backend if we have an id/token
         try {
           const parsed = raw ? JSON.parse(raw) : null;
-          const storedId = parsed?.id || parsed?._id || (await SecureStore.getItemAsync("userId"));
+          const storedId =
+            parsed?.id ||
+            parsed?._id ||
+            (await SecureStore.getItemAsync("userId"));
           const token = await SecureStore.getItemAsync("userToken");
           if (storedId && token) {
             const resp = await api.get(`/users/${storedId}`);
             if (resp.ok) {
               const payload = await resp.json().catch(() => null);
-              const fetchedUser = Array.isArray(payload) && payload.length > 0
-                ? payload[0]
-                : payload?.data || payload?.user || payload;
+              const fetchedUser =
+                Array.isArray(payload) && payload.length > 0
+                  ? payload[0]
+                  : payload?.data || payload?.user || payload;
               if (fetchedUser && mounted) {
                 setUser(fetchedUser);
                 try {
-                  await SecureStore.setItemAsync("user", JSON.stringify(fetchedUser));
+                  await SecureStore.setItemAsync(
+                    "user",
+                    JSON.stringify(fetchedUser)
+                  );
                 } catch {}
               }
             }
@@ -149,7 +166,7 @@ export default function SettingsScreen() {
       <SafeAreaView style={styles.screen}>
         <LogoHeader />
         <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+          style={{ flex: -1, justifyContent: "center", alignItems: "center" }}
         >
           <ActivityIndicator />
         </View>
@@ -339,187 +356,194 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
-      <LogoHeader />
+      <View style={styles.pageContainer}>
+        <LogoHeader style={styles.logoHeader} />
+        <View style={styles.cardShell}>
+          <BgCard style={styles.bgCard}>
+            <ScrollView
+              contentContainerStyle={styles.cardContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <ThemedText type="title" style={styles.pageTitle}>
+                Profiel
+              </ThemedText>
 
-      <ScrollView contentContainerStyle={styles.pageContainer}>
-        <BgCard style={styles.bgCard}>
-          <ScrollView
-            contentContainerStyle={styles.cardContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <ThemedText type="title" style={styles.pageTitle}>
-              Profiel
-            </ThemedText>
-
-            <View style={styles.centerRow}>
-              <View style={styles.avatarColumn}>
-                {photoUri ? (
-                  <Image
-                    source={{ uri: photoUri }}
-                    style={styles.avatarLarge}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <Pressable
-                    onPress={pickAndUploadPhoto}
-                    style={styles.avatarLargePlaceholder}
-                  >
-                    <Ionicons name="add" size={28} color="#AEBA40" />
-                  </Pressable>
-                )}
-              </View>
-
-              <View style={styles.nameColumn}>
-                <ThemedText type="subtitle" style={styles.nameText}>
-                  {displayName}
-                </ThemedText>
-                {age ? (
-                  <ThemedText style={styles.ageText}>{`${age} jaar`}</ThemedText>
-                ) : null}
-              </View>
-            </View>
-
-            <View style={styles.avatarBtnWrapper}>
-              <View style={{ width: 120, alignItems: "center" }}>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.photoBtn,
-                    pressed && { opacity: 0.85 },
-                  ]}
-                  onPress={pickAndUploadPhoto}
-                  disabled={uploading}
-                >
-                  {uploading ? (
-                    <ActivityIndicator />
+              <View style={styles.centerRow}>
+                <View style={styles.avatarColumn}>
+                  {photoUri ? (
+                    <Image
+                      source={{ uri: photoUri }}
+                      style={styles.avatarLarge}
+                      resizeMode="cover"
+                    />
                   ) : (
-                    <ThemedText style={styles.photoBtnText}>
-                      {photoUri ? "Wijzig" : "Upload"}
-                    </ThemedText>
+                    <Pressable
+                      onPress={pickAndUploadPhoto}
+                      style={styles.avatarLargePlaceholder}
+                    >
+                      <Ionicons name="add" size={28} color="#AEBA40" />
+                    </Pressable>
                   )}
-                </Pressable>
-              </View>
-              <View style={{ flex: 1 }} />
-            </View>
-
-            <View style={{ height: 12 }} />
-
-            <Section
-              title="Mijn interesses"
-              onEdit={() => router.push("/users/register-interests")}
-            >
-              {interests ? (
-                <View style={styles.chipsRow}>
-                  {(interests.employment || []).map((c: string) => (
-                    <Chip key={String(c)} label={String(c)} />
-                  ))}
-                  {(interests.freeTime || []).map((c: string) => (
-                    <Chip key={String(c)} label={String(c)} />
-                  ))}
-                  {(interests.household || []).map((c: string) => (
-                    <Chip key={String(c)} label={String(c)} />
-                  ))}
                 </View>
-              ) : (
-                <ThemedText>Geen interesses opgeslagen.</ThemedText>
-              )}
-            </Section>
 
-            <Section
-              title="Wat ik zoek"
-              onEdit={() => router.push("/users/register-pet")}
-            >
-              {preferences ? (
-                <View style={styles.chipsRow}>
-                  {createPetPreferenceChips(preferences.preferredSpecies || [])}
-                  {(preferences.characteristics || []).map((c: string) => (
-                    <Chip key={String(c)} label={String(c)} />
-                  ))}
-                  {preferences.notes ? (
-                    <Chip label={String(preferences.notes)} />
+                <View style={styles.nameColumn}>
+                  <ThemedText type="subtitle" style={styles.nameText}>
+                    {displayName}
+                  </ThemedText>
+                  {age ? (
+                    <ThemedText
+                      style={styles.ageText}
+                    >{`${age} jaar`}</ThemedText>
                   ) : null}
                 </View>
-              ) : (
-                <ThemedText>Geen voorkeuren opgeslagen.</ThemedText>
-              )}
-            </Section>
+              </View>
 
-            <Section
-              title="Thuissituatie"
-              onEdit={() => router.push("/users/register-home")}
-            >
-              {home ? (
-                <View>
-                  <View style={styles.chipsRow}>
-                    {typeof home.garden !== "undefined" ? (
-                      <Chip
-                        label={home.garden ? "🌿 Tuin: Ja" : "🚫 Tuin: Nee"}
-                      />
-                    ) : null}
-
-                    {typeof home.children !== "undefined" ? (
-                      <Chip
-                        label={
-                          home.children
-                            ? `👶 Kinderen: ${home.children}`
-                            : "👶 Geen kinderen"
-                        }
-                      />
-                    ) : null}
-
-                    {(home.otherPets || []).length > 0
-                      ? (home.otherPets || []).map((h: string, i: number) => (
-                          <Chip
-                            key={`${String(h)}-${i}`}
-                            label={mapHomePetLabel(h)}
-                          />
-                        ))
-                      : null}
-                  </View>
+              <View style={styles.avatarBtnWrapper}>
+                <View style={{ width: 120, alignItems: "center" }}>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.photoBtn,
+                      pressed && { opacity: 0.85 },
+                    ]}
+                    onPress={pickAndUploadPhoto}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <ActivityIndicator />
+                    ) : (
+                      <ThemedText style={styles.photoBtnText}>
+                        {photoUri ? "Wijzig" : "Upload"}
+                      </ThemedText>
+                    )}
+                  </Pressable>
                 </View>
-              ) : (
-                <ThemedText>Geen thuissituatie opgeslagen.</ThemedText>
-              )}
-            </Section>
+                <View style={{ flex: 1 }} />
+              </View>
 
-            <Section
-              title={`Regio`}
-              onEdit={() => router.push("/users/register-owner")}
-            >
-              <ThemedText>{region}</ThemedText>
-            </Section>
+              <Section
+                title="Mijn interesses"
+                onEdit={() => router.push("/users/register-interests")}
+                style={styles.sectionIntroSpacing}
+              >
+                {interests ? (
+                  <View style={styles.chipsRow}>
+                    {(interests.employment || []).map((c: string) => (
+                      <Chip key={String(c)} label={String(c)} />
+                    ))}
+                    {(interests.freeTime || []).map((c: string) => (
+                      <Chip key={String(c)} label={String(c)} />
+                    ))}
+                    {(interests.household || []).map((c: string) => (
+                      <Chip key={String(c)} label={String(c)} />
+                    ))}
+                  </View>
+                ) : (
+                  <ThemedText>Geen interesses opgeslagen.</ThemedText>
+                )}
+              </Section>
 
-            <View style={{ height: 40 }} />
-          </ScrollView>
-        </BgCard>
-      </ScrollView>
+              <Section
+                title="Wat ik zoek"
+                onEdit={() => router.push("/users/register-pet")}
+                style={styles.sectionPrimarySpacing}
+              >
+                {preferences ? (
+                  <View style={styles.chipsRow}>
+                    {createPetPreferenceChips(
+                      preferences.preferredSpecies || []
+                    )}
+                    {(preferences.characteristics || []).map((c: string) => (
+                      <Chip key={String(c)} label={String(c)} />
+                    ))}
+                    {preferences.notes ? (
+                      <Chip label={String(preferences.notes)} />
+                    ) : null}
+                  </View>
+                ) : (
+                  <ThemedText>Geen voorkeuren opgeslagen.</ThemedText>
+                )}
+              </Section>
+
+              <Section
+                title="Thuissituatie"
+                onEdit={() => router.push("/users/register-home")}
+              >
+                {home ? (
+                  <View>
+                    <View style={styles.chipsRow}>
+                      {typeof home.garden !== "undefined" ? (
+                        <Chip
+                          label={home.garden ? "🌿 Tuin: Ja" : "🚫 Tuin: Nee"}
+                        />
+                      ) : null}
+
+                      {typeof home.children !== "undefined" ? (
+                        <Chip
+                          label={
+                            home.children
+                              ? `👶 Kinderen: ${home.children}`
+                              : "👶 Geen kinderen"
+                          }
+                        />
+                      ) : null}
+
+                      {(home.otherPets || []).length > 0
+                        ? (home.otherPets || []).map((h: string, i: number) => (
+                            <Chip
+                              key={`${String(h)}-${i}`}
+                              label={mapHomePetLabel(h)}
+                            />
+                          ))
+                        : null}
+                    </View>
+                  </View>
+                ) : (
+                  <ThemedText>Geen thuissituatie opgeslagen.</ThemedText>
+                )}
+              </Section>
+
+              <Section
+                title={`Regio`}
+                onEdit={() => router.push("/users/register-owner")}
+              >
+                <ThemedText>{region}</ThemedText>
+              </Section>
+
+              <View style={{ height: 40 }} />
+            </ScrollView>
+          </BgCard>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#FFFCF5" },
-  container: { padding: 20 },
-  // page container centers the white card on the screen
-  pageContainer: { padding: 20, alignItems: "center" },
-  // white background card dimensions and shadow
-  bgCard: {
-    width: 343,
-    height: 666,
-    paddingTop: 45,
-    paddingRight: 15,
-    paddingBottom: 15,
-    paddingLeft: 15,
-    flexDirection: "column",
+  screen: { flex: 1, backgroundColor: "#FFF8EF" },
+  pageContainer: {
+    flex: 1,
+    width: "100%",
     alignItems: "center",
-    flexShrink: 0,
-    borderRadius: 20,
-    backgroundColor: "#FFF",
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: -1, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 23.4,
-    elevation: 6,
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+    paddingTop: 24,
+  },
+  logoHeader: {
+    marginTop: 12,
+    marginBottom: 12,
+    alignSelf: "center",
+    zIndex: 2,
+  },
+  cardShell: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 360,
+    alignSelf: "center",
+  },
+  container: { padding: 20 },
+  bgCard: {
+    width: "100%",
+    height: "100%",
   },
   cardContent: {
     width: "100%",
@@ -637,6 +661,10 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
     fontSize: 12,
   },
+  sectionContainer: {
+    width: "100%",
+    marginBottom: 18,
+  },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -645,6 +673,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
+  },
+  sectionIntroSpacing: {
+    marginTop: 32,
+  },
+  sectionPrimarySpacing: {
+    marginTop: 28,
   },
   editIconBtn: {
     width: 36,
