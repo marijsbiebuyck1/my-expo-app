@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -111,9 +112,16 @@ export default function AnimalChatsScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
       <LogoHeader />
       <View style={styles.container}>
-        <ThemedText type="title" style={{ marginBottom: 12 }}>
-          Chats voor dier
-        </ThemedText>
+        <View style={styles.headerRow}>
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.backButton}
+            accessibilityLabel="Terug"
+          >
+            <Ionicons name="chevron-back" size={22} color="#2F2A28" />
+          </Pressable>
+          <ThemedText type="title">Chats voor dier</ThemedText>
+        </View>
 
         {loading ? (
           <View style={{ padding: 16 }}>
@@ -140,6 +148,20 @@ export default function AnimalChatsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFFCF5", padding: 30 },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 12,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F1EFE8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   row: {
     flexDirection: "row",
     alignItems: "center",
