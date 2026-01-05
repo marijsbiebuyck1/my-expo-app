@@ -66,6 +66,11 @@ Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan he
         const conversation = payload?.conversation || {};
         addLocalConversation({
           id: conversation.animalId || animalId,
+          conversationId:
+            conversation.id ||
+            conversation._id ||
+            conversation.conversationId ||
+            null,
           name:
             conversation.animalName ||
             itemSnapshot.name ||

@@ -5,6 +5,7 @@ export type LocalConversation = {
   name: string;
   lastMessage?: string;
   avatar?: string | null;
+  conversationId?: string | null;
 };
 
 const STORAGE_KEY = "local-conversations-v1";
