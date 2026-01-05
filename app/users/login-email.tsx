@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgUri } from "react-native-svg";
 import { ThemedText } from "../../components/themed-text";
+import { clearLocalConversations } from "../../lib/localConversations";
 import { ADMIN_BASE, api } from "../_lib/api";
 
 type AccountType = "user" | "shelter";
@@ -164,6 +165,8 @@ export default function LoginEmailScreen({
           if (id) await SecureStore.setItemAsync("adminId", String(id));
         }
       } else {
+        // Switching user accounts should never reuse cached chats from another user.
+        clearLocalConversations();
         if (token) await SecureStore.setItemAsync("userToken", String(token));
         if (profile) {
           await SecureStore.setItemAsync("user", JSON.stringify(profile));

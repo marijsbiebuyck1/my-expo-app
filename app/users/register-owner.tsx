@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "../../components/themed-text";
+import { clearLocalConversations } from "../../lib/localConversations";
 import { api } from "../_lib/api";
 
 export const options = { headerShown: false };
@@ -127,7 +128,10 @@ export default function RegisterOwnerScreen() {
       const fileName = uri.split("/").pop() || `photo-${Date.now()}.jpg`;
       // Some versions of expo-file-system's types may not expose cacheDirectory/documentDirectory
       // at compile time — use a runtime-safe access via any and fallback to empty string.
-      const cacheDir = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory || "";
+      const cacheDir =
+        (FileSystem as any).cacheDirectory ||
+        (FileSystem as any).documentDirectory ||
+        "";
       const dest = cacheDir + fileName;
 
       await FileSystem.copyAsync({ from: uri, to: dest });
@@ -139,7 +143,9 @@ export default function RegisterOwnerScreen() {
     // FileSystem.readAsStringAsync works with either file:// or a local path in Expo.
     // Some versions of expo-file-system may not expose EncodingType in types; use the
     // string literal 'base64' which the runtime accepts.
-    const base64 = await FileSystem.readAsStringAsync(fileUri, { encoding: "base64" as any });
+    const base64 = await FileSystem.readAsStringAsync(fileUri, {
+      encoding: "base64" as any,
+    });
 
     // We manipulated to JPEG, so safe default:
     return `data:image/jpeg;base64,${base64}`;
@@ -164,6 +170,7 @@ export default function RegisterOwnerScreen() {
       await SecureStore.deleteItemAsync("userToken");
       await SecureStore.deleteItemAsync("user");
       await SecureStore.deleteItemAsync("userId");
+      clearLocalConversations();
 
       // 1) Register user (JSON-only, matches your backend)
       const payload = {
@@ -182,8 +189,6 @@ export default function RegisterOwnerScreen() {
         Alert.alert("Fout bij registratie", raw || `HTTP ${resp.status}`);
         return;
       }
-
-      
 
       // Your backend POST /users currently returns the saved user (no token).
       // So: after registering, we immediately log in to get a token.
@@ -287,7 +292,9 @@ export default function RegisterOwnerScreen() {
             </Text>
           </TouchableOpacity>
 
-          {photoUri ? <Image source={{ uri: photoUri }} style={styles.photo} /> : null}
+          {photoUri ? (
+            <Image source={{ uri: photoUri }} style={styles.photo} />
+          ) : null}
 
           <Text style={styles.label}>Wat is je naam?</Text>
           <TextInput
@@ -369,8 +376,16 @@ export default function RegisterOwnerScreen() {
 
       <View style={styles.footerBar} pointerEvents={loading ? "none" : "auto"}>
         <View style={styles.footerInner}>
-          <TouchableOpacity style={styles.ctaButton} onPress={onContinue} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>Verder</Text>}
+          <TouchableOpacity
+            style={styles.ctaButton}
+            onPress={onContinue}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.ctaText}>Verder</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -441,7 +456,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  ctaText: { color: "#fff", fontFamily: "Montserrat_600SemiBold", fontSize: 16 },
+  ctaText: {
+    color: "#fff",
+    fontFamily: "Montserrat_600SemiBold",
+    fontSize: 16,
+  },
   katBottom: {
     position: "absolute",
     right: 16,
