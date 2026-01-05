@@ -246,8 +246,10 @@ function mapAnimalToCard(animal: any): SwipeDeckItem | null {
   const name = animal.name || "Naamloos dier";
   const imageUri = typeof animal.photo === "string" ? animal.photo : null;
   const attributes = animal.attributes || {};
+  const species = attributes.species || animal.species || null;
 
-  const gender = formatGender(attributes.sex || animal.gender, animal.species);
+  const genderSource = animal.gender || attributes.sex;
+  const gender = formatGender(genderSource, species);
   const age = formatAge(animal.birthdate);
   const breed = attributes.breed || animal.breed || null;
   const description = extractDescription(animal, attributes);
@@ -255,7 +257,7 @@ function mapAnimalToCard(animal: any): SwipeDeckItem | null {
   const { petTags, whoTags } = buildTags(animal, attributes);
 
   return {
-    title: attributes.species || animal.species || undefined,
+    title: species || undefined,
     name,
     gender,
     age,

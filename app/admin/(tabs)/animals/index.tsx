@@ -704,15 +704,6 @@ export default function AnimalsScreen() {
               />
             )}
 
-            {/* ✅ Modal en CameraCapture blijven exact zoals jij ze al hebt */}
-            <Modal
-              visible={modalVisible}
-              animationType="slide"
-              onRequestClose={closeModal}
-            >
-              {/* ... jouw bestaande modal code blijft hier 그대로 ... */}
-            </Modal>
-
             <CameraCapture
               visible={cameraVisible}
               onClose={() => setCameraVisible(false)}
