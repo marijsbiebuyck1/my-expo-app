@@ -34,12 +34,25 @@ export default function TabLayout() {
             title: "Settings",
             tabBarLabel: "Settings",
             tabBarIcon: ({ color, focused }) => (
-              <View style={{ alignItems: "center", justifyContent: "center", width: tabWidth }}>
-                <View style={[styles.tabIconWrap, focused && styles.tabIconActive]}>
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: tabWidth,
+                }}
+              >
+                <View
+                  style={[styles.tabIconWrap, focused && styles.tabIconActive]}
+                >
                   <FontAwesome size={24} name="cog" color={color} />
                   <Text
                     numberOfLines={1}
-                    style={{ fontSize: 11, marginTop: 4, color, textAlign: "center" }}
+                    style={{
+                      fontSize: 11,
+                      marginTop: 4,
+                      color,
+                      textAlign: "center",
+                    }}
                   >
                     {"Settings"}
                   </Text>
@@ -55,12 +68,25 @@ export default function TabLayout() {
             title: "Swipe",
             tabBarLabel: "Swipe",
             tabBarIcon: ({ color, focused }) => (
-              <View style={{ alignItems: "center", justifyContent: "center", width: tabWidth }}>
-                <View style={[styles.tabIconWrap, focused && styles.tabIconActive]}>
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: tabWidth,
+                }}
+              >
+                <View
+                  style={[styles.tabIconWrap, focused && styles.tabIconActive]}
+                >
                   <FontAwesome size={24} name="heart" color={color} />
                   <Text
                     numberOfLines={1}
-                    style={{ fontSize: 11, marginTop: 4, color, textAlign: "center" }}
+                    style={{
+                      fontSize: 11,
+                      marginTop: 4,
+                      color,
+                      textAlign: "center",
+                    }}
                   >
                     {"Swipe"}
                   </Text>
@@ -76,12 +102,25 @@ export default function TabLayout() {
             title: "Chat",
             tabBarLabel: "Chat",
             tabBarIcon: ({ color, focused }) => (
-              <View style={{ alignItems: "center", justifyContent: "center", width: tabWidth }}>
-                <View style={[styles.tabIconWrap, focused && styles.tabIconActive]}>
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: tabWidth,
+                }}
+              >
+                <View
+                  style={[styles.tabIconWrap, focused && styles.tabIconActive]}
+                >
                   <FontAwesome size={24} name="comments" color={color} />
                   <Text
                     numberOfLines={1}
-                    style={{ fontSize: 11, marginTop: 4, color, textAlign: "center" }}
+                    style={{
+                      fontSize: 11,
+                      marginTop: 4,
+                      color,
+                      textAlign: "center",
+                    }}
                   >
                     {"Chat"}
                   </Text>
@@ -97,12 +136,25 @@ export default function TabLayout() {
             title: "Feed",
             tabBarLabel: "Feed",
             tabBarIcon: ({ color, focused }) => (
-              <View style={{ alignItems: "center", justifyContent: "center", width: tabWidth }}>
-                <View style={[styles.tabIconWrap, focused && styles.tabIconActive]}>
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: tabWidth,
+                }}
+              >
+                <View
+                  style={[styles.tabIconWrap, focused && styles.tabIconActive]}
+                >
                   <FontAwesome size={24} name="rss" color={color} />
                   <Text
                     numberOfLines={1}
-                    style={{ fontSize: 11, marginTop: 4, color, textAlign: "center" }}
+                    style={{
+                      fontSize: 11,
+                      marginTop: 4,
+                      color,
+                      textAlign: "center",
+                    }}
                   >
                     {"Feed"}
                   </Text>
@@ -154,7 +206,7 @@ const styles = StyleSheet.create({
   },
   tabIconWrap: {
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 6,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",

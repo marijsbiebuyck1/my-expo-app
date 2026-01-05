@@ -355,9 +355,9 @@ export default function SettingsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
-      <View style={styles.pageContainer}>
-        <LogoHeader style={styles.logoHeader} />
+    <SafeAreaView style={styles.screen}>
+      <LogoHeader />
+      <View style={styles.container}>
         <View style={styles.cardShell}>
           <BgCard style={styles.bgCard}>
             <ScrollView
@@ -520,19 +520,10 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#FFF8EF" },
-  pageContainer: {
+  container: {
     flex: 1,
-    width: "100%",
+    padding: 20,
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-    paddingTop: 24,
-  },
-  logoHeader: {
-    marginTop: 12,
-    marginBottom: 12,
-    alignSelf: "center",
-    zIndex: 2,
   },
   cardShell: {
     flex: 1,
@@ -540,10 +531,9 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     alignSelf: "center",
   },
-  container: { padding: 20 },
   bgCard: {
     width: "100%",
-    height: "100%",
+    height: "92%",
   },
   cardContent: {
     width: "100%",

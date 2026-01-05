@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 // SecureStore usage removed - prefer provided ids from the conversation list
+import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -15,6 +16,7 @@ import { Swipeable } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
+import BgCard from "../../../../components/ui/bg-card";
 import {
   getLocalConversations,
   removeLocalConversation,
@@ -29,6 +31,8 @@ type Conversation = {
   lastMessage: string;
   avatar?: string | null;
 };
+
+const rossePoes = require("../../../../assets/images/rossepoes.png");
 
 export default function ChatListScreen() {
   const router = useRouter();
@@ -220,65 +224,142 @@ export default function ChatListScreen() {
             {item.lastMessage}
           </ThemedText>
         </View>
+        <Ionicons name="chevron-forward" size={20} style={styles.chevron} />
       </Pressable>
     </Swipeable>
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
+    <SafeAreaView style={styles.screen}>
       <LogoHeader />
 
       <View style={styles.container}>
-        <ThemedText type="title" style={{ marginBottom: 12, paddingLeft: 30 }}>
-          Chats
-        </ThemedText>
+        <View style={styles.cardShell}>
+          <BgCard
+            style={styles.bgCard}
+            contentStyle={styles.cardContent}
+            scrollEnabled={false}
+          >
+            <ThemedText type="title" style={styles.pageTitle}>
+              Jouw matches 🐾
+            </ThemedText>
 
-        {loading ? (
-          <View style={{ padding: 16 }}>
-            <ThemedText>Bezig met laden...</ThemedText>
-          </View>
-        ) : (
-          <FlatList
-            data={conversations}
-            keyExtractor={(i) => i.id}
-            renderItem={renderItem}
-            ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-            contentContainerStyle={{ padding: 16 }}
-          />
-        )}
-        {/* Could show a loading indicator here if desired */}
+            {loading ? (
+              <View style={styles.loadingState}>
+                <ThemedText>Bezig met laden...</ThemedText>
+              </View>
+            ) : (
+              <View style={styles.listArea}>
+                <FlatList
+                  data={conversations}
+                  keyExtractor={(i) => i.id}
+                  renderItem={renderItem}
+                  ItemSeparatorComponent={() => (
+                    <View style={styles.separator} />
+                  )}
+                  contentContainerStyle={styles.listContent}
+                  style={styles.list}
+                  showsVerticalScrollIndicator={false}
+                  ListEmptyComponent={() => (
+                    <View style={styles.emptyState}>
+                      <ThemedText>Geen gesprekken beschikbaar.</ThemedText>
+                    </View>
+                  )}
+                />
+                <View style={styles.footerIllustration}>
+                  <Image
+                    source={rossePoes}
+                    style={styles.footerImage}
+                    resizeMode="contain"
+                    accessibilityIgnoresInvertColors
+                  />
+                </View>
+              </View>
+            )}
+          </BgCard>
+        </View>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#FFFCF5" },
   container: {
     flex: 1,
-    backgroundColor: "#FFFCF5",
+    padding: 20,
+  },
+  cardShell: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 360,
+    alignSelf: "center",
+  },
+  bgCard: {
+    width: "100%",
+    height: "92%",
+  },
+  cardContent: {
+    flex: 1,
+    flexGrow: 1,
+    paddingBottom: 0,
+  },
+  pageTitle: {
+    marginBottom: 30,
+    paddingLeft: 6,
+    marginTop: 6,
+  },
+  listArea: {
+    flex: 1,
+  },
+  list: { flex: 1 },
+  listContent: {
+    paddingHorizontal: 6,
+    paddingBottom: 0,
+  },
+  emptyState: {
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  loadingState: {
+    paddingVertical: 16,
+    paddingHorizontal: 6,
   },
   row: {
     flexDirection: "row",
+    alignItems: "center",
     width: "100%",
-    padding: 15,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    paddingVertical: 14,
+    paddingRight: 6,
   },
-  avatar: { width: 56, height: 56, borderRadius: 12, marginRight: 12 },
+  avatar: { width: 56, height: 56, borderRadius: 28, marginRight: 12 },
   avatarPlaceholder: {
     width: 56,
     height: 56,
-    borderRadius: 12,
+    borderRadius: 28,
     marginRight: 12,
     backgroundColor: "#f0f0f0",
   },
   meta: { flex: 1 },
   preview: { color: "#666", marginTop: 4 },
+  chevron: {
+    color: "#B5B5B5",
+  },
+  separator: {
+    height: 1,
+    backgroundColor: "#E5E2DC",
+    marginLeft: 68,
+  },
+  footerIllustration: {
+    alignItems: "flex-end",
+    paddingTop: 22,
+    marginTop: 16,
+  },
+  footerImage: {
+    width: 180,
+    height: 145,
+    marginRight: -24,
+  },
   deleteAction: {
     backgroundColor: "#FDA0E9",
     justifyContent: "center",

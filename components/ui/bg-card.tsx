@@ -11,17 +11,27 @@ type Props = {
   children?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
+  scrollEnabled?: boolean;
 };
 
-export default function BgCard({ children, style, contentStyle }: Props) {
+export default function BgCard({
+  children,
+  style,
+  contentStyle,
+  scrollEnabled = true,
+}: Props) {
   return (
     <View style={[styles.container, style]}>
-      <ScrollView
-        contentContainerStyle={[styles.contentContainer, contentStyle]}
-        showsVerticalScrollIndicator={false}
-      >
-        {children}
-      </ScrollView>
+      {scrollEnabled ? (
+        <ScrollView
+          contentContainerStyle={[styles.contentContainer, contentStyle]}
+          showsVerticalScrollIndicator={false}
+        >
+          {children}
+        </ScrollView>
+      ) : (
+        <View style={[styles.contentContainer, contentStyle]}>{children}</View>
+      )}
     </View>
   );
 }
