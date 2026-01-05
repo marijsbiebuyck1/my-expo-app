@@ -113,6 +113,9 @@ export default function RegisterOwnerScreen() {
     try {
       // NOTE: the backend returned a validation error for the `role` enum.
       // Temporarily omit `role` so the server can pick its default value (or return a clearer error).
+await SecureStore.deleteItemAsync("userToken");
+await SecureStore.deleteItemAsync("user");
+await SecureStore.deleteItemAsync("userId");
 
   // If user picked a photo, send multipart/form-data so backend can handle file upload.
   let resp;
@@ -146,7 +149,7 @@ export default function RegisterOwnerScreen() {
         form.append("name", name);
         form.append("email", email);
         form.append("password", password);
-        form.append("birthdate", birthdate);
+        form.append("birthdate", normalizedBirth);
         form.append("region", region);
 
         const uriParts = photoUri.split("/");
@@ -530,7 +533,7 @@ export default function RegisterOwnerScreen() {
       {/* fixed footer CTA */}
       <View style={styles.footerBar} pointerEvents={loading ? 'none' : 'auto'}>
         <View style={styles.footerInner}>
-          <TouchableOpacity style={styles.ctaButton} onPress={continueToInterests} disabled={loading}>
+          <TouchableOpacity style={styles.ctaButton} onPress={onContinue} disabled={loading}>
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
