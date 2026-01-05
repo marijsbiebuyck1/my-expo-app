@@ -9,9 +9,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import LogoHeader from "../../../../../../components/logo-header";
-import { ThemedText } from "../../../../../../components/themed-text";
-import { api } from "../../../../../_lib/api";
+import LogoHeader from "../../../../components/logo-header";
+import { ThemedText } from "../../../../components/themed-text";
+import { api } from "../../../_lib/api";
 
 type Conversation = {
   id: string;
@@ -74,7 +74,7 @@ export default function AnimalChatsScreen() {
 
   function openConversation(conversation: Conversation) {
     router.push({
-      pathname: "/admin/animals/[animalId]/chats/[conversationId]",
+      pathname: "/admin/[animalId]/chats/[conversationId]",
       params: {
         animalId,
         conversationId: conversation.id,

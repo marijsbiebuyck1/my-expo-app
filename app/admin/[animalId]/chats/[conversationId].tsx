@@ -18,9 +18,9 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import LogoHeader from "../../../../../../components/logo-header";
-import { ThemedText } from "../../../../../../components/themed-text";
-import { api } from "../../../../../_lib/api";
+import LogoHeader from "../../../../components/logo-header";
+import { ThemedText } from "../../../../components/themed-text";
+import { api } from "../../../_lib/api";
 
 interface MessageItem {
   id: string;

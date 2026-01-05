@@ -537,7 +537,7 @@ export default function AnimalsScreen() {
           style={[styles.swipeActionButton, styles.swipeMoreButton]}
           onPress={() => {
             router.push({
-              pathname: "/admin/animals/[animalId]/chats",
+              pathname: "/admin/[animalId]/chats",
               params: { animalId: id },
             } as any);
           }}
@@ -618,7 +618,7 @@ export default function AnimalsScreen() {
                         onPress={() => {
                           const id = String(item._id ?? item.id ?? "");
                           router.push({
-                            pathname: "/admin/animals/[animalId]/chats",
+                            pathname: "/admin/[animalId]/chats",
                             params: { animalId: id },
                           } as any);
                         }}
