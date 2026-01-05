@@ -116,7 +116,7 @@ Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan he
         if (active) {
           setError(
             err?.message ||
-              "Kon de dieren niet ophalen. Probeer het later opnieuw."
+              "Kon de diertjes niet ophalen. Probeer het later opnieuw."
           );
           setItems([]);
         }
