@@ -3,7 +3,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -39,6 +39,7 @@ export default function AnimalsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [animals, setAnimals] = useState<any[]>([]);
   const [loadingAnimals, setLoadingAnimals] = useState(false);
+  const [matchCounts, setMatchCounts] = useState<Record<string, number>>({});
   const [step, setStep] = useState(1);
   const [editingAnimal, setEditingAnimal] = useState<any | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -65,6 +66,13 @@ export default function AnimalsScreen() {
 
   const [submitting, setSubmitting] = useState(false);
   const [cameraVisible, setCameraVisible] = useState(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   async function pickImage() {
     try {
@@ -373,6 +381,7 @@ export default function AnimalsScreen() {
           "Log opnieuw in als asiel om jouw dieren te zien."
         );
         setAnimals([]);
+        setMatchCounts({});
         return;
       }
       const endpoint = `/animals?shelterId=${encodeURIComponent(shelterId)}`;
@@ -381,14 +390,55 @@ export default function AnimalsScreen() {
         const t = await res.text();
         console.warn("Failed to fetch animals", t || res.status);
         setAnimals([]);
+        setMatchCounts({});
         return;
       }
       const json = await res.json().catch(() => null);
-      if (Array.isArray(json)) setAnimals(json as any[]);
-      else setAnimals([]);
+      const list = Array.isArray(json) ? (json as any[]) : [];
+      setAnimals(list);
+      setMatchCounts({});
+
+      if (list.length) {
+        try {
+          const counts = await Promise.all(
+            list.map(async (animal) => {
+              const animalId = String(animal._id ?? animal.id ?? "");
+              if (!animalId) return null;
+              try {
+                const resp = await api.get(
+                  `/conversations?animalId=${encodeURIComponent(animalId)}`,
+                  true
+                );
+                if (!resp.ok) throw new Error(`status ${resp.status}`);
+                const convoJson = await resp.json().catch(() => []);
+                const count = Array.isArray(convoJson) ? convoJson.length : 0;
+                return { id: animalId, count };
+              } catch (err) {
+                console.warn(
+                  `Failed to fetch matches for animal ${animalId}`,
+                  err
+                );
+                return { id: animalId, count: 0 };
+              }
+            })
+          );
+
+          if (mountedRef.current) {
+            const next: Record<string, number> = {};
+            counts.forEach((entry) => {
+              if (!entry) return;
+              next[entry.id] = entry.count;
+            });
+            setMatchCounts(next);
+          }
+        } catch (err) {
+          console.warn("Failed to resolve match counts", err);
+        }
+      }
     } catch (err) {
       console.warn("Fetch animals error", err);
       setAnimals([]);
+      setMatchCounts({});
     } finally {
       setLoadingAnimals(false);
     }
@@ -725,6 +775,28 @@ export default function AnimalsScreen() {
                     typeof item.description === "string"
                       ? item.description.trim()
                       : "";
+                  const fallbackMatchCount = (() => {
+                    if (typeof item.matchesCount === "number")
+                      return item.matchesCount;
+                    if (typeof item.matchCount === "number")
+                      return item.matchCount;
+                    if (typeof item.conversationsCount === "number")
+                      return item.conversationsCount;
+                    if (typeof item.conversationCount === "number")
+                      return item.conversationCount;
+                    if (typeof item.matches === "number") return item.matches;
+                    if (Array.isArray(item.matches)) return item.matches.length;
+                    if (Array.isArray(item.conversations))
+                      return item.conversations.length;
+                    return 0;
+                  })();
+                  const matchCount =
+                    typeof matchCounts[id] === "number"
+                      ? matchCounts[id]
+                      : fallbackMatchCount;
+                  const matchCountLabel = `${matchCount} ${
+                    matchCount === 1 ? "match" : "matches"
+                  }`;
 
                   return (
                     <Swipeable
@@ -758,6 +830,18 @@ export default function AnimalsScreen() {
                               {item.name}
                             </ThemedText>
 
+                            <View style={styles.matchCountRow}>
+                              <Ionicons
+                                name="heart"
+                                size={14}
+                                color="#FDA0E9"
+                                style={styles.matchIcon}
+                              />
+                              <ThemedText style={styles.matchCountText}>
+                                {matchCountLabel}
+                              </ThemedText>
+                            </View>
+
                             {item.breed || item.species ? (
                               <ThemedText style={styles.animalBreed}>
                                 {item.breed || item.species}
@@ -773,14 +857,6 @@ export default function AnimalsScreen() {
                               </ThemedText>
                             ) : null}
                           </View>
-
-                          {typeof item.matchesCount === "number" ? (
-                            <View style={styles.animalsBadge}>
-                              <ThemedText style={styles.animalsBadgeText}>
-                                {String(item.matchesCount)} matches
-                              </ThemedText>
-                            </View>
-                          ) : null}
                         </TouchableOpacity>
                       </View>
                     </Swipeable>
@@ -1661,16 +1737,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#f2f2f2",
   },
   animalName: { fontWeight: "700", fontSize: 18 },
+  matchCountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+    gap: 4,
+  },
+  matchIcon: {
+    marginRight: 2,
+  },
+  matchCountText: {
+    color: "#827D78",
+    fontSize: 13,
+  },
   animalBreed: { color: "#666", fontSize: 14 },
   animalDescription: { color: "#555", fontSize: 13, marginTop: 4 },
-  animalsBadge: {
-    backgroundColor: "#E6F0C8",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginLeft: 12,
-  },
-  animalsBadgeText: { color: "#333", fontSize: 13 },
   swipeActions: {
     flexDirection: "row",
     alignItems: "center",
