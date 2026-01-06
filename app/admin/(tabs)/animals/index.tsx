@@ -30,6 +30,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import CameraCapture from "../../../../components/camera-capture";
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
+import BgCard from "../../../../components/ui/bg-card";
 import { api } from "../../../_lib/api";
 import { useAdminAuth } from "../../../_lib/useAuth";
 
@@ -686,26 +687,7 @@ export default function AnimalsScreen() {
     const id = String(item._id ?? item.id ?? "");
     return (
       <View style={styles.swipeActions}>
-        <RectButton
-          style={[styles.swipeActionButton, styles.swipeMoreButton]}
-          onPress={() => {
-            router.push({
-              pathname: "/admin/[animalId]/chats",
-              params: { animalId: id },
-            } as any);
-          }}
-        >
-          <Ionicons
-            name="chatbubble-ellipses-outline"
-            size={20}
-            color="#4b5563"
-          />
-          <ThemedText
-            style={[styles.swipeActionText, styles.swipeActionTextDark]}
-          >
-            Chats
-          </ThemedText>
-        </RectButton>
+        
 
         <RectButton
           style={[styles.swipeActionButton, styles.swipeDeleteButton]}
@@ -730,154 +712,133 @@ export default function AnimalsScreen() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
         <LogoHeader />
-        <View style={styles.root}>
-          <View style={styles.root}>
-            <View style={styles.fixedTop}>
-              <View style={styles.headerRow}>
-                <ThemedText type="title">Jouw dieren 🐾</ThemedText>
-              </View>
+        <View style={styles.container}>
+          <View style={styles.cardShell}>
+            <BgCard
+              style={styles.bgCard}
+              contentStyle={styles.cardContent}
+              scrollEnabled={false}
+            >
+              <ThemedText type="title" style={styles.pageTitle}>
+                Jouw dieren 🐾
+              </ThemedText>
 
               <TouchableOpacity
                 style={styles.addButtonFull}
                 onPress={openCreateModal}
               >
-                <ThemedText
-                  style={{
-                    color: "#fff",
-                    fontWeight: "700",
-                    textAlign: "center",
-                  }}
-                >
+                <ThemedText style={{ color: "#fff", fontWeight: "700", textAlign: "center" }}>
                   + Dier toevoegen
                 </ThemedText>
               </TouchableOpacity>
-            </View>
 
-            {loadingAnimals ? (
-              <View style={styles.emptyState}>
-                <ActivityIndicator />
-              </View>
-            ) : (
-              <FlatList
-                data={animals}
-                keyExtractor={(item) =>
-                  String(item._id ?? item.id ?? item.name)
-                }
-                contentContainerStyle={styles.listContent}
-                showsVerticalScrollIndicator={false}
-                renderItem={({ item }) => {
-                  const id = String(item._id ?? item.id ?? "");
-                  const photoUri =
-                    typeof item.photo === "string" && item.photo
-                      ? item.photo
-                      : null;
-                  const descriptionSnippet =
-                    typeof item.description === "string"
-                      ? item.description.trim()
-                      : "";
-                  const fallbackMatchCount = (() => {
-                    if (typeof item.matchesCount === "number")
-                      return item.matchesCount;
-                    if (typeof item.matchCount === "number")
-                      return item.matchCount;
-                    if (typeof item.conversationsCount === "number")
-                      return item.conversationsCount;
-                    if (typeof item.conversationCount === "number")
-                      return item.conversationCount;
-                    if (typeof item.matches === "number") return item.matches;
-                    if (Array.isArray(item.matches)) return item.matches.length;
-                    if (Array.isArray(item.conversations))
-                      return item.conversations.length;
-                    return 0;
-                  })();
-                  const matchCount =
-                    typeof matchCounts[id] === "number"
-                      ? matchCounts[id]
-                      : fallbackMatchCount;
-                  const matchCountLabel = `${matchCount} ${
-                    matchCount === 1 ? "match" : "matches"
-                  }`;
+              {loadingAnimals ? (
+                <View style={styles.loadingState}>
+                  <ActivityIndicator />
+                </View>
+              ) : (
+                <View style={styles.listArea}>
+                  <FlatList
+                    data={animals}
+                    keyExtractor={(item) => String(item._id ?? item.id ?? item.name)}
+                    renderItem={({ item }) => {
+                      const id = String(item._id ?? item.id ?? "");
+                      const photoUri =
+                        typeof item.photo === "string" && item.photo
+                          ? item.photo
+                          : null;
+                      const descriptionSnippet =
+                        typeof item.description === "string"
+                          ? item.description.trim()
+                          : "";
+                      const fallbackMatchCount = (() => {
+                        if (typeof item.matchesCount === "number")
+                          return item.matchesCount;
+                        if (typeof item.matchCount === "number")
+                          return item.matchCount;
+                        if (typeof item.conversationsCount === "number")
+                          return item.conversationsCount;
+                        if (typeof item.conversationCount === "number")
+                          return item.conversationCount;
+                        if (typeof item.matches === "number") return item.matches;
+                        if (Array.isArray(item.matches)) return item.matches.length;
+                        if (Array.isArray(item.conversations))
+                          return item.conversations.length;
+                        return 0;
+                      })();
+                      const matchCount =
+                        typeof matchCounts[id] === "number"
+                          ? matchCounts[id]
+                          : fallbackMatchCount;
+                      const matchCountLabel = `${matchCount} ${
+                        matchCount === 1 ? "match" : "matches"
+                      }`;
 
-                  return (
-                    <Swipeable
-                      renderRightActions={() => renderSwipeActions(item)}
-                      overshootRight={false}
-                      friction={2}
-                      rightThreshold={40}
-                    >
-                      <View style={styles.swipeRowContainer}>
-                        <TouchableOpacity
-                          style={styles.animalRow}
-                          onPress={() => {
-                            router.push({
-                              pathname: "/admin/[animalId]/chats",
-                              params: { animalId: id },
-                            } as any);
-                          }}
-                          activeOpacity={0.9}
+                      return (
+                        <Swipeable
+                          renderRightActions={() => renderSwipeActions(item)}
+                          overshootRight={false}
+                          friction={2}
+                          rightThreshold={40}
                         >
-                          {photoUri ? (
-                            <Image
-                              source={{ uri: photoUri }}
-                              style={styles.avatar}
-                            />
-                          ) : (
-                            <View style={styles.avatar} />
-                          )}
+                          <View style={styles.swipeRowContainer}>
+                            <TouchableOpacity
+                              style={styles.animalRow}
+                              onPress={() => {
+                                router.push({
+                                  pathname: "/admin/[animalId]/chats",
+                                  params: { animalId: id },
+                                } as any);
+                              }}
+                              activeOpacity={0.9}
+                            >
+                              {photoUri ? (
+                                <Image source={{ uri: photoUri }} style={styles.avatar} />
+                              ) : (
+                                <View style={styles.avatar} />
+                              )}
 
-                          <View style={{ flex: 1, marginLeft: 16 }}>
-                            <ThemedText style={styles.animalName}>
-                              {item.name}
-                            </ThemedText>
+                              <View style={{ flex: 1, marginLeft: 16 }}>
+                                <ThemedText style={styles.animalName}>{item.name}</ThemedText>
 
-                            <View style={styles.matchCountRow}>
-                              <Ionicons
-                                name="heart"
-                                size={14}
-                                color="#FDA0E9"
-                                style={styles.matchIcon}
-                              />
-                              <ThemedText style={styles.matchCountText}>
-                                {matchCountLabel}
-                              </ThemedText>
-                            </View>
+                                <View style={styles.matchCountRow}>
+                                  <Ionicons name="heart" size={14} color="#FDA0E9" style={styles.matchIcon} />
+                                  <ThemedText style={styles.matchCountText}>{matchCountLabel}</ThemedText>
+                                </View>
 
-                            {item.breed || item.species ? (
-                              <ThemedText style={styles.animalBreed}>
-                                {item.breed || item.species}
-                              </ThemedText>
-                            ) : null}
+                                {item.breed || item.species ? (
+                                  <ThemedText style={styles.animalBreed}>{item.breed || item.species}</ThemedText>
+                                ) : null}
 
-                            {descriptionSnippet ? (
-                              <ThemedText
-                                numberOfLines={2}
-                                style={styles.animalDescription}
-                              >
-                                {descriptionSnippet}
-                              </ThemedText>
-                            ) : null}
+                                {descriptionSnippet ? (
+                                  <ThemedText numberOfLines={2} style={styles.animalDescription}>
+                                    {descriptionSnippet}
+                                  </ThemedText>
+                                ) : null}
+                              </View>
+                            </TouchableOpacity>
                           </View>
-                        </TouchableOpacity>
+                        </Swipeable>
+                      );
+                    }}
+                    ItemSeparatorComponent={() => <View style={styles.separator} />}
+                    contentContainerStyle={styles.listContent}
+                    style={styles.list}
+                    showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                      <View style={styles.emptyState}>
+                        <ThemedText style={{ fontSize: 18, marginBottom: 8 }}>Nog geen dieren</ThemedText>
+                        <ThemedText style={{ color: "#666" }}>
+                          Er zijn nog geen dieren om te tonen. Voeg een dier toe om te beginnen.
+                        </ThemedText>
                       </View>
-                    </Swipeable>
-                  );
-                }}
-                ListEmptyComponent={
-                  <View style={styles.emptyState}>
-                    <ThemedText style={{ fontSize: 18, marginBottom: 8 }}>
-                      Nog geen dieren
-                    </ThemedText>
-                    <ThemedText style={{ color: "#666" }}>
-                      Er zijn nog geen dieren om te tonen. Voeg een dier toe om
-                      te beginnen.
-                    </ThemedText>
-                  </View>
-                }
-              />
-            )}
-
-            {/* ⚠️ Verwijderd: dubbele CameraCapture (er stond er al één onderaan) */}
+                    }
+                  />
+                </View>
+              )}
+            </BgCard>
           </View>
+        </View>
 
           <Modal
             visible={modalVisible}
@@ -1607,13 +1568,124 @@ export default function AnimalsScreen() {
               setPhotoPayload(res.previewBase64);
             }}
           />
-        </View>
       </SafeAreaView>
     </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  // Copied from users/(tabs)/chat styling for consistent appearance
+  screen: { flex: 1, backgroundColor: "#FFFCF5" },
+  container: {
+    flex: 1,
+    padding: 20,
+  },
+  cardShell: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 360,
+    alignSelf: "center",
+  },
+  bgCard: {
+    width: "100%",
+    height: "92%",
+  },
+  cardContent: {
+    flex: 1,
+    flexGrow: 1,
+    paddingBottom: 0,
+  },
+  pageTitle: {
+    marginBottom: 30,
+    paddingLeft: 6,
+    marginTop: 6,
+  },
+  listArea: {
+    flex: 1,
+  },
+  list: { flex: 1 },
+  listContent: {
+    paddingHorizontal: 6,
+    paddingBottom: 0,
+  },
+  emptyState: {
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  loadingState: {
+    paddingVertical: 16,
+    paddingHorizontal: 6,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    paddingVertical: 14,
+    paddingRight: 6,
+  },
+  avatar: { width: 56, height: 56, borderRadius: 28, marginRight: 12 },
+  avatarPlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginRight: 12,
+    backgroundColor: "#f0f0f0",
+  },
+  meta: { flex: 1 },
+  preview: { color: "#666", marginTop: 4 },
+  chevron: {
+    color: "#B5B5B5",
+  },
+  separator: {
+    height: 1,
+    backgroundColor: "#E5E2DC",
+    marginLeft: 0,
+  },
+  footerIllustration: {
+    alignItems: "flex-end",
+    paddingTop: 22,
+    marginTop: 16,
+  },
+  footerImage: {
+    width: 180,
+    height: 145,
+    marginRight: -24,
+  },
+  deleteAction: {
+    backgroundColor: "#FDA0E9",
+    justifyContent: "center",
+    alignItems: "center",
+    width: 120,
+    marginLeft: 12,
+    borderRadius: 12,
+  },
+  deleteActionText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  swipeActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  swipeActionButton: {
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 26,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginHorizontal: 4,
+    minWidth: 72,
+  },
+  swipeDeleteButton: { backgroundColor: "#FDA0E9" },
+  swipeActionText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 12,
+    marginTop: 4,
+  },
+
+  // Additional animal/admin-specific styles (merged from previous file)
   root: { flex: 1 },
   rootContent: { paddingTop: 80, padding: 30, paddingBottom: 80 },
   headerRow: {
@@ -1628,7 +1700,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 20,
   },
-  emptyState: { flex: 1, alignItems: "center", justifyContent: "center" },
   modalWrap: {
     flex: 1,
     padding: 20,
@@ -1730,12 +1801,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   animalRow: { flexDirection: "row", alignItems: "center", width: "100%" },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#f2f2f2",
-  },
   animalName: { fontWeight: "700", fontSize: 18 },
   matchCountRow: {
     flexDirection: "row",
@@ -1752,29 +1817,8 @@ const styles = StyleSheet.create({
   },
   animalBreed: { color: "#666", fontSize: 14 },
   animalDescription: { color: "#555", fontSize: 13, marginTop: 4 },
-  swipeActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-  },
-  swipeActionButton: {
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 26,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginHorizontal: 4,
-    minWidth: 72,
-  },
   swipeMoreButton: { backgroundColor: "#E5E7EB" },
   swipeEditButton: { backgroundColor: "#AEBA40" },
-  swipeDeleteButton: { backgroundColor: "#FDA0E9" },
-  swipeActionText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 12,
-    marginTop: 4,
-  },
   swipeActionTextDark: { color: "#374151" },
   footerWrap: {
     position: "absolute",
@@ -1818,7 +1862,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFCF5",
     zIndex: 10,
   },
-  listContent: { paddingHorizontal: 30, paddingBottom: 30 },
 });
 
 export const options = { title: "Animals" };

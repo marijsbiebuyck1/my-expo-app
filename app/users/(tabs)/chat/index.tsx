@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   separator: {
     height: 1,
     backgroundColor: "#E5E2DC",
-    marginLeft: 68,
+    marginLeft: 0,
   },
   footerIllustration: {
     alignItems: "flex-end",

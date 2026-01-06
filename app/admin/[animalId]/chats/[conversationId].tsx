@@ -252,12 +252,7 @@ export default function AdminConversationDetailScreen() {
                             ) : (
                               <View style={styles.messageAvatarFallback}>
                                 <ThemedText style={styles.messageAvatarText}>
-                                  {(
-                                    (message.authorDisplayName || "")
-                                      .trim()
-                                      .charAt(0)
-                                      .toUpperCase() || userInitial
-                                  )}
+                                  {userInitial}
                                 </ThemedText>
                               </View>
                             )}

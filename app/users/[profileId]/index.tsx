@@ -27,8 +27,6 @@ type Message = {
   text: string;
   fromMe?: boolean;
   time?: string;
-  authorDisplayName?: string | null;
-  authorAvatar?: string | null;
 };
 
 export default function ChatDetailScreen() {
@@ -88,19 +86,12 @@ export default function ChatDetailScreen() {
           ? payload
           : [];
 
-        const list: Message[] = listSource.map((m: any) => {
-          const authorAvatar =
-            m.authorProfileImage || m.authorAvatar || m.authorPhoto || m.userAvatar || m.avatar || m.profileImage || null;
-          const authorDisplayName = m.authorDisplayName || m.authorName || m.author || null;
-          return {
-            id: m.id || m._id || String(Math.random()),
-            text: m.text || "",
-            fromMe: !m.fromKind || m.fromKind === "user",
-            time: m.createdAt || m.updatedAt || undefined,
-            authorDisplayName,
-            authorAvatar,
-          } as Message;
-        });
+        const list: Message[] = listSource.map((m: any) => ({
+          id: m.id || m._id || String(Math.random()),
+          text: m.text || "",
+          fromMe: !m.fromKind || m.fromKind === "user",
+          time: m.createdAt || m.updatedAt || undefined,
+        }));
 
         setMessages(list);
 
@@ -254,15 +245,15 @@ export default function ChatDetailScreen() {
                         >
                           {!isMine && (
                             <View style={styles.avatarHolder}>
-                              {m.authorAvatar || animal?.photo ? (
+                              {animal?.photo ? (
                                 <Image
-                                  source={{ uri: m.authorAvatar || animal?.photo || undefined }}
+                                  source={{ uri: animal.photo }}
                                   style={styles.messageAvatar}
                                 />
                               ) : (
                                 <View style={styles.avatarFallback}>
                                   <ThemedText style={styles.avatarInitial}>
-                                    {((m.authorDisplayName || "").trim().charAt(0).toUpperCase() || avatarInitial)}
+                                    {avatarInitial}
                                   </ThemedText>
                                 </View>
                               )}

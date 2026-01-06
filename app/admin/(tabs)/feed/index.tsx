@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { SvgXml } from "react-native-svg";
 import CameraCapture from "../../../../components/camera-capture";
 import BgCard from "../../../../components/ui/bg-card";
@@ -324,6 +325,10 @@ export default function FeedScreen() {
       return null;
     })();
 
+    const likesCount =
+      (item as any).likesCount ?? (item as any).likeCount ?? (item as any).likes ?? 0;
+    const likedByMe = Boolean((item as any).liked || (item as any).likedByMe);
+
     return (
       <View style={styles.postCard}>
         <View style={styles.postHeader}>
@@ -351,6 +356,77 @@ export default function FeedScreen() {
         {item.caption ? (
           <ThemedText style={{ marginTop: 8 }}>{item.caption}</ThemedText>
         ) : null}
+
+        <View style={styles.postActionsRow}>
+          <TouchableOpacity
+            style={styles.likeButton}
+            onPress={async () => {
+              try {
+                // optimistic update
+                setPosts((prev) =>
+                  prev.map((p) => {
+                    if (p._id !== item._id) return p;
+                    const prevCount =
+                      (p as any).likesCount ?? (p as any).likeCount ?? (p as any).likes ?? 0;
+                    const currentlyLiked = Boolean((p as any).liked || (p as any).likedByMe);
+                    return {
+                      ...p,
+                      liked: !currentlyLiked,
+                      likesCount: currentlyLiked ? Math.max(0, prevCount - 1) : prevCount + 1,
+                    } as Post;
+                  })
+                );
+
+                const resp = await api.post(
+                  `/posts/${encodeURIComponent(String(item._id))}/like`,
+                  {},
+                  false
+                );
+                if (!resp.ok) {
+                  // rollback on failure
+                  setPosts((prev) =>
+                    prev.map((p) => {
+                      if (p._id !== item._id) return p;
+                      // revert liked flag
+                      return {
+                        ...p,
+                        liked: (item as any).liked || (item as any).likedByMe || false,
+                        likesCount: (item as any).likesCount ?? (item as any).likeCount ?? (item as any).likes ?? 0,
+                      } as Post;
+                    })
+                  );
+                } else {
+                  // if server returns updated post, use it
+                  const json = await resp.json().catch(() => null);
+                  if (json && typeof json === "object") {
+                    setPosts((prev) => prev.map((p) => (p._id === item._id ? { ...(p as any), ...(json as any) } : p)));
+                  }
+                }
+              } catch (err) {
+                console.warn("Like action failed", err);
+                // rollback
+                setPosts((prev) =>
+                  prev.map((p) => {
+                    if (p._id !== item._id) return p;
+                    return {
+                      ...p,
+                      liked: (item as any).liked || (item as any).likedByMe || false,
+                      likesCount: (item as any).likesCount ?? (item as any).likeCount ?? (item as any).likes ?? 0,
+                    } as Post;
+                  })
+                );
+              }
+            }}
+          >
+            <Ionicons
+              name={likedByMe ? "heart" : "heart-outline"}
+              size={20}
+              color={likedByMe ? "#FDA0E9" : "#666"}
+            />
+          </TouchableOpacity>
+
+          <ThemedText style={styles.likesCountText}>{String(likesCount ?? 0)}</ThemedText>
+        </View>
       </View>
     );
   }
@@ -627,6 +703,20 @@ const styles = StyleSheet.create({
     color: "#333",
     fontFamily: "Montserrat_700Bold",
     alignSelf: "flex-start",
+  },
+  postActionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  likeButton: {
+    padding: 6,
+    borderRadius: 8,
+  },
+  likesCountText: {
+    marginLeft: 8,
+    color: "#666",
+    fontSize: 14,
   },
 });
 
