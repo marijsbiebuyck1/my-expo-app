@@ -41,45 +41,26 @@ export default function HomeScreen() {
     }
   }, []);
 
-  const AUTO_MESSAGE_SUFFIX =
-    "Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan het formulier in en wie weet claim ik binnenkort mijn plekje op jouw bank 😸.";
-  const AUTO_MESSAGE_INTROS = useMemo(
-    () => [
-      "Ik heb 9 levens… wil jij er eentje met mij delen?",
-      "Oké, eerlijk? Ik kwam voor de snacks… maar ik blijf misschien voor jou.",
-      "Ik ben misschien een beetje verlegen, maar voor jou wil ik wel spinnen...",
-      "Ik ben meer een ‘kijk-eerst-de-kat-uit-de-boom’-type… maar jij lijkt veilig.",
-      "Dus eh… wat is jouw favoriete snack? Vraag voor een kat.",
-      "Zullen we doen alsof dit heel casual is, terwijl ik al een plekje op je bank claim?",
-    ],
-    []
-  );
-
-  const buildAutoMessage = useCallback(() => {
-    const introIndex = Math.floor(Math.random() * AUTO_MESSAGE_INTROS.length);
-    const intro = AUTO_MESSAGE_INTROS[introIndex] || AUTO_MESSAGE_INTROS[0];
-    return `${intro}\n\n${AUTO_MESSAGE_SUFFIX}`;
-  }, [AUTO_MESSAGE_INTROS, AUTO_MESSAGE_SUFFIX]);
-
   const persistMatch = useCallback(
-    async (itemSnapshot: SwipeDeckItem | null, autoMessage: string) => {
+    async (itemSnapshot: SwipeDeckItem | null) => {
       if (!itemSnapshot?.id) return;
       const animalId = String(itemSnapshot.id);
       const optimistic = {
         id: animalId,
         name: itemSnapshot.name || "Onbekend",
-        lastMessage: autoMessage,
+        lastMessage: "",
         avatar: itemSnapshot.imageUri || null,
       };
       addLocalConversation(optimistic);
       try {
         const resp = await api.post("/conversations", {
           animalId,
-          autoMessage,
         });
         if (!resp.ok) throw new Error(`status ${resp.status}`);
         const payload = await resp.json().catch(() => null);
         const conversation = payload?.conversation || {};
+        const autoMessageText =
+          conversation.lastMessage || payload?.message?.text || "";
         addLocalConversation({
           id: conversation.animalId || animalId,
           conversationId:
@@ -92,7 +73,7 @@ export default function HomeScreen() {
             itemSnapshot.name ||
             conversation.name ||
             "Onbekend",
-          lastMessage: conversation.lastMessage || autoMessage,
+          lastMessage: autoMessageText,
           avatar:
             conversation.animalPhoto ||
             itemSnapshot.imageUri ||
@@ -176,8 +157,7 @@ export default function HomeScreen() {
                         imageUri: photo,
                       };
                       setMatchItem(normalized);
-                      const autoMessage = buildAutoMessage();
-                      persistMatch(normalized, autoMessage);
+                      persistMatch(normalized);
                       return;
                     }
                   }
@@ -188,7 +168,7 @@ export default function HomeScreen() {
 
                 // fallback: use the mapped imageUri
                 setMatchItem(item);
-                persistMatch(item, buildAutoMessage());
+                persistMatch(item);
               }}
             />
             <MatchCard

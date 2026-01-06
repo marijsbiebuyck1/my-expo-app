@@ -22,6 +22,18 @@ import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
 import { api } from "../../../_lib/api";
 
+const AUTO_MESSAGE_SUFFIX =
+  "Twijfels of vragen? Je kunt ze altijd hier stellen. Geen vragen meer? Vul dan het formulier in en wie weet claim ik binnenkort mijn plekje op jouw bank 😸.";
+const AUTO_MESSAGE_KEYWORDS = [
+  "Twijfels of vragen",
+  "Vul dan het formulier in",
+  "plekje op jouw bank",
+];
+const NORMALIZED_AUTO_SUFFIX = normalizeMessageSignature(AUTO_MESSAGE_SUFFIX);
+const NORMALIZED_AUTO_KEYWORDS = AUTO_MESSAGE_KEYWORDS.map((keyword) =>
+  normalizeMessageSignature(keyword)
+);
+
 interface MessageItem {
   id: string;
   text: string;
@@ -81,13 +93,21 @@ export default function AdminConversationDetailScreen() {
           : Array.isArray(payload)
           ? payload
           : [];
-        const mapped: MessageItem[] = listSource.map((m: any) => ({
-          id: String(m.id || m._id || Math.random()),
-          text: m.text || "",
-          fromMe: m.fromKind === "shelter",
-          createdAt: m.createdAt || undefined,
-          authorDisplayName: m.authorDisplayName,
-        }));
+        const mapped: MessageItem[] = listSource.map((m: any) => {
+          const textValue = m.text || "";
+          const fromKind =
+            typeof m.fromKind === "string"
+              ? m.fromKind.trim().toLowerCase()
+              : "";
+          const autoMatch = isProbableAutoMessage(textValue);
+          return {
+            id: String(m.id || m._id || Math.random()),
+            text: textValue,
+            fromMe: fromKind === "shelter" || autoMatch,
+            createdAt: m.createdAt || undefined,
+            authorDisplayName: m.authorDisplayName,
+          };
+        });
         setMessages(mapped);
       } catch (err) {
         console.warn("Failed to load admin messages", err);
@@ -291,6 +311,35 @@ export default function AdminConversationDetailScreen() {
       </TouchableWithoutFeedback>
     </SafeAreaView>
   );
+}
+
+function normalizeMessageSignature(value?: string | null) {
+  if (!value) return "";
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isProbableAutoMessage(text?: string | null) {
+  const signature = normalizeMessageSignature(text);
+  if (!signature) return false;
+  if (NORMALIZED_AUTO_SUFFIX && signature.includes(NORMALIZED_AUTO_SUFFIX)) {
+    return true;
+  }
+  let keywordHits = 0;
+  for (const keyword of NORMALIZED_AUTO_KEYWORDS) {
+    if (!keyword) continue;
+    if (signature.includes(keyword)) {
+      keywordHits += 1;
+      if (keywordHits >= 2) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 const styles = StyleSheet.create({
