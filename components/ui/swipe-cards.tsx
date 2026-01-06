@@ -154,13 +154,12 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 100,
     borderBottomRightRadius: 20,
     borderBottomLeftRadius: 20,
-    overflow: "hidden",
     // subtle shadow
-    shadowColor: "#000",
-    shadowOffset: { width: -1, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5.2,
-    elevation: 6,
+    shadowColor: "#0F0B06",
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.12,
+    shadowRadius: 28,
+    elevation: 8,
     alignSelf: "center",
   },
 

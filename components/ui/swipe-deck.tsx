@@ -205,7 +205,7 @@ export default function SwipeDeck({ items, onLike, onNope }: Props) {
                 "#FF8E28",
                 "#AEBA40",
                 "#D3D1F6",
-                "#FF8E28"
+                "#FF8E28",
               ];
               return word.split("").map((ch, i) => (
                 <Text
@@ -220,11 +220,11 @@ export default function SwipeDeck({ items, onLike, onNope }: Props) {
               ));
             })()}
           </View>
-            <Image
-              source={require("../../assets/images/kat-uitgeswiped.png")}
-              style={styles.noMoreImage}
-              resizeMode="contain"
-            />
+          <Image
+            source={require("../../assets/images/kat-uitgeswiped.png")}
+            style={styles.noMoreImage}
+            resizeMode="contain"
+          />
         </View>
       );
     }
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   },
   statusWrap: {
     position: "absolute",
-    top: "45%",
+    top: "35%",
     left: "50%",
     zIndex: 10,
     marginLeft: -50,
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
   buttonsRow: {
     flexDirection: "row",
     position: "absolute",
-    bottom: 78,
+    bottom: 110,
     left: 0,
     right: 0,
     justifyContent: "center",
