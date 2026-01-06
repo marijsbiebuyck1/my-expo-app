@@ -357,37 +357,52 @@ export default function SettingsScreen() {
 
   async function logout() {
     try {
-      await SecureStore.deleteItemAsync('user');
-      await SecureStore.deleteItemAsync('userId');
-      await SecureStore.deleteItemAsync('userToken');
+      await SecureStore.deleteItemAsync("user");
+      await SecureStore.deleteItemAsync("userId");
+      await SecureStore.deleteItemAsync("userToken");
     } catch {}
-    try { router.replace('/login'); } catch {}
+    try {
+      router.replace("/login");
+    } catch {}
   }
 
   async function deleteAccount() {
-    Alert.alert('Account verwijderen', 'Weet je zeker dat je dit account wilt verwijderen? Dit kan niet ongedaan gemaakt worden.', [
-      { text: 'Annuleren', style: 'cancel' },
-      { text: 'Verwijder', style: 'destructive', onPress: async () => {
-        try {
-          const id = user?.id || user?._id || (await SecureStore.getItemAsync('userId'));
-          if (!id) throw new Error('Gebruiker-id niet gevonden');
-          const res = await api.del(`/users/${id}`);
-          if (!res.ok) {
-            const t = await res.text().catch(() => '');
-            throw new Error(t || `Status ${res.status}`);
-          }
-          try {
-            await SecureStore.deleteItemAsync('user');
-            await SecureStore.deleteItemAsync('userId');
-            await SecureStore.deleteItemAsync('userToken');
-          } catch {}
-          try { router.replace('/login'); } catch {}
-        } catch (err: any) {
-          console.warn('delete failed', err);
-          Alert.alert('Verwijderen mislukt', String(err?.message || err));
-        }
-      } }
-    ]);
+    Alert.alert(
+      "Account verwijderen",
+      "Weet je zeker dat je dit account wilt verwijderen? Dit kan niet ongedaan gemaakt worden.",
+      [
+        { text: "Annuleren", style: "cancel" },
+        {
+          text: "Verwijder",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const id =
+                user?.id ||
+                user?._id ||
+                (await SecureStore.getItemAsync("userId"));
+              if (!id) throw new Error("Gebruiker-id niet gevonden");
+              const res = await api.del(`/users/${id}`);
+              if (!res.ok) {
+                const t = await res.text().catch(() => "");
+                throw new Error(t || `Status ${res.status}`);
+              }
+              try {
+                await SecureStore.deleteItemAsync("user");
+                await SecureStore.deleteItemAsync("userId");
+                await SecureStore.deleteItemAsync("userToken");
+              } catch {}
+              try {
+                router.replace("/login");
+              } catch {}
+            } catch (err: any) {
+              console.warn("delete failed", err);
+              Alert.alert("Verwijderen mislukt", String(err?.message || err));
+            }
+          },
+        },
+      ]
+    );
   }
 
   return (
@@ -459,7 +474,7 @@ export default function SettingsScreen() {
               <Section
                 title="Mijn interesses"
                 onEdit={() => router.push("/users/register-interests")}
-                style={styles.sectionIntroSpacing}
+                style={styles.sectionSpacing}
               >
                 {interests ? (
                   <View style={styles.chipsRow}>
@@ -481,7 +496,7 @@ export default function SettingsScreen() {
               <Section
                 title="Wat ik zoek"
                 onEdit={() => router.push("/users/register-pet")}
-                style={styles.sectionPrimarySpacing}
+                style={styles.sectionSpacing}
               >
                 {preferences ? (
                   <View style={styles.chipsRow}>
@@ -503,6 +518,7 @@ export default function SettingsScreen() {
               <Section
                 title="Thuissituatie"
                 onEdit={() => router.push("/users/register-home")}
+                style={styles.sectionSpacing}
               >
                 {home ? (
                   <View>
@@ -541,16 +557,22 @@ export default function SettingsScreen() {
               <Section
                 title={`Regio`}
                 onEdit={() => router.push("/users/register-owner")}
+                style={styles.sectionSpacing}
               >
                 <ThemedText>{region}</ThemedText>
               </Section>
-            <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-              <ThemedText style={{ color: '#fff' }}>Uitloggen</ThemedText>
-            </TouchableOpacity>
+              <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+                <ThemedText style={{ color: "#fff" }}>Uitloggen</ThemedText>
+              </TouchableOpacity>
 
-            <TouchableOpacity style={styles.deleteBtn} onPress={deleteAccount}>
-              <ThemedText style={{ color: '#037D4E' }}>Account verwijderen</ThemedText>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteBtn}
+                onPress={deleteAccount}
+              >
+                <ThemedText style={{ color: "#037D4E" }}>
+                  Account verwijderen
+                </ThemedText>
+              </TouchableOpacity>
               <View style={{ height: 40 }} />
             </ScrollView>
           </BgCard>
@@ -706,11 +728,8 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
   },
-  sectionIntroSpacing: {
-    marginTop: 32,
-  },
-  sectionPrimarySpacing: {
-    marginTop: 28,
+  sectionSpacing: {
+    marginTop: 10,
   },
   editIconBtn: {
     width: 36,
@@ -722,13 +741,13 @@ const styles = StyleSheet.create({
   },
 
   logoutBtn: {
-    backgroundColor: '#037D4E',
+    backgroundColor: "#037D4E",
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 40,
     marginTop: 12,
-    alignSelf: 'stretch',
-    alignItems: 'center',
+    alignSelf: "stretch",
+    alignItems: "center",
     marginBottom: 12,
   },
 
@@ -737,11 +756,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     borderRadius: 40,
     borderWidth: 2,
-    borderColor: '#037D4E',
+    borderColor: "#037D4E",
     marginTop: 0,
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
+    alignSelf: "stretch",
+    alignItems: "center",
+    backgroundColor: "transparent",
   },
 });
 
