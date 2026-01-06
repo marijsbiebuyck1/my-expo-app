@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useMemo, useState } from "react";
@@ -322,21 +321,6 @@ export default function LoginEmailScreen({
             )}
           </TouchableOpacity>
         </View>
-      </View>
-      <View style={styles.iconRowTop}>
-        <TouchableOpacity
-          style={[styles.roundButton, styles.homeButton]}
-          onPress={() => router.replace("/users/home" as any)}
-        >
-          <Ionicons name="person" size={24} color="#fff" />
-        </TouchableOpacity>
-        <View style={{ width: 12 }} />
-        <TouchableOpacity
-          style={[styles.roundButton, styles.animalsButton]}
-          onPress={() => router.replace("/admin/(tabs)/animals" as any)}
-        >
-          <Ionicons name="paw" size={22} color="#fff" />
-        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
