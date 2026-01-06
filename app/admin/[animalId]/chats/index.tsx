@@ -107,7 +107,11 @@ export default function AnimalChatsScreen() {
         {item.avatar ? (
           <Image source={{ uri: item.avatar }} style={styles.avatar} />
         ) : (
-          <View style={styles.avatarPlaceholder} />
+          <View style={styles.avatarFallback}>
+            <ThemedText style={styles.avatarInitial}>
+              {(item.name || "").trim().charAt(0).toUpperCase()}
+            </ThemedText>
+          </View>
         )}
         <View style={styles.meta}>
           <ThemedText type="subtitle">{item.name}</ThemedText>
@@ -259,6 +263,16 @@ const styles = StyleSheet.create({
     marginRight: 12,
     backgroundColor: "#f0f0f0",
   },
+  avatarFallback: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginRight: 12,
+    backgroundColor: "#EFEFD1",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarInitial: { fontWeight: "700", color: "#000" },
   meta: { flex: 1 },
   preview: { color: "#666", marginTop: 4 },
   chevron: {

@@ -40,6 +40,7 @@ interface MessageItem {
   fromMe: boolean;
   createdAt?: string;
   authorDisplayName?: string;
+  authorAvatar?: string | null;
 }
 
 export default function AdminConversationDetailScreen() {
@@ -100,12 +101,15 @@ export default function AdminConversationDetailScreen() {
               ? m.fromKind.trim().toLowerCase()
               : "";
           const autoMatch = isProbableAutoMessage(textValue);
+          const authorAvatar =
+            m.authorProfileImage || m.authorAvatar || m.authorPhoto || m.userAvatar || m.avatar || m.profileImage || null;
           return {
             id: String(m.id || m._id || Math.random()),
             text: textValue,
             fromMe: fromKind === "shelter" || autoMatch,
             createdAt: m.createdAt || undefined,
             authorDisplayName: m.authorDisplayName,
+            authorAvatar,
           };
         });
         setMessages(mapped);
@@ -240,15 +244,20 @@ export default function AdminConversationDetailScreen() {
                       >
                         {!message.fromMe ? (
                           <View style={styles.avatarHolder}>
-                            {avatar ? (
+                            {message.authorAvatar || avatar ? (
                               <Image
-                                source={{ uri: avatar }}
+                                source={{ uri: message.authorAvatar || avatar || undefined }}
                                 style={styles.messageAvatar}
                               />
                             ) : (
                               <View style={styles.messageAvatarFallback}>
                                 <ThemedText style={styles.messageAvatarText}>
-                                  {userInitial}
+                                  {(
+                                    (message.authorDisplayName || "")
+                                      .trim()
+                                      .charAt(0)
+                                      .toUpperCase() || userInitial
+                                  )}
                                 </ThemedText>
                               </View>
                             )}
