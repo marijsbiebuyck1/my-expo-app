@@ -16,6 +16,7 @@ import {
   StyleSheet,
   View,
   ViewStyle,
+  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoHeader from "../../../../components/logo-header";
@@ -354,6 +355,41 @@ export default function SettingsScreen() {
     }
   }
 
+  async function logout() {
+    try {
+      await SecureStore.deleteItemAsync('user');
+      await SecureStore.deleteItemAsync('userId');
+      await SecureStore.deleteItemAsync('userToken');
+    } catch {}
+    try { router.replace('/login'); } catch {}
+  }
+
+  async function deleteAccount() {
+    Alert.alert('Account verwijderen', 'Weet je zeker dat je dit account wilt verwijderen? Dit kan niet ongedaan gemaakt worden.', [
+      { text: 'Annuleren', style: 'cancel' },
+      { text: 'Verwijder', style: 'destructive', onPress: async () => {
+        try {
+          const id = user?.id || user?._id || (await SecureStore.getItemAsync('userId'));
+          if (!id) throw new Error('Gebruiker-id niet gevonden');
+          const res = await api.del(`/users/${id}`);
+          if (!res.ok) {
+            const t = await res.text().catch(() => '');
+            throw new Error(t || `Status ${res.status}`);
+          }
+          try {
+            await SecureStore.deleteItemAsync('user');
+            await SecureStore.deleteItemAsync('userId');
+            await SecureStore.deleteItemAsync('userToken');
+          } catch {}
+          try { router.replace('/login'); } catch {}
+        } catch (err: any) {
+          console.warn('delete failed', err);
+          Alert.alert('Verwijderen mislukt', String(err?.message || err));
+        }
+      } }
+    ]);
+  }
+
   return (
     <SafeAreaView style={styles.screen}>
       <LogoHeader />
@@ -508,7 +544,13 @@ export default function SettingsScreen() {
               >
                 <ThemedText>{region}</ThemedText>
               </Section>
+            <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+              <ThemedText style={{ color: '#fff' }}>Uitloggen</ThemedText>
+            </TouchableOpacity>
 
+            <TouchableOpacity style={styles.deleteBtn} onPress={deleteAccount}>
+              <ThemedText style={{ color: '#037D4E' }}>Account verwijderen</ThemedText>
+            </TouchableOpacity>
               <View style={{ height: 40 }} />
             </ScrollView>
           </BgCard>
@@ -677,6 +719,29 @@ const styles = StyleSheet.create({
     backgroundColor: "#AEBA40",
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  logoutBtn: {
+    backgroundColor: '#037D4E',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 40,
+    marginTop: 12,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  deleteBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: '#037D4E',
+    marginTop: 0,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
   },
 });
 

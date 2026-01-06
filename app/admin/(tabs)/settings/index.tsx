@@ -1,11 +1,9 @@
 import { ThemedText } from "@/components/themed-text";
-import * as FileSystem from 'expo-file-system';
-import * as ImageManipulator from "expo-image-manipulator";
-import * as ImagePicker from "expo-image-picker";
+// image upload utilities removed (upload button removed from UI)
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoHeader from "../../../../components/logo-header";
 import { ADMIN_BASE, api } from "../../../_lib/api";
@@ -14,12 +12,10 @@ import { useAdminAuth } from "../../../_lib/useAuth";
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { admin, token, save, clear } = useAdminAuth();
+  const { admin, clear } = useAdminAuth();
   const [shelter, setShelter] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  // local preview URI while uploading / immediately after selection
-  const [selectedLocalUri, setSelectedLocalUri] = useState<string | null>(null);
+  // upload UI removed per request
 
   useEffect(() => {
     let mounted = true;
@@ -47,132 +43,7 @@ export default function SettingsScreen() {
     };
   }, [admin]);
 
-  async function pickAndUploadPhoto() {
-    try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert("Toestemming nodig", "Geef toegang tot je foto's om een profielfoto te kiezen.");
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        // request images only
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 4],
-        quality: 0.7,
-      });
-
-      const wasCancelled = (result as any).cancelled ?? (result as any).canceled ?? false;
-      if (wasCancelled) return;
-
-  // get uri from new assets shape or legacy uri
-  // @ts-ignore
-  const uri: string | undefined = (result.assets && result.assets[0] && result.assets[0].uri) || (result as any).uri;
-      if (!uri) return;
-
-      // show local preview immediately (we'll try to replace with a base64 preview after manipulation)
-  setSelectedLocalUri(uri);
-
-      // attempt to resize/compress and produce a base64 preview
-      let uploadUri = uri;
-      try {
-        const manipulated = await ImageManipulator.manipulateAsync(
-          uri,
-          [{ resize: { width: 600 } }],
-          { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-        );
-        if (manipulated.uri) uploadUri = manipulated.uri;
-        if (manipulated.base64) setSelectedLocalUri(`data:image/jpeg;base64,${manipulated.base64}`);
-      } catch (e) {
-        console.warn('image manipulation failed, proceeding with original uri', e);
-      }
-
-      const uriParts = uploadUri.split('/');
-      const fileName = uriParts[uriParts.length - 1] || `photo-${Date.now()}.jpg`;
-      const match = fileName.match(/\.([0-9a-zA-Z]+)$/);
-      const ext = match ? match[1].toLowerCase() : 'jpg';
-      const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
-
-      // Some Android URIs are content:// and can't be attached directly. Copy to cache when needed.
-  // `uploadUri` is already set above (possibly the manipulated uri)
-      try {
-        if (Platform.OS === 'android' && uri.startsWith('content://')) {
-          // Read file as base64 then write to cache so fetch can send it
-          const fs: any = FileSystem;
-          const b64 = await fs.readAsStringAsync(uri, { encoding: 'base64' }).catch(() => null as string | null);
-          if (b64) {
-            const dest = (fs.cacheDirectory || fs.documentDirectory || '') + fileName;
-            await fs.writeAsStringAsync(dest, b64, { encoding: 'base64' });
-            uploadUri = dest;
-          }
-        }
-      } catch (e) {
-        console.warn('Could not copy content URI to cache, using original uri', e);
-      }
-
-      // iOS may require file:// prefix
-      if (Platform.OS === 'ios' && !uploadUri.startsWith('file://')) {
-        uploadUri = 'file://' + uploadUri;
-      }
-
-      const form = new FormData();
-      // @ts-ignore -- React Native FormData file object
-      const fileField = { uri: uploadUri, name: fileName, type: mimeType } as any;
-      form.append('avatar', fileField);
-
-      let id = admin?.id || admin?._id || (await SecureStore.getItemAsync('adminId'));
-      if (!id) id = shelter?.id || shelter?._id || (await SecureStore.getItemAsync('adminId'));
-      if (!id) {
-        Alert.alert('Fout', 'Asiel-id niet gevonden. Log in als asiel en probeer het opnieuw.');
-        return;
-      }
-
-      // debug: show what we will upload so Metro/device logs contain the details
-      try {
-        console.debug("admin:upload ->", { id, uploadUri, fileName, mimeType, isAdmin: true });
-      } catch {}
-      setUploading(true);
-      const resp = await api.post(`/asielen/${id}/avatar`, form as any, true);
-      // log raw response for easier debugging
-      try {
-        const respText = await resp.clone().text().catch(() => null);
-        console.debug("admin:upload:response", { status: resp.status, body: respText });
-      } catch {}
-      if (!resp.ok) {
-        const text = await resp.text().catch(() => '');
-        let msg = text || `HTTP ${resp.status}`;
-        try {
-          const parsed = JSON.parse(text);
-          msg = parsed.message || JSON.stringify(parsed);
-        } catch {}
-        // Show server response in alert for immediate feedback
-        Alert.alert('Upload mislukt', msg);
-        return;
-      }
-
-      const json = await resp.json().catch(() => null);
-      const updated = Array.isArray(json) && json.length > 0 ? json[0] : json.data || json.admin || json.result || json;
-      if (updated) {
-        // server may return profileImage or other names; normalize into shelter state
-        setShelter(updated);
-        // clear local preview so the UI uses the server-provided image
-        setSelectedLocalUri(null);
-        try {
-          await SecureStore.setItemAsync('admin', JSON.stringify(updated));
-          const adminId = (updated as any).id ?? (updated as any)._id;
-          if (adminId) await SecureStore.setItemAsync('adminId', String(adminId));
-        } catch {}
-        try { await save(token ?? null, updated as any); } catch {}
-      }
-      Alert.alert('Klaar', 'Profielfoto bijgewerkt.');
-    } catch (e) {
-      console.error('photo upload error', e);
-      Alert.alert('Fout', 'Er is iets misgegaan bij het uploaden van de foto.');
-    } finally {
-      setUploading(false);
-    }
-  }
+  // upload helper removed; upload button is not part of this view anymore
 
   async function deleteAccount() {
     Alert.alert('Account verwijderen', 'Weet je zeker dat je dit asiel-account wilt verwijderen? Dit kan niet ongedaan gemaakt worden.', [
@@ -218,30 +89,72 @@ export default function SettingsScreen() {
     else displayPhotoUri = ADMIN_BASE + '/' + displayPhotoUri;
   }
 
-  // prefer local preview while present
-  const shownUri = selectedLocalUri || displayPhotoUri;
+  // no local preview / photo shown in this view per design change
+
+  // derive contact fields defensively from possible backend keys
+  const address =
+    shelter?.address || shelter?.adres || shelter?.location?.address || shelter?.street || null;
+  const email = shelter?.email || shelter?.contactEmail || shelter?.mail || null;
+  const phone = shelter?.phone || shelter?.telefoon || shelter?.phoneNumber || shelter?.contactPhone || null;
+
+  // Helpers to render contact values safely (strings, arrays or objects)
+  const formatValue = (val: any) => {
+    if (val == null) return '-';
+    if (typeof val === 'string') return val;
+    if (Array.isArray(val)) return val.filter(Boolean).join(', ');
+    if (typeof val === 'object') {
+      // common address shapes may have street/name/number/postcode/city
+      const keys = ['street', 'straat', 'line1', 'address', 'streetName', 'name'];
+      const parts: string[] = [];
+      for (const k of keys) {
+        if (val[k]) parts.push(String(val[k]));
+      }
+      // fallback: include any string values present on the object
+      if (!parts.length) {
+        for (const v of Object.values(val)) {
+          if (typeof v === 'string' && v.trim()) parts.push(v.trim());
+        }
+      }
+      return parts.length ? parts.join(', ') : JSON.stringify(val);
+    }
+    return String(val);
+  };
+
+  const addressText = formatValue(address);
+  const emailText = formatValue(email);
+  const phoneText = formatValue(phone);
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <LogoHeader />
       <View style={styles.container}>
         <View style={styles.card}>
-          <ThemedText type="title" style={{ marginBottom: 12 }}>Profiel</ThemedText>
-          {shownUri ? (
-            <Image source={{ uri: shownUri }} style={styles.avatarLarge} />
-          ) : (
-            <View style={styles.avatarLargePlaceholder} />
-          )}
+          <ThemedText type="title" style={{ marginBottom: 12 }}>Asiel</ThemedText>
+          <View style={styles.infoBlock}>
+            <ThemedText type="subtitle" style={styles.nameText}>{displayName}</ThemedText>
 
-          <TouchableOpacity style={styles.photoBtn} onPress={pickAndUploadPhoto} disabled={uploading}>
-            {uploading ? <ActivityIndicator color="#333" /> : <ThemedText style={styles.photoBtnText}>{photo ? 'Wijzig profielfoto' : 'Upload profielfoto'}</ThemedText>}
-          </TouchableOpacity>
+            <View style={styles.infoRow}>
+              <ThemedText style={styles.infoLabel}>Adres</ThemedText>
+              <ThemedText>{addressText}</ThemedText>
+            </View>
 
-          <ThemedText type="subtitle" style={styles.nameText}>{displayName}</ThemedText>
+            <View style={styles.infoRow}>
+              <ThemedText style={styles.infoLabel}>E-mail</ThemedText>
+              <ThemedText>{emailText}</ThemedText>
+            </View>
 
-          <TouchableOpacity style={styles.deleteBtn} onPress={deleteAccount}>
-            <ThemedText style={{ color: '#fff' }}>Verwijder account</ThemedText>
-          </TouchableOpacity>
+            <View style={styles.infoRow}>
+              <ThemedText style={styles.infoLabel}>Telefoon</ThemedText>
+              <ThemedText>{phoneText}</ThemedText>
+            </View>
+            <TouchableOpacity style={styles.logoutBtn}>
+              <ThemedText style={{ color: '#fff' }}>Uitloggen</ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.deleteBtn} onPress={deleteAccount}>
+              <ThemedText style={{ color: '#037D4E' }}>Account verwijderen</ThemedText>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -259,42 +172,46 @@ const styles = StyleSheet.create({
   },
   nameText: {
     fontSize: 20,
-    marginBottom: 6,
+    marginBottom: 40,
     textAlign: 'center',
   },
-  avatarLarge: {
-    width: 210,
-    height: 210,
-    borderRadius: 20,
-    marginBottom: 18,
-  },
-  avatarLargePlaceholder: {
-    width: 210,
-    height: 210,
-    borderRadius: 20,
-    backgroundColor: '#EEE',
-    marginBottom: 18,
-  },
-  photoBtn: {
-    backgroundColor: '#fff',
-    borderColor: '#eee',
-    borderWidth: 1,
-    paddingVertical: 10,
-    borderRadius: 50,
-    alignItems: 'center',
-    marginBottom: 12,
-    width: 220,
-  },
-  photoBtnText: {
-    color: '#333',
-    fontFamily: 'Montserrat_600SemiBold',
-  },
-  deleteBtn: {
+
+  logoutBtn: {
     backgroundColor: '#037D4E',
     paddingVertical: 12,
     paddingHorizontal: 30,
-    borderRadius: 8,
+    borderRadius: 40,
     marginTop: 12,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  deleteBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: '#037D4E',
+    marginTop: 0,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  infoBlock: {
+    width: '100%',
+    alignItems: 'flex-start',
+    paddingTop: 6,
+  },
+  infoRow: {
+    width: '100%',
+    marginBottom: 32,
+  },
+  infoLabel: {
+    fontSize: 16,
+    color: '#000',
+    marginBottom: 4,
+    fontFamily: 'Montserrat_600SemiBold',
   },
 });
 
