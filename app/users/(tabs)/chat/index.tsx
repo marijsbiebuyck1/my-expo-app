@@ -264,7 +264,7 @@ export default function ChatListScreen() {
                   showsVerticalScrollIndicator={false}
                   ListEmptyComponent={() => (
                     <View style={styles.emptyState}>
-                      <ThemedText>Geen gesprekken beschikbaar.</ThemedText>
+                      <ThemedText>Je hebt nog geen matches.</ThemedText>
                     </View>
                   )}
                 />

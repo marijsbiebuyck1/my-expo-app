@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -17,7 +18,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 import { SvgXml } from "react-native-svg";
 import CameraCapture from "../../../../components/camera-capture";
 import BgCard from "../../../../components/ui/bg-card";
@@ -330,7 +330,8 @@ export default function FeedScreen() {
     const likedByMe = Boolean((item as any).liked || (item as any).likedByMe);
 
     return (
-      <View style={styles.postCard}>
+      <>
+        <View style={styles.postCard}>
         <View style={styles.postHeader}>
           {avatarUri ? (
             <Image
@@ -427,7 +428,11 @@ export default function FeedScreen() {
 
           <ThemedText style={styles.likesCountText}>{String(likesCount ?? 0)}</ThemedText>
         </View>
-      </View>
+
+  </View>
+
+  <View style={styles.postSeparator} />
+      </>
     );
   }
 
@@ -634,11 +639,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 12,
     borderRadius: 12,
+    marginBottom: 0,
+  },
+
+  postSeparator: {
+    height: 1,
+    backgroundColor: "#E5E2DC",
+    marginTop: 12,
     marginBottom: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    width: "100%",
   },
   postHeader: {
     flexDirection: "row",
