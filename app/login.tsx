@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
 
   skateboard: {
     position: "absolute",
-    bottom: -130,
+    bottom: -50,
     right: -50,
     width: 240,
     height: 160,

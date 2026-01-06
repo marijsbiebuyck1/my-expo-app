@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     width: 450,
     height: 200,
     alignSelf: "center",
-    bottom: 20,
+    bottom: 70,
   },
   bottomBar: {
     position: "absolute",
