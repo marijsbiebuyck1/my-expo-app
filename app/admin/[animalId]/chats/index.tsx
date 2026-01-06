@@ -196,17 +196,21 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#FFFCF5" },
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 24,
+    alignItems: "center",
   },
   cardShell: {
     flex: 1,
     width: "100%",
     maxWidth: 360,
     alignSelf: "center",
+    justifyContent: "center",
   },
   bgCard: {
     width: "100%",
-    height: "100%",
+    height: "92%",
   },
   cardContent: {
     flex: 1,
@@ -284,9 +288,10 @@ const styles = StyleSheet.create({
     marginLeft: 68,
   },
   footerIllustration: {
-    alignItems: "flex-end",
-    paddingTop: 22,
-    marginTop: 16,
+    position: "absolute",
+    bottom: -40,
+    right: -20,
+    zIndex: 100,
   },
   footerImage: {
     width: 180,
