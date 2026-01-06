@@ -306,7 +306,7 @@ export default function SwipeDeck({ items, onLike, onNope }: Props) {
           accessibilityLabel="Nope"
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <TimesIcon size={28} color={styles.nopeIcon.color} />
+          <TimesIcon size={35} color={styles.nopeIcon.color} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -316,7 +316,7 @@ export default function SwipeDeck({ items, onLike, onNope }: Props) {
           accessibilityLabel="Like"
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <HeartIcon size={28} color={styles.loveIcon.color} />
+          <HeartIcon size={35} color={styles.loveIcon.color} />
         </TouchableOpacity>
       </View>
     </View>
@@ -381,16 +381,15 @@ const styles = StyleSheet.create({
   buttonsRow: {
     flexDirection: "row",
     position: "absolute",
-    bottom: 110,
+    bottom: 90,
     left: 0,
     right: 0,
     justifyContent: "center",
-    zIndex: 40,
-    elevation: 12,
+
   },
   button: {
-    width: 64,
-    height: 64,
+    width: 68,
+    height: 68,
     borderRadius: 32,
     backgroundColor: "#fff",
     alignItems: "center",

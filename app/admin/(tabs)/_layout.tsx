@@ -170,7 +170,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
-    elevation: 40,
+    elevation: 20,
+    zIndex: 0,
+    overflow: "visible",
   },
   tabIconWrap: {
     paddingVertical: 8,

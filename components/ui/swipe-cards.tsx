@@ -196,6 +196,7 @@ const styles = StyleSheet.create({
   },
   contentInner: {
     padding: 20,
+    paddingBottom: 80,
   },
 
   title: {
