@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   },
   floatingTabBar: {
     position: "absolute",
-    marginHorizontal: 8,
+    marginHorizontal: 17,
     alignSelf: "center",
     height: 72,
     backgroundColor: "#fff",
