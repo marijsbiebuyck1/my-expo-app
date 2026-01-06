@@ -445,11 +445,11 @@ const styles = StyleSheet.create({
     borderRadius: 28,
   },
   bubbleLeft: {
-    backgroundColor: "#F3F0EB",
+    backgroundColor: "#F7F7F7",
     borderBottomLeftRadius: 12,
   },
   bubbleRight: {
-    backgroundColor: "#E7F6E6",
+    backgroundColor: "#EFEFD1",
     borderBottomRightRadius: 12,
     alignSelf: "flex-end",
   },
