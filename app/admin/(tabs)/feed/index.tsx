@@ -7,15 +7,19 @@ import {
   Alert,
   FlatList,
   Image,
+  Keyboard,
   Modal,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SvgXml } from "react-native-svg";
 import CameraCapture from "../../../../components/camera-capture";
+import BgCard from "../../../../components/ui/bg-card";
 // ...existing code...
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
@@ -352,29 +356,56 @@ export default function FeedScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFCF5" }}>
+    <SafeAreaView style={styles.screen}>
       <LogoHeader />
       <View style={styles.container}>
-        <View style={styles.headerRow}>
-          <ThemedText type="title">Happy tails Feed</ThemedText>
-
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setModalVisible(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Nieuw dier toevoegen"
-            accessibilityHint="Open het uploadscherm"
-            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+        <View style={styles.cardShell}>
+          <BgCard
+            style={styles.bgCard}
+            contentStyle={styles.cardContent}
+            scrollEnabled={false}
           >
-            <ThemedText style={styles.addButtonIcon}>+</ThemedText>
-          </TouchableOpacity>
-        </View>
+            <View style={styles.headerRow}>
+              <ThemedText type="title" style={styles.pageTitle}>
+                Happy tails Feed
+              </ThemedText>
 
-        <Modal
-          visible={modalVisible}
-          animationType="slide"
-          onRequestClose={() => setModalVisible(false)}
-        >
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => setModalVisible(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Nieuw dier toevoegen"
+                accessibilityHint="Open het uploadscherm"
+                hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+              >
+                <ThemedText style={styles.addButtonIcon}>+</ThemedText>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.listWrapper}>
+              {loading ? (
+                <ActivityIndicator style={styles.loadingIndicator} />
+              ) : (
+                <FlatList
+                  data={posts}
+                  keyExtractor={(p, idx) => p._id ?? `post-${idx}`}
+                  renderItem={renderPost}
+                  contentContainerStyle={styles.feedListContent}
+                  style={styles.feedList}
+                  showsVerticalScrollIndicator={false}
+                />
+              )}
+            </View>
+          </BgCard>
+        </View>
+      </View>
+
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <SafeAreaView style={styles.modalContainer}>
             <ThemedText type="title">
               Plaats een foto met jouw nieuwste huisgenoot
@@ -393,13 +424,13 @@ export default function FeedScreen() {
 
             <View style={{ flexDirection: "row", gap: 8 }}>
               <TouchableOpacity style={styles.smallButton} onPress={pickImage}>
-                <ThemedText>Choose</ThemedText>
+                <ThemedText>Kies foto</ThemedText>
               </TouchableOpacity>
               <TouchableOpacity style={styles.smallButton} onPress={takePhoto}>
                 <ThemedText>Camera</ThemedText>
               </TouchableOpacity>
             </View>
-
+            <Text style={styles.sectionLabel}>Schrijf een leuk tekstje</Text>
             <TextInput
               placeholder="Onderschrift toevoegen..."
               value={caption}
@@ -432,63 +463,96 @@ export default function FeedScreen() {
               </TouchableOpacity>
             </View>
           </SafeAreaView>
-        </Modal>
+        </TouchableWithoutFeedback>
+      </Modal>
 
-        <CameraCapture
-          visible={cameraVisible}
-          onClose={() => setCameraVisible(false)}
-          onCapture={(res) => {
-            if (!res) return;
-            if (res.uploadUri) setImage(res.uploadUri);
-            if (res.previewBase64) setImagePreview(res.previewBase64);
-          }}
-        />
-
-        {loading ? (
-          <ActivityIndicator style={{ marginTop: 24 }} />
-        ) : (
-          <FlatList
-            data={posts}
-            keyExtractor={(p) => p._id ?? String(Math.random())}
-            renderItem={renderPost}
-            contentContainerStyle={{ paddingBottom: 40 }}
-          />
-        )}
-      </View>
+      <CameraCapture
+        visible={cameraVisible}
+        onClose={() => setCameraVisible(false)}
+        onCapture={(res) => {
+          if (!res) return;
+          if (res.uploadUri) setImage(res.uploadUri);
+          if (res.previewBase64) setImagePreview(res.previewBase64);
+        }}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#FFFCF5",
+  },
   container: {
     flex: 1,
-    padding: 30,
+    padding: 20,
+    alignItems: "center",
+  },
+  cardShell: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 360,
+    alignSelf: "center",
+  },
+  bgCard: {
+    width: "100%",
+    height: "92%",
+  },
+  cardContent: {
+    flex: 1,
+    width: "100%",
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 8,
-    marginBottom: 24,
+    marginTop: 4,
+    marginBottom: 26,
+    paddingHorizontal: 5,
+  },
+  pageTitle: {
+    flex: 1,
+    marginRight: 12,
+    marginBottom: 0,
+    textAlign: "left",
   },
   addButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#F7A5D8",
+    borderColor: "#eee",
+    borderWidth: 1,
+    backgroundColor: "#FFFF",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#E36FC0",
+    marginRight: 12,
+
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4,
   },
   addButtonIcon: {
-    color: "#fff",
+    color: "#AEBA40",
     fontWeight: "800",
     fontSize: 24,
     marginTop: -2,
+  },
+  listWrapper: {
+    flex: 1,
+    minHeight: 0,
+    width: "100%",
+  },
+  loadingIndicator: {
+    marginTop: 12,
+  },
+  feedList: {
+    flex: 1,
+    width: "100%",
+  },
+  feedListContent: {
+    paddingBottom: 16,
   },
   postCard: {
     backgroundColor: "#fff",
@@ -522,7 +586,7 @@ const styles = StyleSheet.create({
   imagePicker: {
     width: 140,
     height: 140,
-    backgroundColor: "#E6F0F8",
+    backgroundColor: "#EFF1D9",
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -541,6 +605,7 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: "#fff",
     marginTop: 12,
+    fontFamily: "Montserrat_400Regular",
   },
   shareButton: {
     backgroundColor: "#037D4E",
@@ -554,6 +619,14 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
     marginTop: 8,
+  },
+  sectionLabel: {
+    fontSize: 16,
+    marginTop: 30,
+    marginBottom: 8,
+    color: "#333",
+    fontFamily: "Montserrat_700Bold",
+    alignSelf: "flex-start",
   },
 });
 
