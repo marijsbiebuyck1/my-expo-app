@@ -1,4 +1,3 @@
-import { ThemedText } from "@/components/themed-text";
 import { useFonts } from "expo-font";
 import { useRouter } from "expo-router";
 import React from "react";
@@ -39,8 +38,8 @@ export default function LoginScreen() {
         resizeMode="contain"
       />
       <Image
-        source={require("../assets/images/skateboard.png")}
-        style={styles.skateboard}
+        source={require("../assets/images/teckel-sparkle.png")}
+        style={styles.teckel}
         resizeMode="contain"
       />
       {/* decorative images only; navigation buttons are on the login-email screen */}
@@ -64,53 +63,49 @@ export default function LoginScreen() {
             Swipe. Match. Adopt. Forever.
           </Text>
           <Image
-            source={require("../assets/images/teckel-ster.png")}
-            style={styles.teckel}
-            resizeMode="contain"
-          />
-          <Image
             source={require("../assets/images/kat-start.png")}
             style={styles.katStart}
             resizeMode="contain"
           />
+          <Image
+            source={require("../assets/images/skateboard.png")}
+            style={styles.skateboard}
+            resizeMode="contain"
+          />
         </View>
-
-
       </View>
       {/* Action group: subtitle + buttons */}
-        <View style={styles.actions}>
-          <ThemedText style={styles.subtitle}>
-            Kies hoe je wilt registreren:
-          </ThemedText>
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={[styles.button, styles.owner]}
+          onPress={goAsOwner}
+        >
+          <Text style={[styles.buttonText, styles.buttonTextOwner]}>
+            Registreer als baasje
+          </Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.button, styles.owner]}
-            onPress={goAsOwner}
-          >
-            <Text style={[styles.buttonText, styles.buttonTextOwner]}>
-              Registreer als baasje
-            </Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, styles.shelter]}
+          onPress={goAsShelter}
+        >
+          <Text style={[styles.buttonText, styles.buttonTextShelter]}>
+            Registreer als asiel
+          </Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.button, styles.shelter]}
-            onPress={goAsShelter}
-          >
-            <Text style={[styles.buttonText, styles.buttonTextShelter]}>
-              Registreer als asiel
-            </Text>
-          </TouchableOpacity>
+        {/* icon buttons moved to top */}
 
-          {/* icon buttons moved to top */}
-
-          {/* Quick access to existing-user login */}
-          <TouchableOpacity
-            style={{ marginTop: 12 }}
-            onPress={() => router.replace("/users/login-email" as any)}
-          >
-            <Text style={[styles.skipText, styles.linkText]}>Al een account? Log in!</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Quick access to existing-user login */}
+        <TouchableOpacity
+          style={{ marginTop: 12 }}
+          onPress={() => router.replace("/users/login-email" as any)}
+        >
+          <Text style={[styles.skipText, styles.linkText]}>
+            Al een account? Log in!
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -126,6 +121,7 @@ const styles = StyleSheet.create({
   },
   brand: {
     alignItems: "center",
+    marginTop: 40,
   },
   actions: {
     width: "100%",
@@ -140,20 +136,19 @@ const styles = StyleSheet.create({
   },
 
   katStart: {
-    width: 200,
-    height: 140,
-    marginTop: 28,
-    marginLeft: 180,
+    width: 220,
+    height: 160,
+    marginTop: 48,
+    marginLeft: -200,
   },
   teckel: {
-       position: "absolute",
-   left: -30,
-    top: 200,
+    position: "absolute",
+    right: -30,
+    top: 60,
     width: 200,
     height: 200,
     zIndex: 60,
   },
-
   alternateTag: {
     color: "#FF8E28",
     fontSize: 18,
@@ -214,10 +209,10 @@ const styles = StyleSheet.create({
 
   skateboard: {
     position: "absolute",
-    top: 64,
-    right: 0,
-    width: 220,
-    height: 140,
+    bottom: -130,
+    right: -50,
+    width: 240,
+    height: 160,
     zIndex: 100,
   },
   pootje: {

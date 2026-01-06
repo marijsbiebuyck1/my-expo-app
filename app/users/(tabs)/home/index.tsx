@@ -29,17 +29,31 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [matchItem, setMatchItem] = useState<SwipeDeckItem | null>(null);
   const router = useRouter();
-  const katStartSvgUri = useMemo(() => {
+  const resolveSvgUri = useCallback((asset: any) => {
     try {
-      const resolved = Image.resolveAssetSource(
-        require("../../../../assets/images/kat-start.svg")
-      );
+      const resolved = Image.resolveAssetSource(asset);
       return resolved?.uri || null;
-    } catch (svgErr) {
-      console.warn("Failed to load kat-start.svg", svgErr);
+    } catch (err) {
+      console.warn("Failed to resolve svg asset", err);
       return null;
     }
   }, []);
+  const katStartSvgUri = useMemo(() => {
+    return resolveSvgUri(require("../../../../assets/images/kat-start.svg"));
+  }, [resolveSvgUri]);
+  const darkGreenStarUri = useMemo(() => {
+    return resolveSvgUri(
+      require("../../../../assets/images/donkergroene-ster.svg")
+    );
+  }, [resolveSvgUri]);
+  const pinkOrangeStarUri = useMemo(() => {
+    return resolveSvgUri(
+      require("../../../../assets/images/Roze-oranje-ster.svg")
+    );
+  }, [resolveSvgUri]);
+  const greenStarUri = useMemo(() => {
+    return resolveSvgUri(require("../../../../assets/images/groene-ster.svg"));
+  }, [resolveSvgUri]);
 
   const persistMatch = useCallback(
     async (itemSnapshot: SwipeDeckItem | null) => {
@@ -140,6 +154,32 @@ export default function HomeScreen() {
           </View>
         ) : hasCards ? (
           <View style={styles.deckWrap}>
+            <View pointerEvents="none" style={styles.decorLayer}>
+              {darkGreenStarUri ? (
+                <SvgUri
+                  uri={darkGreenStarUri}
+                  width={20}
+                  height={20}
+                  style={[styles.star, styles.starTopLeft]}
+                />
+              ) : null}
+              {greenStarUri ? (
+                <SvgUri
+                  uri={greenStarUri}
+                  width={20}
+                  height={20}
+                  style={[styles.star, styles.starMidLeft]}
+                />
+              ) : null}
+              {pinkOrangeStarUri ? (
+                <SvgUri
+                  uri={pinkOrangeStarUri}
+                  width={35}
+                  height={35}
+                  style={[styles.star, styles.starBottomRight]}
+                />
+              ) : null}
+            </View>
             <SwipeDeck
               items={items}
               onLike={async (raw) => {
@@ -424,7 +464,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 32,
     paddingBottom: 32,
     gap: 12,
   },
@@ -432,6 +472,30 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
     alignItems: "center",
+    position: "relative",
+  },
+  decorLayer: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 5,
+  },
+  star: {
+    position: "absolute",
+  },
+  starTopLeft: {
+    top: -13,
+    left: 18,
+  },
+  starMidLeft: {
+    top: 580,
+    left: -6,
+  },
+  starBottomRight: {
+    top: 450,
+    right: -10,
   },
   msgCard: {
     width: "92%",
