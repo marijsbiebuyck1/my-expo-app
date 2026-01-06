@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
   ctaButton: {
     marginTop: 18,
     alignSelf: "flex-start",
-    backgroundColor: "#FDA0E9",
+    backgroundColor: "#037D4E",
     borderRadius: 22,
     paddingVertical: 10,
     paddingHorizontal: 24,

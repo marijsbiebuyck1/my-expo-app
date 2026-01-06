@@ -9,10 +9,10 @@ import {
   ListRenderItemInfo,
   Pressable,
   StyleSheet,
-  TouchableOpacity,
+
   View,
 } from "react-native";
-import { Swipeable } from "react-native-gesture-handler";
+import { RectButton, Swipeable } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LogoHeader from "../../../../components/logo-header";
 import { ThemedText } from "../../../../components/themed-text";
@@ -186,15 +186,17 @@ export default function ChatListScreen() {
   );
 
   const renderSwipeActions = (item: Conversation) => (
-    <TouchableOpacity
-      style={styles.deleteAction}
-      onPress={() => confirmDelete(item)}
-      accessibilityRole="button"
-    >
-      <ThemedText style={styles.deleteActionText}>
-        {pendingDeleteId === item.id ? "Bezig…" : "Verwijderen"}
-      </ThemedText>
-    </TouchableOpacity>
+    <View style={styles.swipeActions}>
+      <RectButton
+        style={[styles.swipeActionButton, styles.swipeDeleteButton]}
+        onPress={() => confirmDelete(item)}
+      >
+        <Ionicons name="trash-outline" size={20} color="#fff" />
+        <ThemedText style={styles.swipeActionText}>
+          {pendingDeleteId === item.id ? "Bezig…" : "Verwijderen"}
+        </ThemedText>
+      </RectButton>
+    </View>
   );
 
   const renderItem = ({ item }: ListRenderItemInfo<Conversation>) => (
@@ -371,6 +373,27 @@ const styles = StyleSheet.create({
   deleteActionText: {
     color: "#fff",
     fontWeight: "700",
+  },
+  swipeActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  swipeActionButton: {
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 26,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginHorizontal: 4,
+    minWidth: 72,
+  },
+  swipeDeleteButton: { backgroundColor: "#FDA0E9" },
+  swipeActionText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 12,
+    marginTop: 4,
   },
 });
 
